@@ -8,16 +8,20 @@ CLI tool that generates randomized quizzes from CSV files and provides interacti
 ## Core Functionality
 
 ### Two-Script Architecture
-1. **Import Script** (`import_quiz.py` or similar)
+1. **Import Script** (`import_quiz.py`)
    - Input: CSV with 2 columns (Question, Answer)
-   - Output: JSON file(s) with randomized question sets
+   - Output: JSON file(s) with randomized question sets in timestamped subfolders
    - Each quiz contains up to 50 questions randomly selected from the pool
+   - Creates subfolder `data/quizzes/YYYYMMDD_HHMMSS/` for each import batch
    
-2. **Quiz Runner** (`run_quiz.py` or similar)
-   - Interactive CLI that loads a quiz JSON
+2. **Quiz Runner** (`run_quiz.py`)
+   - Interactive CLI that loads a quiz JSON (or selects random quiz)
+   - **Optional quiz file**: If not provided, automatically selects random quiz
+   - **Interactive folder selection**: If multiple quiz folders exist, prompts user to choose
    - Presents questions one-by-one
    - Collects and validates user answers
    - Generates pass/fail report (80% threshold)
+   - Automatically creates HTML report after completion
 
 ### Input Format Specification
 **CSV Structure:**

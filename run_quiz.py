@@ -22,6 +22,86 @@ from typing import List, Dict
 from quizzer import answers_match, format_answer_display, Quiz, QuizResult
 
 
+def select_quiz_folder(base_dir: str = "data/quizzes") -> Path:
+    """
+    Interactively select a quiz folder if multiple exist.
+    
+    Args:
+        base_dir: Base directory containing quiz folders
+    
+    Returns:
+        Path to selected folder
+    """
+    base_path = Path(base_dir)
+    
+    if not base_path.exists():
+        print(f"Error: Quiz directory not found: {base_path}")
+        sys.exit(1)
+    
+    # Get all subdirectories
+    subdirs = [d for d in base_path.iterdir() if d.is_dir()]
+    
+    if len(subdirs) == 0:
+        print(f"Error: No quiz folders found in {base_path}")
+        sys.exit(1)
+    
+    if len(subdirs) == 1:
+        return subdirs[0]
+    
+    # Multiple folders - ask user to select
+    print("\nAvailable quiz folders:")
+    for i, folder in enumerate(subdirs, 1):
+        quiz_count = len(list(folder.glob("*.json")))
+        print(f"  {i}. {folder.name} ({quiz_count} quizzes)")
+    
+    while True:
+        try:
+            choice = input("\nSelect folder (1-{0}): ".format(len(subdirs)))
+            idx = int(choice) - 1
+            if 0 <= idx < len(subdirs):
+                return subdirs[idx]
+            else:
+                print(f"Please enter a number between 1 and {len(subdirs)}")
+        except (ValueError, KeyboardInterrupt):
+            print("\nCancelled by user.")
+            sys.exit(0)
+
+
+def select_random_quiz(quiz_dir: str = "data/quizzes") -> Path:
+    """
+    Select a random quiz from the quiz directory.
+    
+    Args:
+        quiz_dir: Base directory containing quiz folders
+    
+    Returns:
+        Path to randomly selected quiz file
+    """
+    import random
+    
+    base_path = Path(quiz_dir)
+    
+    # Check if there are subfolders or direct quiz files
+    subdirs = [d for d in base_path.iterdir() if d.is_dir()]
+    
+    if subdirs:
+        # Select folder (interactive if multiple)
+        folder = select_quiz_folder(quiz_dir)
+        quiz_files = list(folder.glob("*.json"))
+    else:
+        # Look for quiz files directly in base directory
+        quiz_files = list(base_path.glob("*.json"))
+    
+    if not quiz_files:
+        print(f"Error: No quiz files found in {base_path}")
+        sys.exit(1)
+    
+    # Select random quiz
+    selected = random.choice(quiz_files)
+    print(f"Selected random quiz: {selected.name}")
+    return selected
+
+
 def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
     """
     Generate an HTML report for quiz results.
@@ -548,7 +628,9 @@ Examples:
     
     parser.add_argument(
         'quiz_file',
-        help='Path to quiz JSON file'
+        nargs='?',
+        default=None,
+        help='Path to quiz JSON file (optional - will select random quiz if not provided)'
     )
     parser.add_argument(
         '-t', '--pass-threshold',
@@ -569,11 +651,17 @@ Examples:
     args = parser.parse_args()
     
     try:
-        # Validate quiz file
-        quiz_file = Path(args.quiz_file)
-        if not quiz_file.exists():
-            print(f"Error: Quiz file not found: {quiz_file}")
-            sys.exit(1)
+        # Get quiz file (either specified or random)
+        if args.quiz_file:
+            quiz_file = Path(args.quiz_file)
+            if not quiz_file.exists():
+                print(f"Error: Quiz file not found: {quiz_file}")
+                sys.exit(1)
+        else:
+            # Select random quiz
+            if not args.quiet:
+                print("No quiz file specified, selecting random quiz...\n")
+            quiz_file = select_random_quiz()
         
         # Load quiz
         if not args.quiet:

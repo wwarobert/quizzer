@@ -206,8 +206,10 @@ Examples:
                 f"less than max {args.max_questions}"
             )
         
-        # Create output directory
-        output_dir = Path(args.output)
+        # Create output directory with subfolder for this import batch
+        base_output_dir = Path(args.output)
+        batch_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = base_output_dir / batch_id
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate quizzes
@@ -231,6 +233,7 @@ Examples:
             )
         
         print(f"\n✓ Successfully generated {args.number} quiz(zes)")
+        print(f"  Batch ID: {batch_id}")
         print(f"  Output directory: {output_dir.absolute()}")
         
     except FileNotFoundError as e:
