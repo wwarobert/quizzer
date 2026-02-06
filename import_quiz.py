@@ -49,35 +49,60 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
     
     questions = []
     
-    with open(filepath, 'r', encoding='utf-8', newline='') as f:
-        reader = csv.reader(f)
-        
-        for i, row in enumerate(reader, 1):
-            # Validate column count - need at least 2 columns
-            if len(row) < 2:
-                raise ValueError(
-                    f"Row {i} has {len(row)} column(s), expected at least 2. "
-                    f"Each row must have at least Question,Answer format."
-                )
+    # Try multiple encodings in order of preference
+    encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']
+    last_error = None
+    
+    for encoding in encodings:
+        try:
+            with open(filepath, 'r', encoding=encoding, newline='') as f:
+                reader = csv.reader(f)
+                questions = []  # Reset for each encoding attempt
+                
+                for i, row in enumerate(reader, 1):
+                    # Validate column count - need at least 2 columns
+                    if len(row) < 2:
+                        raise ValueError(
+                            f"Row {i} has {len(row)} column(s), expected at least 2. "
+                            f"Each row must have at least Question,Answer format."
+                        )
+                    
+                    # Use only first 2 columns, ignore the rest
+                    question, answer = row[0], row[1]
+                    question = question.strip()
+                    answer = answer.strip()
+                    
+                    # Skip potential header row
+                    if i == 1 and (
+                        'question' in question.lower() or 
+                        'answer' in answer.lower()
+                    ):
+                        continue
+                    
+                    # Skip empty rows
+                    if not question or not answer:
+                        print(f"Warning: Skipping row {i} with empty question or answer")
+                        continue
+                    
+                    questions.append((question, answer))
             
-            # Use only first 2 columns, ignore the rest
-            question, answer = row[0], row[1]
-            question = question.strip()
-            answer = answer.strip()
+            # If we got here, encoding worked - break out of loop
+            break
             
-            # Skip potential header row
-            if i == 1 and (
-                'question' in question.lower() or 
-                'answer' in answer.lower()
-            ):
-                continue
-            
-            # Skip empty rows
-            if not question or not answer:
-                print(f"Warning: Skipping row {i} with empty question or answer")
-                continue
-            
-            questions.append((question, answer))
+        except (UnicodeDecodeError, UnicodeError) as e:
+            last_error = e
+            continue  # Try next encoding
+    
+    else:
+        # All encodings failed
+        raise UnicodeDecodeError(
+            'multiple',
+            b'',
+            0,
+            1,
+            f"Failed to decode file with any of the attempted encodings: {encodings}. "
+            f"Last error: {last_error}"
+        )
     
     return questions
 
