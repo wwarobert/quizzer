@@ -156,17 +156,20 @@ def create_quiz(
     return quiz
 
 
-def generate_quiz_id(prefix: str = "quiz") -> str:
+def generate_quiz_id(prefix: str = "quiz", sequence: int = None) -> str:
     """
-    Generate a unique quiz ID using timestamp.
+    Generate a unique quiz ID using timestamp and optional sequence number.
     
     Args:
         prefix: Prefix for the quiz ID (default: "quiz")
+        sequence: Optional sequence number for uniqueness (1-based)
     
     Returns:
-        Unique quiz ID string (e.g., "quiz_20260206_103045")
+        Unique quiz ID string (e.g., "quiz_20260206_103045" or "quiz_20260206_103045_1")
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if sequence is not None:
+        return f"{prefix}_{timestamp}_{sequence}"
     return f"{prefix}_{timestamp}"
 
 
@@ -233,15 +236,19 @@ Examples:
                 f"less than max {args.max_questions}"
             )
         
-        # Create output directory
-        output_dir = Path(args.output)
+        # Create output directory with subfolder based on CSV filename
+        base_output_dir = Path(args.output)
+        csv_basename = Path(args.csv_file).stem  # filename without extension
+        output_dir = base_output_dir / csv_basename
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate quizzes
         source_filename = Path(args.csv_file).name
+        created_files = []
         
         for i in range(args.number):
-            quiz_id = generate_quiz_id(args.prefix)
+            # Generate unique quiz ID with sequence number for multiple quizzes
+            quiz_id = generate_quiz_id(args.prefix, i + 1 if args.number > 1 else None)
             quiz = create_quiz(
                 questions, 
                 quiz_id,
@@ -251,11 +258,26 @@ Examples:
             
             output_file = output_dir / f"{quiz_id}.json"
             quiz.save(str(output_file))
+            created_files.append(str(output_file))
             
             print(
                 f"Created quiz {i+1}/{args.number}: {output_file} "
                 f"({len(quiz.questions)} questions)"
             )
+        
+        # Save metadata about last import
+        metadata = {
+            "last_import": datetime.now().isoformat(),
+            "source_csv": args.csv_file,
+            "csv_basename": csv_basename,
+            "output_dir": str(output_dir.absolute()),
+            "quiz_files": created_files,
+            "num_quizzes": args.number,
+            "total_questions": len(questions)
+        }
+        metadata_file = base_output_dir / "last_import.json"
+        with open(metadata_file, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, indent=2)
         
         print(f"\n✓ Successfully generated {args.number} quiz(zes)")
         print(f"  Output directory: {output_dir.absolute()}")

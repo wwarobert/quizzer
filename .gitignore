@@ -207,9 +207,9 @@ marimo/_lsp/
 __marimo__/
 
 # Quizzer specific
-# Ignore generated quiz JSON files (keep only samples)
-data/quizzes/*.json
-!data/quizzes/README.md
+# Ignore generated quiz JSON files and metadata (keep only READMEs)
+data/quizzes/**/*.json
+!data/quizzes/**/README.md
 
 # Ignore CSV input files (keep only samples)
 data/input/*.csv
