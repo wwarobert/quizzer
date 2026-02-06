@@ -205,3 +205,27 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Quizzer specific
+# Ignore generated quiz JSON files (keep only samples)
+data/quizzes/*.json
+!data/quizzes/README.md
+
+# Ignore CSV input files (keep only samples)
+data/input/*.csv
+!data/input/sample_questions.csv
+!data/input/README.md
+
+# Ignore HTML reports (all generated locally)
+data/reports/*.html
+!data/reports/README.md
+
+# Test artifacts
+junit.xml
+report.html
+.coverage
+coverage.xml
+
+# GitHub Actions artifacts
+.pytest_cache/
+htmlcov/
