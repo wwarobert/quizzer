@@ -15,6 +15,8 @@ A command-line tool that generates randomized quizzes from CSV files and provide
 ✅ **Smart Answer Validation**: Case-insensitive, whitespace-tolerant, multi-answer support  
 📊 **Detailed Reports**: Pass/fail results with incorrect answer breakdown  
 📄 **HTML Reports**: Automatically generated styled reports after each quiz  
+📁 **Organized Storage**: Quiz batches stored in timestamped subfolders  
+🎯 **Smart Selection**: Auto-selects random quiz when no file specified  
 ⚡ **Zero Dependencies**: Built entirely with Python standard library  
 
 ---
