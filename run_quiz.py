@@ -15,6 +15,8 @@ Licensed under the Apache License, Version 2.0
 
 import argparse
 import sys
+import json
+import random
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
@@ -528,6 +530,45 @@ def display_results(result: QuizResult):
     print("\n" + "=" * 60)
 
 
+def find_latest_quiz(base_dir: str = "data/quizzes") -> Path:
+    """
+    Find the most recent quiz file from the last import.
+    
+    Args:
+        base_dir: Base directory where quizzes are stored
+    
+    Returns:
+        Path to the most recent quiz file
+    
+    Raises:
+        FileNotFoundError: If no quizzes found or metadata missing
+    """
+    base_path = Path(base_dir)
+    metadata_file = base_path / "last_import.json"
+    
+    if metadata_file.exists():
+        # Use metadata from last import
+        with open(metadata_file, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+        
+        quiz_files = metadata.get('quiz_files', [])
+        if not quiz_files:
+            raise FileNotFoundError("No quiz files found in last import metadata")
+        
+        # Pick a random quiz from the last import batch
+        selected_quiz = random.choice(quiz_files)
+        return Path(selected_quiz)
+    
+    # Fallback: find most recent quiz file by modification time
+    quiz_files = list(base_path.rglob("quiz_*.json"))
+    if not quiz_files:
+        raise FileNotFoundError(f"No quiz files found in {base_path}")
+    
+    # Sort by modification time, newest first
+    latest_quiz = max(quiz_files, key=lambda p: p.stat().st_mtime)
+    return latest_quiz
+
+
 def main():
     """Main entry point for the quiz runner script."""
     parser = argparse.ArgumentParser(
@@ -535,20 +576,24 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run a quiz with default 80% pass threshold
-  python run_quiz.py data/quizzes/quiz_001.json
+  # Run the most recent quiz automatically
+  python run_quiz.py
+  
+  # Run a specific quiz file
+  python run_quiz.py data/quizzes/az-104/quiz_001.json
   
   # Run with custom pass threshold
-  python run_quiz.py quiz.json --pass-threshold 75
+  python run_quiz.py --pass-threshold 75
   
   # Save report to custom location
-  python run_quiz.py quiz.json --report-output reports/
+  python run_quiz.py --report-output reports/
         """
     )
     
     parser.add_argument(
         'quiz_file',
-        help='Path to quiz JSON file'
+        nargs='?',  # Make it optional
+        help='Path to quiz JSON file (optional, auto-selects latest if not provided)'
     )
     parser.add_argument(
         '-t', '--pass-threshold',
@@ -569,8 +614,17 @@ Examples:
     args = parser.parse_args()
     
     try:
+        # Auto-select quiz if not provided
+        if args.quiz_file:
+            quiz_file = Path(args.quiz_file)
+        else:
+            if not args.quiet:
+                print("No quiz file specified, selecting from last import...")
+            quiz_file = find_latest_quiz()
+            if not args.quiet:
+                print(f"Selected: {quiz_file}\n")
+        
         # Validate quiz file
-        quiz_file = Path(args.quiz_file)
         if not quiz_file.exists():
             print(f"Error: Quiz file not found: {quiz_file}")
             sys.exit(1)
