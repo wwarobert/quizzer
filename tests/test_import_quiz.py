@@ -67,15 +67,33 @@ class TestReadCSVQuestions:
         finally:
             Path(temp_path).unlink(missing_ok=True)
     
-    def test_invalid_column_count(self):
-        """Test error on invalid column count."""
+    def test_extra_columns_ignored(self):
+        """Test that extra columns beyond first 2 are ignored."""
         with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["Question", "Answer", "Extra"])
+            writer.writerow(["Question", "Answer", "Extra1", "Extra2"])
+            writer.writerow(["What is 2+2?", "4", "ignored1", "ignored2"])
+            writer.writerow(["Capital?", "Paris", "ignored3", "ignored4"])
             temp_path = f.name
         
         try:
-            with pytest.raises(ValueError, match="expected 2"):
+            questions = import_quiz.read_csv_questions(temp_path)
+            # Should skip header and read 2 questions, ignoring extra columns
+            assert len(questions) == 2
+            assert questions[0] == ("What is 2+2?", "4")
+            assert questions[1] == ("Capital?", "Paris")
+        finally:
+            Path(temp_path).unlink(missing_ok=True)
+    
+    def test_insufficient_columns(self):
+        """Test error when CSV has fewer than 2 columns."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["OnlyOneColumn"])
+            temp_path = f.name
+        
+        try:
+            with pytest.raises(ValueError, match="expected at least 2"):
                 import_quiz.read_csv_questions(temp_path)
         finally:
             Path(temp_path).unlink(missing_ok=True)

@@ -28,7 +28,8 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
     """
     Read questions and answers from a CSV file.
     
-    Expected format: 2 columns (Question, Answer) with no header row.
+    Expected format: At least 2 columns (Question, Answer).
+    Only the first 2 columns are used; additional columns are ignored.
     If a header row is detected (first row contains "question" or "answer"),
     it will be skipped.
     
@@ -39,7 +40,7 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
         List of (question, answer) tuples
     
     Raises:
-        ValueError: If CSV doesn't have exactly 2 columns
+        ValueError: If CSV doesn't have at least 2 columns
         FileNotFoundError: If CSV file doesn't exist
     """
     filepath = Path(filepath)
@@ -52,14 +53,15 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
         reader = csv.reader(f)
         
         for i, row in enumerate(reader, 1):
-            # Validate column count
-            if len(row) != 2:
+            # Validate column count - need at least 2 columns
+            if len(row) < 2:
                 raise ValueError(
-                    f"Row {i} has {len(row)} columns, expected 2. "
-                    f"Each row must have exactly Question,Answer format."
+                    f"Row {i} has {len(row)} column(s), expected at least 2. "
+                    f"Each row must have at least Question,Answer format."
                 )
             
-            question, answer = row
+            # Use only first 2 columns, ignore the rest
+            question, answer = row[0], row[1]
             question = question.strip()
             answer = answer.strip()
             
@@ -163,7 +165,7 @@ Examples:
     
     parser.add_argument(
         'csv_file',
-        help='Path to CSV file with questions (2 columns: Question, Answer)'
+        help='Path to CSV file with questions (first 2 columns: Question, Answer; additional columns ignored)'
     )
     parser.add_argument(
         '-o', '--output',
