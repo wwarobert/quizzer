@@ -115,6 +115,7 @@ class QuizResult:
         score_percentage: Percentage score (0-100)
         passed: Whether the quiz was passed (score >= 80%)
         failures: List of failed questions with user answers
+        time_spent: Time spent on quiz in seconds
     """
     quiz_id: str
     completed_at: str
@@ -123,6 +124,7 @@ class QuizResult:
     score_percentage: float
     passed: bool
     failures: List[Dict[str, str]]
+    time_spent: float = 0.0
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary format."""
@@ -135,12 +137,16 @@ class QuizResult:
         Returns:
             Multi-line string containing the full quiz report
         """
+        mins, secs = divmod(int(self.time_spent), 60)
+        time_str = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
+        
         lines = [
             f"Quiz Report - {self.quiz_id}",
             f"Date: {self.completed_at}",
             f"Questions: {self.total_questions}",
             f"Correct: {self.correct_answers}",
             f"Score: {self.score_percentage:.1f}%",
+            f"Time Spent: {time_str}",
             f"Result: {'PASS' if self.passed else 'FAIL'}",
             ""
         ]
