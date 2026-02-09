@@ -664,8 +664,13 @@ def get_quiz_folders(base_dir: str = "data/quizzes") -> List[Path]:
     folders = []
     for item in base_path.iterdir():
         if item.is_dir():
-            # Check if directory contains any quiz JSON files
-            quiz_files = list(item.glob("quiz_*.json"))
+            # Check if directory contains any JSON files (quiz files have timestamp pattern)
+            json_files = list(item.glob("*.json"))
+            # Filter out non-quiz files (like metadata)
+            quiz_files = [
+                f for f in json_files 
+                if f.stem not in ['last_import', 'README', 'metadata']
+            ]
             if quiz_files:
                 folders.append(item)
     
@@ -697,8 +702,13 @@ def select_quiz_folder(folders: List[Path]) -> Path:
     
     print("Available quiz folders:\n")
     for idx, folder in enumerate(folders, 1):
-        # Count quiz files in folder
-        quiz_count = len(list(folder.glob("quiz_*.json")))
+        # Count quiz files in folder (all JSON files except metadata)
+        json_files = list(folder.glob("*.json"))
+        quiz_files = [
+            f for f in json_files 
+            if f.stem not in ['last_import', 'README', 'metadata']
+        ]
+        quiz_count = len(quiz_files)
         print(f"  {idx}. {folder.name} ({quiz_count} quiz{'zes' if quiz_count != 1 else ''})")
     
     print("\n  0. Exit\n")
@@ -739,7 +749,12 @@ def get_random_quiz_from_folder(folder: Path) -> Path:
     Raises:
         FileNotFoundError: If no quiz files found in folder
     """
-    quiz_files = list(folder.glob("quiz_*.json"))
+    # Get all JSON files, excluding known metadata files
+    json_files = list(folder.glob("*.json"))
+    quiz_files = [
+        f for f in json_files 
+        if f.stem not in ['last_import', 'README', 'metadata']
+    ]
     
     if not quiz_files:
         raise FileNotFoundError(f"No quiz files found in {folder}")
