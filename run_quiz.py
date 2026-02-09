@@ -15,6 +15,10 @@ Licensed under the Apache License, Version 2.0
 
 import argparse
 import sys
+import json
+import random
+import os
+import time
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
@@ -403,6 +407,10 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
                     <span class="metadata-value">{datetime.fromisoformat(result.completed_at).strftime('%Y-%m-%d %H:%M:%S')}</span>
                 </div>
                 <div class="metadata-item">
+                    <span class="metadata-label">Time Spent</span>
+                    <span class="metadata-value">{int(result.time_spent // 60)}m {int(result.time_spent % 60)}s</span>
+                </div>
+                <div class="metadata-item">
                     <span class="metadata-label">Source</span>
                     <span class="metadata-value">{quiz.source_file or 'N/A'}</span>
                 </div>
@@ -479,6 +487,11 @@ def save_html_report(result: QuizResult, quiz: Quiz, output_dir: str = "data/rep
     return filepath
 
 
+def clear_screen():
+    """Clear the console screen."""
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+
 def print_header():
     """Print quiz header banner."""
     print("\n" + "=" * 60)
@@ -524,6 +537,7 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
     Returns:
         QuizResult object with complete results
     """
+    clear_screen()
     print_header()
     print(f"Quiz ID: {quiz.quiz_id}")
     print(f"Questions: {len(quiz.questions)}")
@@ -532,31 +546,54 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
     print("  - For multiple answers, separate with commas (e.g., 'a, b, c')")
     print("  - Answers are case-insensitive")
     print("  - Whitespace is ignored")
+    print("  - After each answer, press Enter to continue")
     print("\nPress Ctrl+C to quit at any time.\n")
     
     input("Press Enter to start...")
     
+    start_time = time.time()
     correct_count = 0
     failures: List[Dict[str, str]] = []
     
     for idx, question in enumerate(quiz.questions, 1):
-        print_question(idx, len(quiz.questions), question.question)
+        # Clear screen and display question
+        clear_screen()
+        print("=" * 60)
+        print(f"Question {idx}/{len(quiz.questions)}".center(60))
+        print("=" * 60 + "\n")
+        print(f"{question.question}\n")
+        
         user_answer = get_user_answer()
         
         # Compare answers
         is_correct = answers_match(user_answer, question.original_answer)
         
+        # Display result
+        print("\n" + "-" * 60)
         if is_correct:
             correct_count += 1
-            print("✓ Correct!")
+            print("✓ CORRECT!")
         else:
-            print("✗ Incorrect")
+            print("✗ INCORRECT")
             failures.append({
                 'question_id': str(question.id),
                 'question': question.question,
                 'user_answer': format_answer_display(user_answer) if user_answer else "(no answer)",
                 'correct_answer': question.original_answer
             })
+        
+        # Show detailed answer
+        print(f"\nYour answer: {format_answer_display(user_answer) if user_answer else '(no answer)'}")
+        print(f"Correct answer: {question.original_answer}")
+        print("-" * 60)
+        
+        # Wait for user to press Enter before continuing
+        if idx < len(quiz.questions):
+            input("\nPress Enter to continue to the next question...")
+    
+    # Calculate time spent
+    end_time = time.time()
+    time_spent = end_time - start_time
     
     # Calculate results
     total_questions = len(quiz.questions)
@@ -571,7 +608,8 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
         correct_answers=correct_count,
         score_percentage=score_percentage,
         passed=passed,
-        failures=failures
+        failures=failures,
+        time_spent=time_spent
     )
     
     return result
@@ -584,28 +622,67 @@ def display_results(result: QuizResult):
     Args:
         result: QuizResult object to display
     """
+    clear_screen()
     print("\n" + "=" * 60)
     print("QUIZ COMPLETE".center(60))
     print("=" * 60 + "\n")
     
-    print(f"Score: {result.correct_answers}/{result.total_questions} ({result.score_percentage:.1f}%)")
+    # Summary statistics
+    incorrect_count = result.total_questions - result.correct_answers
+    mins, secs = divmod(int(result.time_spent), 60)
+    time_str = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
+    
+    print(f"Total Questions:     {result.total_questions}")
+    print(f"Correct Answers:     {result.correct_answers}")
+    print(f"Incorrect Answers:   {incorrect_count}")
+    print(f"Time Spent:          {time_str}")
+    print(f"\nScore:               {result.correct_answers}/{result.total_questions} ({result.score_percentage:.1f}%)")
     
     if result.passed:
-        print("Result: ✓ PASS")
+        print("Result:              ✓ PASS")
     else:
-        print("Result: ✗ FAIL")
-    
-    if result.failures:
-        print(f"\nFailed Questions ({len(result.failures)}):")
-        print("-" * 60)
-        for failure in result.failures:
-            print(f"\nQ{failure['question_id']}: {failure['question']}")
-            print(f"  Your answer: {failure['user_answer']}")
-            print(f"  Correct answer: {failure['correct_answer']}")
-    else:
-        print("\n🎉 Perfect score! All answers correct!")
+        print("Result:              ✗ FAIL")
     
     print("\n" + "=" * 60)
+
+
+def find_latest_quiz(base_dir: str = "data/quizzes") -> Path:
+    """
+    Find the most recent quiz file from the last import.
+    
+    Args:
+        base_dir: Base directory where quizzes are stored
+    
+    Returns:
+        Path to the most recent quiz file
+    
+    Raises:
+        FileNotFoundError: If no quizzes found or metadata missing
+    """
+    base_path = Path(base_dir)
+    metadata_file = base_path / "last_import.json"
+    
+    if metadata_file.exists():
+        # Use metadata from last import
+        with open(metadata_file, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+        
+        quiz_files = metadata.get('quiz_files', [])
+        if not quiz_files:
+            raise FileNotFoundError("No quiz files found in last import metadata")
+        
+        # Pick a random quiz from the last import batch
+        selected_quiz = random.choice(quiz_files)
+        return Path(selected_quiz)
+    
+    # Fallback: find most recent quiz file by modification time
+    quiz_files = list(base_path.rglob("quiz_*.json"))
+    if not quiz_files:
+        raise FileNotFoundError(f"No quiz files found in {base_path}")
+    
+    # Sort by modification time, newest first
+    latest_quiz = max(quiz_files, key=lambda p: p.stat().st_mtime)
+    return latest_quiz
 
 
 def main():
@@ -615,22 +692,24 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run a quiz with default 80% pass threshold
-  python run_quiz.py data/quizzes/quiz_001.json
+  # Run the most recent quiz automatically
+  python run_quiz.py
+  
+  # Run a specific quiz file
+  python run_quiz.py data/quizzes/az-104/quiz_001.json
   
   # Run with custom pass threshold
-  python run_quiz.py quiz.json --pass-threshold 75
+  python run_quiz.py --pass-threshold 75
   
   # Save report to custom location
-  python run_quiz.py quiz.json --report-output reports/
+  python run_quiz.py --report-output reports/
         """
     )
     
     parser.add_argument(
         'quiz_file',
-        nargs='?',
-        default=None,
-        help='Path to quiz JSON file (optional - will select random quiz if not provided)'
+        nargs='?',  # Make it optional
+        help='Path to quiz JSON file (optional, auto-selects latest if not provided)'
     )
     parser.add_argument(
         '-t', '--pass-threshold',
@@ -651,17 +730,20 @@ Examples:
     args = parser.parse_args()
     
     try:
-        # Get quiz file (either specified or random)
+        # Auto-select quiz if not provided
         if args.quiz_file:
             quiz_file = Path(args.quiz_file)
-            if not quiz_file.exists():
-                print(f"Error: Quiz file not found: {quiz_file}")
-                sys.exit(1)
         else:
-            # Select random quiz
             if not args.quiet:
-                print("No quiz file specified, selecting random quiz...\n")
-            quiz_file = select_random_quiz()
+                print("No quiz file specified, selecting from last import...")
+            quiz_file = find_latest_quiz()
+            if not args.quiet:
+                print(f"Selected: {quiz_file}\n")
+        
+        # Validate quiz file
+        if not quiz_file.exists():
+            print(f"Error: Quiz file not found: {quiz_file}")
+            sys.exit(1)
         
         # Load quiz
         if not args.quiet:

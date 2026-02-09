@@ -9,17 +9,14 @@ A command-line tool that generates randomized quizzes from CSV files and provide
 
 ## Features
 
-✨ **Simple CSV Input**: Two-column format (Question, Answer)  
-🎲 **Randomized Quizzes**: Each quiz randomly selects and shuffles questions  
-📝 **Interactive Testing**: Clean CLI interface for taking quizzes  
-✅ **Smart Answer Validation**: Case-insensitive, whitespace-tolerant, multi-answer support  
-📊 **Detailed Reports**: Pass/fail results with incorrect answer breakdown  
-📄 **HTML Reports**: Automatically generated styled reports after each quiz  
-📁 **Organized Storage**: Quiz batches stored in timestamped subfolders  
-🎯 **Smart Selection**: Auto-selects random quiz when no file specified  
-⚡ **Zero Dependencies**: Built entirely with Python standard library  
-
----
+- Simple CSV input format (Question, Answer)
+- Randomized question selection and ordering
+- Interactive command-line interface
+- Smart answer validation (case-insensitive, whitespace-tolerant, multi-answer support)
+- Detailed pass/fail reports with incorrect answer breakdown
+- Automatic HTML report generation
+- Built entirely with Python standard library (zero external dependencies)
+- Time tracking for quiz completion
 
 ## Table of Contents
 
@@ -33,8 +30,6 @@ A command-line tool that generates randomized quizzes from CSV files and provide
 - [Examples](#examples)
 - [Development](#development)
 - [License](#license)
-
----
 
 ## Installation
 
@@ -68,8 +63,6 @@ A command-line tool that generates randomized quizzes from CSV files and provide
    python run_quiz.py --help
    ```
 
----
-
 ## Quick Start
 
 ### 1. Create a CSV file with your questions
@@ -100,8 +93,6 @@ Output: `data/quizzes/quiz_YYYYMMDD_HHMMSS.json`
 ```bash
 python run_quiz.py data/quizzes/quiz_YYYYMMDD_HHMMSS.json
 ```
-
----
 
 ## Usage
 
@@ -152,8 +143,6 @@ Generate quiz with only 20 questions:
 python import_quiz.py data/input/history.csv -m 20
 ```
 
----
-
 ### Taking Quizzes
 
 The `run_quiz.py` script provides an interactive CLI for taking quizzes.
@@ -183,30 +172,31 @@ python run_quiz.py data/quizzes/quiz_001.json \
 
 #### Interactive Features
 
-- **Progress tracking**: Shows `Question X/Y` for each question
-- **Multi-answer support**: Separate answers with commas: `red, blue, yellow`
-- **Instant feedback**: Shows ✓ or ✗ after each answer
-- **HTML Report Generation**: Automatically creates a styled HTML report in `data/reports/`
-- **Final report**: Displays score, pass/fail, and all incorrect answers
-- **Keyboard interrupt**: Press Ctrl+C to exit anytime
+- Progress tracking: Shows `Question X/Y` for each question
+- Multi-answer support: Separate answers with commas (e.g., `red, blue, yellow`)
+- Instant feedback: Shows result after each answer
+- HTML Report Generation: Automatically creates a styled HTML report in `data/reports/`
+- Final report: Displays score, pass/fail, time spent, and all incorrect answers
+- Keyboard interrupt: Press Ctrl+C to exit anytime
 
 #### HTML Reports
 
-**Every quiz automatically generates an HTML report** with:
+Each quiz automatically generates an HTML report with the following features:
 - Visual pass/fail status banner
 - Score percentage with color coding
 - Complete statistics (total/correct/failed questions)
 - Detailed breakdown of all failed questions
 - Professional styling with gradients and responsive design
 
-Reports are saved as: `data/reports/{quiz_id}_report.html`
+Reports are saved to: `data/reports/{quiz_id}_report.html`
 
-**Note**: Each quiz run overwrites its previous report, so you always have the latest results.
+Note: Each quiz run overwrites its previous report, ensuring the latest results are retained.
 
-View your report by:
-- Double-clicking the HTML file in File Explorer
-- Running: `start data/reports/quiz_xxx_report.html` (Windows)
-- Opening in any web browser
+To view reports:
+- Open the HTML file directly in a web browser
+- On Windows: `start data/reports/quiz_xxx_report.html`
+- On macOS: `open data/reports/quiz_xxx_report.html`
+- On Linux: `xdg-open data/reports/quiz_xxx_report.html`
 
 #### Examples
 
@@ -220,24 +210,22 @@ Run with 75% threshold and save report:
 python run_quiz.py quiz.json -t 75 -r reports/
 ```
 
----
-
 ## CSV Format
 
 ### Structure
 
-CSV files must have **exactly 2 columns**:
+CSV files must have exactly 2 columns:
 
-1. **Column 1**: Question text
-2. **Column 2**: Answer text
+1. Column 1: Question text
+2. Column 2: Answer text
 
 ### Rules
 
-- **Header row**: Optional (auto-detected if first row contains "question"/"answer")
-- **Encoding**: UTF-8
-- **Quotes**: Use quotes for answers containing commas
-- **Multi-answers**: Separate with commas (e.g., `"red, blue, yellow"`)
-- **Empty rows**: Skipped automatically
+- Header row: Optional (auto-detected if first row contains "question"/"answer")
+- Encoding: UTF-8
+- Quotes: Use quotes for answers containing commas
+- Multi-answers: Separate with commas (e.g., `"red, blue, yellow"`)
+- Empty rows: Skipped automatically
 
 ### Example
 
@@ -251,8 +239,6 @@ Who wrote Hamlet?,William Shakespeare
 ### Sample File
 
 See [data/input/sample_questions.csv](data/input/sample_questions.csv) for a complete example with 25 questions.
-
----
 
 ## Quiz Format
 
@@ -282,12 +268,10 @@ Quizzes are stored as JSON files with the following structure:
 
 ### Key Points
 
-- **answer**: Normalized for comparison (lowercase, sorted, no whitespace)
-- **original_answer**: Preserved for display in reports
-- **questions**: Limited to 50 per quiz
-- **order**: Randomized during import
-
----
+- `answer`: Normalized for comparison (lowercase, sorted, no whitespace)
+- `original_answer`: Preserved for display in reports
+- `questions`: Limited to 50 per quiz
+- `order`: Randomized during import
 
 ## Examples
 
@@ -347,11 +331,11 @@ Press Enter to start...
 
 Question 1/25: What is the capital of France?
 Your answer: paris
-✓ Correct!
+Correct!
 
 Question 2/25: List primary colors
 Your answer: red, blue, yellow
-✓ Correct!
+Correct!
 
 [... continues for all questions ...]
 
@@ -359,8 +343,13 @@ Your answer: red, blue, yellow
                       QUIZ COMPLETE
 ============================================================
 
-Score: 21/25 (84.0%)
-Result: ✓ PASS
+Total Questions:     25
+Correct Answers:     21
+Incorrect Answers:   4
+Time Spent:          3m 45s
+
+Score:               21/25 (84.0%)
+Result:              PASS
 
 Failed Questions (4):
 ------------------------------------------------------------
@@ -373,8 +362,6 @@ Q5: Who wrote Romeo and Juliet?
 
 ============================================================
 ```
-
----
 
 ## Development
 
@@ -414,26 +401,15 @@ quizzer/
 
 This project uses GitHub Actions for continuous integration:
 
-**🔄 Automated Checks on Pull Requests:**
-- ✅ Test suite across Python 3.10-3.13
-- 📊 Code coverage reporting
-- 🎨 Code formatting (Black, isort)
-- 🔍 Static analysis (Flake8, Pylint, MyPy)
-- 🔒 Security scanning (Bandit)
-- 💬 Automated PR comments with results
+Automated checks on pull requests:
+- Test suite across Python 3.10-3.13
+- Code coverage reporting
+- Code formatting (Black, isort)
+- Static analysis (Flake8, Pylint, MyPy)
+- Security scanning (Bandit)
+- Automated PR comments with results
 
 See [.github/workflows/README.md](.github/workflows/README.md) for details.
-│   ├── input/              # Source CSV files
-│   ├── quizzes/            # Generated quiz JSON files
-│   └── reports/            # Quiz result reports (optional)
-├── examples/
-│   └── sample_questions.csv
-├── .github/
-│   └── copilot-instructions.md  # AI agent guidelines
-├── requirements.txt
-├── LICENSE
-└── README.md
-```
 
 ### Key Modules
 
@@ -480,7 +456,7 @@ python -m pytest tests/ --cov=quizzer --cov-report=term-missing
 python -m pytest tests/test_normalizer.py -v
 ```
 
-**Test Results:** ✅ 57 tests passing with 100% coverage on core modules
+Test Results: 57 tests passing with 100% coverage on core modules.
 
 See [tests/README.md](tests/README.md) for detailed testing documentation.
 
@@ -497,15 +473,11 @@ Contributions are welcome! Areas for enhancement:
 - [ ] Answer variants (accept synonyms)
 - [ ] Spaced repetition algorithm
 
----
-
 ## License
 
 Copyright 2026 Quizzer Project
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
-
----
 
 ## Support
 

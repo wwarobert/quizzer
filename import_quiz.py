@@ -14,6 +14,7 @@ Licensed under the Apache License, Version 2.0
 
 import csv
 import json
+import math
 import random
 import argparse
 import sys
@@ -28,7 +29,8 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
     """
     Read questions and answers from a CSV file.
     
-    Expected format: 2 columns (Question, Answer) with no header row.
+    Expected format: At least 2 columns (Question, Answer).
+    Only the first 2 columns are used; additional columns are ignored.
     If a header row is detected (first row contains "question" or "answer"),
     it will be skipped.
     
@@ -39,7 +41,7 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
         List of (question, answer) tuples
     
     Raises:
-        ValueError: If CSV doesn't have exactly 2 columns
+        ValueError: If CSV doesn't have at least 2 columns
         FileNotFoundError: If CSV file doesn't exist
     """
     filepath = Path(filepath)
@@ -48,34 +50,60 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
     
     questions = []
     
-    with open(filepath, 'r', encoding='utf-8', newline='') as f:
-        reader = csv.reader(f)
-        
-        for i, row in enumerate(reader, 1):
-            # Validate column count
-            if len(row) != 2:
-                raise ValueError(
-                    f"Row {i} has {len(row)} columns, expected 2. "
-                    f"Each row must have exactly Question,Answer format."
-                )
+    # Try multiple encodings in order of preference
+    encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']
+    last_error = None
+    
+    for encoding in encodings:
+        try:
+            with open(filepath, 'r', encoding=encoding, newline='') as f:
+                reader = csv.reader(f)
+                questions = []  # Reset for each encoding attempt
+                
+                for i, row in enumerate(reader, 1):
+                    # Validate column count - need at least 2 columns
+                    if len(row) < 2:
+                        raise ValueError(
+                            f"Row {i} has {len(row)} column(s), expected at least 2. "
+                            f"Each row must have at least Question,Answer format."
+                        )
+                    
+                    # Use only first 2 columns, ignore the rest
+                    question, answer = row[0], row[1]
+                    question = question.strip()
+                    answer = answer.strip()
+                    
+                    # Skip potential header row
+                    if i == 1 and (
+                        'question' in question.lower() or 
+                        'answer' in answer.lower()
+                    ):
+                        continue
+                    
+                    # Skip empty rows
+                    if not question or not answer:
+                        print(f"Warning: Skipping row {i} with empty question or answer")
+                        continue
+                    
+                    questions.append((question, answer))
             
-            question, answer = row
-            question = question.strip()
-            answer = answer.strip()
+            # If we got here, encoding worked - break out of loop
+            break
             
-            # Skip potential header row
-            if i == 1 and (
-                'question' in question.lower() or 
-                'answer' in answer.lower()
-            ):
-                continue
-            
-            # Skip empty rows
-            if not question or not answer:
-                print(f"Warning: Skipping row {i} with empty question or answer")
-                continue
-            
-            questions.append((question, answer))
+        except (UnicodeDecodeError, UnicodeError) as e:
+            last_error = e
+            continue  # Try next encoding
+    
+    else:
+        # All encodings failed
+        raise UnicodeDecodeError(
+            'multiple',
+            b'',
+            0,
+            1,
+            f"Failed to decode file with any of the attempted encodings: {encodings}. "
+            f"Last error: {last_error}"
+        )
     
     return questions
 
@@ -83,29 +111,23 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
 def create_quiz(
     questions: List[Tuple[str, str]], 
     quiz_id: str,
-    source_file: str = "",
-    max_questions: int = 50
+    source_file: str = ""
 ) -> Quiz:
     """
     Create a Quiz object from a list of question-answer pairs.
     
-    Questions are randomized and limited to max_questions.
+    Questions are used as provided (no shuffling or limiting).
     
     Args:
-        questions: List of (question, answer) tuples
+        questions: List of (question, answer) tuples (already shuffled/limited)
         quiz_id: Unique identifier for the quiz
         source_file: Original CSV filename
-        max_questions: Maximum number of questions per quiz (default: 50)
     
     Returns:
         Quiz object ready to be saved
     """
-    # Randomize question order
-    shuffled = questions.copy()
-    random.shuffle(shuffled)
-    
-    # Limit to max questions
-    selected = shuffled[:max_questions]
+    # Use questions as provided
+    selected = questions
     
     # Create Question objects
     quiz_questions = []
@@ -129,17 +151,20 @@ def create_quiz(
     return quiz
 
 
-def generate_quiz_id(prefix: str = "quiz") -> str:
+def generate_quiz_id(prefix: str = "quiz", sequence: int = None) -> str:
     """
-    Generate a unique quiz ID using timestamp.
+    Generate a unique quiz ID using timestamp and optional sequence number.
     
     Args:
         prefix: Prefix for the quiz ID (default: "quiz")
+        sequence: Optional sequence number for uniqueness (1-based)
     
     Returns:
-        Unique quiz ID string (e.g., "quiz_20260206_103045")
+        Unique quiz ID string (e.g., "quiz_20260206_103045" or "quiz_20260206_103045_1")
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if sequence is not None:
+        return f"{prefix}_{timestamp}_{sequence}"
     return f"{prefix}_{timestamp}"
 
 
@@ -163,7 +188,7 @@ Examples:
     
     parser.add_argument(
         'csv_file',
-        help='Path to CSV file with questions (2 columns: Question, Answer)'
+        help='Path to CSV file with questions (first 2 columns: Question, Answer; additional columns ignored)'
     )
     parser.add_argument(
         '-o', '--output',
@@ -173,8 +198,8 @@ Examples:
     parser.add_argument(
         '-n', '--number',
         type=int,
-        default=1,
-        help='Number of quiz variations to generate (default: 1)'
+        default=None,
+        help='Number of quizzes to generate (default: auto-calculate to use all questions)'
     )
     parser.add_argument(
         '-m', '--max-questions',
@@ -186,6 +211,11 @@ Examples:
         '--prefix',
         default='quiz',
         help='Prefix for quiz IDs (default: quiz)'
+    )
+    parser.add_argument(
+        '--allow-duplicates',
+        action='store_true',
+        help='Allow duplicate questions across quizzes (random selection mode)'
     )
     
     args = parser.parse_args()
@@ -200,40 +230,104 @@ Examples:
             print("Error: No valid questions found in CSV file")
             sys.exit(1)
         
-        if len(questions) < args.max_questions:
-            print(
-                f"Warning: CSV has {len(questions)} questions, "
-                f"less than max {args.max_questions}"
-            )
+        # Shuffle all questions once
+        shuffled_questions = questions.copy()
+        random.shuffle(shuffled_questions)
         
-        # Create output directory with subfolder for this import batch
+        # Calculate number of quizzes needed
+        if args.allow_duplicates:
+            # Old behavior: random selection with possible duplicates
+            num_quizzes = args.number if args.number else 1
+            quiz_sizes = [args.max_questions] * num_quizzes
+            if len(questions) < args.max_questions:
+                print(
+                    f"Warning: CSV has {len(questions)} questions, "
+                    f"less than max {args.max_questions}"
+                )
+                quiz_sizes = [len(questions)] * num_quizzes
+        else:
+            # New behavior: split all questions evenly across quizzes
+            # Use rounding to stay close to max_questions per quiz
+            calculated_quizzes = max(1, round(len(questions) / args.max_questions))
+            
+            if args.number is None:
+                num_quizzes = calculated_quizzes
+            else:
+                num_quizzes = args.number
+                if num_quizzes < calculated_quizzes:
+                    print(
+                        f"Warning: {len(questions)} questions need {calculated_quizzes} quizzes "
+                        f"(max {args.max_questions} each), but only generating {num_quizzes}. "
+                        f"Some questions will not be used."
+                    )
+            
+            # Distribute questions evenly across quizzes
+            base_size = len(questions) // num_quizzes
+            remainder = len(questions) % num_quizzes
+            
+            # First 'remainder' quizzes get base_size + 1, rest get base_size
+            quiz_sizes = [base_size + 1] * remainder + [base_size] * (num_quizzes - remainder)
+        
+        print(f"Generating {num_quizzes} quiz(zes) from {len(questions)} questions")
+        print(f"  Quiz sizes: {', '.join(str(s) for s in quiz_sizes)}")
+        
+        # Create output directory with subfolder based on CSV filename
         base_output_dir = Path(args.output)
-        batch_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = base_output_dir / batch_id
+        csv_basename = Path(args.csv_file).stem  # filename without extension
+        output_dir = base_output_dir / csv_basename
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate quizzes
         source_filename = Path(args.csv_file).name
+        created_files = []
+        question_index = 0  # Track position in questions list
         
-        for i in range(args.number):
-            quiz_id = generate_quiz_id(args.prefix)
+        for i in range(num_quizzes):
+            # Generate unique quiz ID with sequence number for multiple quizzes
+            quiz_id = generate_quiz_id(args.prefix, i + 1 if num_quizzes > 1 else None)
+            
+            # Get questions for this quiz
+            if args.allow_duplicates:
+                # Old behavior: random selection with possible duplicates
+                quiz_questions = shuffled_questions.copy()
+                random.shuffle(quiz_questions)
+                quiz_questions = quiz_questions[:quiz_sizes[i]]
+            else:
+                # New behavior: split questions evenly (no duplicates)
+                quiz_size = quiz_sizes[i]
+                quiz_questions = shuffled_questions[question_index:question_index + quiz_size]
+                question_index += quiz_size
+            
             quiz = create_quiz(
-                questions, 
+                quiz_questions,
                 quiz_id,
-                source_file=source_filename,
-                max_questions=args.max_questions
+                source_file=source_filename
             )
             
             output_file = output_dir / f"{quiz_id}.json"
             quiz.save(str(output_file))
+            created_files.append(str(output_file))
             
             print(
-                f"Created quiz {i+1}/{args.number}: {output_file} "
+                f"Created quiz {i+1}/{num_quizzes}: {output_file} "
                 f"({len(quiz.questions)} questions)"
             )
         
-        print(f"\n✓ Successfully generated {args.number} quiz(zes)")
-        print(f"  Batch ID: {batch_id}")
+        # Save metadata about last import
+        metadata = {
+            "last_import": datetime.now().isoformat(),
+            "source_csv": args.csv_file,
+            "csv_basename": csv_basename,
+            "output_dir": str(output_dir.absolute()),
+            "quiz_files": created_files,
+            "num_quizzes": num_quizzes,
+            "total_questions": len(questions)
+        }
+        metadata_file = base_output_dir / "last_import.json"
+        with open(metadata_file, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, indent=2)
+        
+        print(f"\n✓ Successfully generated {num_quizzes} quiz(zes)")
         print(f"  Output directory: {output_dir.absolute()}")
         
     except FileNotFoundError as e:
