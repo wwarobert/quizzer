@@ -1,0 +1,113 @@
+{
+  "quiz_id": "sample_20260209_170039_1",
+  "created_at": "2026-02-09T17:00:39.586223",
+  "source_file": "sample_questions.csv",
+  "questions": [
+    {
+      "id": 1,
+      "question": "How many bones are in the human body?",
+      "answer": [
+        "206"
+      ],
+      "original_answer": "206"
+    },
+    {
+      "id": 2,
+      "question": "Who invented the telephone?",
+      "answer": [
+        "alexander graham bell"
+      ],
+      "original_answer": "Alexander Graham Bell"
+    },
+    {
+      "id": 3,
+      "question": "What year did World War II end?",
+      "answer": [
+        "1945"
+      ],
+      "original_answer": "1945"
+    },
+    {
+      "id": 4,
+      "question": "Who developed the theory of relativity?",
+      "answer": [
+        "albert einstein"
+      ],
+      "original_answer": "Albert Einstein"
+    },
+    {
+      "id": 5,
+      "question": "What is 2 + 2?",
+      "answer": [
+        "4"
+      ],
+      "original_answer": "4"
+    },
+    {
+      "id": 6,
+      "question": "What is the square root of 144?",
+      "answer": [
+        "12"
+      ],
+      "original_answer": "12"
+    },
+    {
+      "id": 7,
+      "question": "List the primary colors",
+      "answer": [
+        "blue",
+        "red",
+        "yellow"
+      ],
+      "original_answer": "red, blue, yellow"
+    },
+    {
+      "id": 8,
+      "question": "Who wrote Romeo and Juliet?",
+      "answer": [
+        "william shakespeare"
+      ],
+      "original_answer": "William Shakespeare"
+    },
+    {
+      "id": 9,
+      "question": "What is the capital of Japan?",
+      "answer": [
+        "tokyo"
+      ],
+      "original_answer": "Tokyo"
+    },
+    {
+      "id": 10,
+      "question": "Name the first president of the United States",
+      "answer": [
+        "george washington"
+      ],
+      "original_answer": "George Washington"
+    },
+    {
+      "id": 11,
+      "question": "What is the freezing point of water in Fahrenheit?",
+      "answer": [
+        "32"
+      ],
+      "original_answer": "32"
+    },
+    {
+      "id": 12,
+      "question": "What is the currency of the United Kingdom?",
+      "answer": [
+        "pound sterling"
+      ],
+      "original_answer": "Pound Sterling"
+    },
+    {
+      "id": 13,
+      "question": "Who wrote Pride and Prejudice?",
+      "answer": [
+        "jane austen"
+      ],
+      "original_answer": "Jane Austen"
+    }
+  ]
+}
