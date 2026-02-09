@@ -17,6 +17,8 @@ import argparse
 import sys
 import json
 import random
+import os
+import time
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
@@ -325,6 +327,10 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
                     <span class="metadata-value">{datetime.fromisoformat(result.completed_at).strftime('%Y-%m-%d %H:%M:%S')}</span>
                 </div>
                 <div class="metadata-item">
+                    <span class="metadata-label">Time Spent</span>
+                    <span class="metadata-value">{int(result.time_spent // 60)}m {int(result.time_spent % 60)}s</span>
+                </div>
+                <div class="metadata-item">
                     <span class="metadata-label">Source</span>
                     <span class="metadata-value">{quiz.source_file or 'N/A'}</span>
                 </div>
@@ -401,6 +407,11 @@ def save_html_report(result: QuizResult, quiz: Quiz, output_dir: str = "data/rep
     return filepath
 
 
+def clear_screen():
+    """Clear the console screen."""
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+
 def print_header():
     """Print quiz header banner."""
     print("\n" + "=" * 60)
@@ -446,6 +457,7 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
     Returns:
         QuizResult object with complete results
     """
+    clear_screen()
     print_header()
     print(f"Quiz ID: {quiz.quiz_id}")
     print(f"Questions: {len(quiz.questions)}")
@@ -454,31 +466,54 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
     print("  - For multiple answers, separate with commas (e.g., 'a, b, c')")
     print("  - Answers are case-insensitive")
     print("  - Whitespace is ignored")
+    print("  - After each answer, press Enter to continue")
     print("\nPress Ctrl+C to quit at any time.\n")
     
     input("Press Enter to start...")
     
+    start_time = time.time()
     correct_count = 0
     failures: List[Dict[str, str]] = []
     
     for idx, question in enumerate(quiz.questions, 1):
-        print_question(idx, len(quiz.questions), question.question)
+        # Clear screen and display question
+        clear_screen()
+        print("=" * 60)
+        print(f"Question {idx}/{len(quiz.questions)}".center(60))
+        print("=" * 60 + "\n")
+        print(f"{question.question}\n")
+        
         user_answer = get_user_answer()
         
         # Compare answers
         is_correct = answers_match(user_answer, question.original_answer)
         
+        # Display result
+        print("\n" + "-" * 60)
         if is_correct:
             correct_count += 1
-            print("✓ Correct!")
+            print("✓ CORRECT!")
         else:
-            print("✗ Incorrect")
+            print("✗ INCORRECT")
             failures.append({
                 'question_id': str(question.id),
                 'question': question.question,
                 'user_answer': format_answer_display(user_answer) if user_answer else "(no answer)",
                 'correct_answer': question.original_answer
             })
+        
+        # Show detailed answer
+        print(f"\nYour answer: {format_answer_display(user_answer) if user_answer else '(no answer)'}")
+        print(f"Correct answer: {question.original_answer}")
+        print("-" * 60)
+        
+        # Wait for user to press Enter before continuing
+        if idx < len(quiz.questions):
+            input("\nPress Enter to continue to the next question...")
+    
+    # Calculate time spent
+    end_time = time.time()
+    time_spent = end_time - start_time
     
     # Calculate results
     total_questions = len(quiz.questions)
@@ -493,7 +528,8 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
         correct_answers=correct_count,
         score_percentage=score_percentage,
         passed=passed,
-        failures=failures
+        failures=failures,
+        time_spent=time_spent
     )
     
     return result
@@ -506,26 +542,26 @@ def display_results(result: QuizResult):
     Args:
         result: QuizResult object to display
     """
+    clear_screen()
     print("\n" + "=" * 60)
     print("QUIZ COMPLETE".center(60))
     print("=" * 60 + "\n")
     
-    print(f"Score: {result.correct_answers}/{result.total_questions} ({result.score_percentage:.1f}%)")
+    # Summary statistics
+    incorrect_count = result.total_questions - result.correct_answers
+    mins, secs = divmod(int(result.time_spent), 60)
+    time_str = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
+    
+    print(f"Total Questions:     {result.total_questions}")
+    print(f"Correct Answers:     {result.correct_answers}")
+    print(f"Incorrect Answers:   {incorrect_count}")
+    print(f"Time Spent:          {time_str}")
+    print(f"\nScore:               {result.correct_answers}/{result.total_questions} ({result.score_percentage:.1f}%)")
     
     if result.passed:
-        print("Result: ✓ PASS")
+        print("Result:              ✓ PASS")
     else:
-        print("Result: ✗ FAIL")
-    
-    if result.failures:
-        print(f"\nFailed Questions ({len(result.failures)}):")
-        print("-" * 60)
-        for failure in result.failures:
-            print(f"\nQ{failure['question_id']}: {failure['question']}")
-            print(f"  Your answer: {failure['user_answer']}")
-            print(f"  Correct answer: {failure['correct_answer']}")
-    else:
-        print("\n🎉 Perfect score! All answers correct!")
+        print("Result:              ✗ FAIL")
     
     print("\n" + "=" * 60)
 
