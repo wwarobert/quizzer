@@ -646,6 +646,107 @@ def display_results(result: QuizResult):
     print("\n" + "=" * 60)
 
 
+def get_quiz_folders(base_dir: str = "data/quizzes") -> List[Path]:
+    """
+    Get list of subdirectories containing quiz files.
+    
+    Args:
+        base_dir: Base directory where quizzes are stored
+    
+    Returns:
+        List of Path objects for subdirectories containing quiz files
+    """
+    base_path = Path(base_dir)
+    if not base_path.exists():
+        return []
+    
+    # Find all subdirectories that contain .json files
+    folders = []
+    for item in base_path.iterdir():
+        if item.is_dir():
+            # Check if directory contains any quiz JSON files
+            quiz_files = list(item.glob("quiz_*.json"))
+            if quiz_files:
+                folders.append(item)
+    
+    # Sort folders alphabetically
+    return sorted(folders, key=lambda p: p.name.lower())
+
+
+def select_quiz_folder(folders: List[Path]) -> Path:
+    """
+    Display folder selection menu and get user choice.
+    
+    Args:
+        folders: List of folder paths to choose from
+    
+    Returns:
+        Selected folder path
+    
+    Raises:
+        SystemExit: If user cancels or provides invalid input
+    """
+    print("\n" + "=" * 60)
+    print("SELECT QUIZ FOLDER".center(60))
+    print("=" * 60 + "\n")
+    
+    if not folders:
+        print("No quiz folders found in data/quizzes/")
+        print("\nPlease create quizzes first using import_quiz.py")
+        sys.exit(1)
+    
+    print("Available quiz folders:\n")
+    for idx, folder in enumerate(folders, 1):
+        # Count quiz files in folder
+        quiz_count = len(list(folder.glob("quiz_*.json")))
+        print(f"  {idx}. {folder.name} ({quiz_count} quiz{'zes' if quiz_count != 1 else ''})")
+    
+    print("\n  0. Exit\n")
+    
+    try:
+        choice = input("Select folder number: ").strip()
+        
+        if choice == "0":
+            print("Cancelled by user.")
+            sys.exit(0)
+        
+        choice_idx = int(choice) - 1
+        
+        if 0 <= choice_idx < len(folders):
+            return folders[choice_idx]
+        else:
+            print(f"\nError: Invalid selection. Please choose 1-{len(folders)} or 0 to exit.")
+            sys.exit(1)
+            
+    except ValueError:
+        print("\nError: Please enter a valid number.")
+        sys.exit(1)
+    except (KeyboardInterrupt, EOFError):
+        print("\n\nCancelled by user.")
+        sys.exit(0)
+
+
+def get_random_quiz_from_folder(folder: Path) -> Path:
+    """
+    Select a random quiz file from the specified folder.
+    
+    Args:
+        folder: Path to folder containing quiz files
+    
+    Returns:
+        Path to randomly selected quiz file
+    
+    Raises:
+        FileNotFoundError: If no quiz files found in folder
+    """
+    quiz_files = list(folder.glob("quiz_*.json"))
+    
+    if not quiz_files:
+        raise FileNotFoundError(f"No quiz files found in {folder}")
+    
+    return random.choice(quiz_files)
+
+
 def find_latest_quiz(base_dir: str = "data/quizzes") -> Path:
     """
     Find the most recent quiz file from the last import.
@@ -688,43 +789,64 @@ def find_latest_quiz(base_dir: str = "data/quizzes") -> Path:
 def main():
     """Main entry point for the quiz runner script."""
     parser = argparse.ArgumentParser(
-        description="Run an interactive quiz from a JSON file",
+        prog='run_quiz.py',
+        description='Interactive quiz runner with automatic grading and reporting',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run the most recent quiz automatically
-  python run_quiz.py
+  Interactive folder selection (recommended):
+    python run_quiz.py
   
-  # Run a specific quiz file
-  python run_quiz.py data/quizzes/az-104/quiz_001.json
+  Run a specific quiz file:
+    python run_quiz.py data/quizzes/az-104/quiz_001.json
   
-  # Run with custom pass threshold
-  python run_quiz.py --pass-threshold 75
+  Run with custom pass threshold:
+    python run_quiz.py data/quizzes/az-104/quiz_001.json --pass-threshold 75
   
-  # Save report to custom location
-  python run_quiz.py --report-output reports/
+  Run with additional text report:
+    python run_quiz.py --report-output custom_reports/
+
+Notes:
+  - HTML reports are automatically generated in data/reports/
+  - Pass threshold determines if the quiz is passed (default: 80%)
+  - Use Ctrl+C at any time to exit the quiz
+  - Answers are case-insensitive and whitespace-tolerant
+
+For more information, see README.md
         """
     )
     
     parser.add_argument(
         'quiz_file',
-        nargs='?',  # Make it optional
-        help='Path to quiz JSON file (optional, auto-selects latest if not provided)'
+        nargs='?',
+        metavar='FILE',
+        help='path to quiz JSON file (if omitted, interactive folder selection is shown)'
     )
+    
     parser.add_argument(
         '-t', '--pass-threshold',
         type=float,
         default=80.0,
-        help='Pass threshold percentage (default: 80.0)'
+        metavar='PERCENT',
+        help='minimum score percentage required to pass (default: 80.0)'
     )
+    
     parser.add_argument(
         '-r', '--report-output',
-        help='Directory to save report (optional, default: data/reports/)'
+        metavar='DIR',
+        help='directory to save additional text report (HTML report always generated)'
     )
+    
     parser.add_argument(
         '-q', '--quiet',
         action='store_true',
-        help='Minimal output (no decorative elements)'
+        help='minimal output mode without decorative elements'
+    )
+    
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s 1.0.0'
     )
     
     args = parser.parse_args()
@@ -734,11 +856,14 @@ Examples:
         if args.quiz_file:
             quiz_file = Path(args.quiz_file)
         else:
+            # Show folder selection menu
+            folders = get_quiz_folders()
+            selected_folder = select_quiz_folder(folders)
+            quiz_file = get_random_quiz_from_folder(selected_folder)
+            
             if not args.quiet:
-                print("No quiz file specified, selecting from last import...")
-            quiz_file = find_latest_quiz()
-            if not args.quiet:
-                print(f"Selected: {quiz_file}\n")
+                print(f"\nSelected folder: {selected_folder.name}")
+                print(f"Selected quiz: {quiz_file.name}\n")
         
         # Validate quiz file
         if not quiz_file.exists():

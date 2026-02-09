@@ -171,51 +171,79 @@ def generate_quiz_id(prefix: str = "quiz", sequence: int = None) -> str:
 def main():
     """Main entry point for the import script."""
     parser = argparse.ArgumentParser(
-        description="Convert CSV question files to randomized quiz JSON files",
+        prog='import_quiz.py',
+        description='Convert CSV question files into randomized quiz JSON files',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Generate one quiz from questions.csv
-  python import_quiz.py data/input/questions.csv
+  Generate one quiz from CSV:
+    python import_quiz.py data/input/questions.csv
   
-  # Generate 3 quizzes to specific output directory
-  python import_quiz.py questions.csv -o data/quizzes/ -n 3
+  Generate multiple quizzes to specific directory:
+    python import_quiz.py questions.csv --output data/quizzes/az-104/ --number 5
   
-  # Generate quiz with custom max questions
-  python import_quiz.py questions.csv -m 25
+  Generate quiz with custom question limit:
+    python import_quiz.py questions.csv --max-questions 25
+  
+  Generate with custom prefix:
+    python import_quiz.py questions.csv --prefix midterm
+
+CSV Format:
+  - Must have exactly 2 columns: Question, Answer
+  - Header row is optional (auto-detected)
+  - Use quotes for answers containing commas
+  - Multiple answers separated by commas: "red, blue, yellow"
+
+For more information, see README.md
         """
     )
     
     parser.add_argument(
         'csv_file',
-        help='Path to CSV file with questions (first 2 columns: Question, Answer; additional columns ignored)'
+        metavar='FILE',
+        help='path to CSV file with questions (columns: Question, Answer)'
     )
+    
     parser.add_argument(
         '-o', '--output',
         default='data/quizzes/',
-        help='Output directory for quiz JSON files (default: data/quizzes/)'
+        metavar='DIR',
+        help='output directory for quiz JSON files (default: data/quizzes/)'
     )
+    
     parser.add_argument(
         '-n', '--number',
         type=int,
         default=None,
-        help='Number of quizzes to generate (default: auto-calculate to use all questions)'
+        metavar='N',
+        help='number of quizzes to generate (default: auto-calculate from questions)'
     )
+    
     parser.add_argument(
         '-m', '--max-questions',
         type=int,
         default=50,
-        help='Maximum questions per quiz (default: 50)'
+        metavar='N',
+        help='maximum questions per quiz (default: 50)'
     )
+    
     parser.add_argument(
         '--prefix',
         default='quiz',
-        help='Prefix for quiz IDs (default: quiz)'
+        metavar='TEXT',
+        help='prefix for quiz IDs (default: quiz)'
     )
+    
     parser.add_argument(
         '--allow-duplicates',
         action='store_true',
-        help='Allow duplicate questions across quizzes (random selection mode)'
+        help='allow duplicate questions across quizzes (enables random selection mode)'
+    )
+    
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s 1.0.0'
     )
     
     args = parser.parse_args()
