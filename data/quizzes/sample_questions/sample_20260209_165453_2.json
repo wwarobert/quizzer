@@ -1,0 +1,103 @@
+{
+  "quiz_id": "sample_20260209_165453_2",
+  "created_at": "2026-02-09T16:54:53.661800",
+  "source_file": "sample_questions.csv",
+  "questions": [
+    {
+      "id": 1,
+      "question": "What gets wetter the more it dries?",
+      "answer": [
+        "towel"
+      ],
+      "original_answer": "Towel"
+    },
+    {
+      "id": 2,
+      "question": "What's the only country that is also a continent?",
+      "answer": [
+        "australia"
+      ],
+      "original_answer": "Australia"
+    },
+    {
+      "id": 3,
+      "question": "What runs but never walks?",
+      "answer": [
+        "river"
+      ],
+      "original_answer": "River"
+    },
+    {
+      "id": 4,
+      "question": "What building has the most stories?",
+      "answer": [
+        "library"
+      ],
+      "original_answer": "Library"
+    },
+    {
+      "id": 5,
+      "question": "What comes once in a minute but never in a thousand years?",
+      "answer": [
+        "the letter m"
+      ],
+      "original_answer": "The letter M"
+    },
+    {
+      "id": 6,
+      "question": "What number is a baker's dozen?",
+      "answer": [
+        "13"
+      ],
+      "original_answer": "13"
+    },
+    {
+      "id": 7,
+      "question": "What can travel around the world while staying in a corner?",
+      "answer": [
+        "stamp"
+      ],
+      "original_answer": "Stamp"
+    },
+    {
+      "id": 8,
+      "question": "What's the only vowel not on the top row of a keyboard?",
+      "answer": [
+        "a"
+      ],
+      "original_answer": "A"
+    },
+    {
+      "id": 9,
+      "question": "What's the smallest country in the world?",
+      "answer": [
+        "vatican city"
+      ],
+      "original_answer": "Vatican City"
+    },
+    {
+      "id": 10,
+      "question": "Who said \"I think therefore I am\"?",
+      "answer": [
+        "descartes"
+      ],
+      "original_answer": "Descartes"
+    },
+    {
+      "id": 11,
+      "question": "Which element has the symbol Fe?",
+      "answer": [
+        "iron"
+      ],
+      "original_answer": "Iron"
+    },
+    {
+      "id": 12,
+      "question": "What's always in front of you but can't be seen?",
+      "answer": [
+        "the future"
+      ],
+      "original_answer": "The future"
+    }
+  ]
+}
