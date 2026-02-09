@@ -1,0 +1,116 @@
+{
+  "quiz_id": "sample_20260209_170039_2",
+  "created_at": "2026-02-09T17:00:39.587558",
+  "source_file": "sample_questions.csv",
+  "questions": [
+    {
+      "id": 1,
+      "question": "What is the chemical symbol for gold?",
+      "answer": [
+        "au"
+      ],
+      "original_answer": "Au"
+    },
+    {
+      "id": 2,
+      "question": "How many days are in a leap year?",
+      "answer": [
+        "366"
+      ],
+      "original_answer": "366"
+    },
+    {
+      "id": 3,
+      "question": "What is the largest planet in our solar system?",
+      "answer": [
+        "jupiter"
+      ],
+      "original_answer": "Jupiter"
+    },
+    {
+      "id": 4,
+      "question": "What is the boiling point of water in Celsius?",
+      "answer": [
+        "100"
+      ],
+      "original_answer": "100"
+    },
+    {
+      "id": 5,
+      "question": "Name the planets in our solar system",
+      "answer": [
+        "earth",
+        "jupiter",
+        "mars",
+        "mercury",
+        "neptune",
+        "saturn",
+        "uranus",
+        "venus"
+      ],
+      "original_answer": "Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune"
+    },
+    {
+      "id": 6,
+      "question": "What is the longest river in the world?",
+      "answer": [
+        "nile"
+      ],
+      "original_answer": "Nile"
+    },
+    {
+      "id": 7,
+      "question": "Name the continents",
+      "answer": [
+        "africa",
+        "antarctica",
+        "asia",
+        "australia",
+        "europe",
+        "north america",
+        "south america"
+      ],
+      "original_answer": "Africa, Antarctica, Asia, Australia, Europe, North America, South America"
+    },
+    {
+      "id": 8,
+      "question": "What is the tallest mountain in the world?",
+      "answer": [
+        "mount everest"
+      ],
+      "original_answer": "Mount Everest"
+    },
+    {
+      "id": 9,
+      "question": "What is the speed of light in meters per second?",
+      "answer": [
+        "299792458"
+      ],
+      "original_answer": "299792458"
+    },
+    {
+      "id": 10,
+      "question": "Who painted the Mona Lisa?",
+      "answer": [
+        "leonardo da vinci"
+      ],
+      "original_answer": "Leonardo da Vinci"
+    },
+    {
+      "id": 11,
+      "question": "What is the capital of France?",
+      "answer": [
+        "paris"
+      ],
+      "original_answer": "Paris"
+    },
+    {
+      "id": 12,
+      "question": "What is the smallest prime number?",
+      "answer": [
+        "2"
+      ],
+      "original_answer": "2"
+    }
+  ]
+}
