@@ -17,7 +17,7 @@ from .quiz_data import Question, Quiz, QuizResult
 
 __all__ = [
     'normalize_answer',
-    'answers_match', 
+    'answers_match',
     'format_answer_display',
     'Question',
     'Quiz',
