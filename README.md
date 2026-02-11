@@ -5,18 +5,38 @@
 [![Tests](https://img.shields.io/badge/tests-57%20passing-success.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-71%25-yellow.svg)](tests/)
 
-A command-line tool that generates randomized quizzes from CSV files and provides interactive testing with automatic grading.
+A powerful quiz platform that generates randomized quizzes from CSV files with both command-line and modern web browser interfaces.
 
 ## Features
 
+### Core Functionality
 - Simple CSV input format (Question, Answer)
 - Randomized question selection and ordering
-- Interactive command-line interface
 - Smart answer validation (case-insensitive, whitespace-tolerant, multi-answer support)
-- Detailed pass/fail reports with incorrect answer breakdown
-- Automatic HTML report generation
-- Built entirely with Python standard library (zero external dependencies)
+- Automatic HTML report generation with professional styling
 - Time tracking for quiz completion
+- Zero external dependencies for CLI (Python standard library only)
+
+### Two Ways to Take Quizzes
+
+**Command-Line Interface:**
+- Traditional terminal-based quiz runner
+- No external dependencies required
+- Perfect for automation and scripting
+- Lightweight and fast
+
+**Modern Web Interface:**
+- 🎨 Beautiful blue theme with automatic dark mode support
+- 📊 Comprehensive dashboard with performance metrics
+- 📋 Interactive sidebar with quiz browser and statistics
+- ⏱️ Real-time progress tracking and timer
+- ✅ Instant feedback after each answer
+- 🔔 Elegant overlay notifications (no intrusive popups)
+- 📱 Fully responsive design (desktop, tablet, mobile)
+- 📈 Visual charts for quiz performance and question breakdown
+- 🕐 Activity timeline showing recent quiz attempts
+- 📝 One-click HTML report generation
+- 🐛 Comprehensive error logging with automatic rotation
 
 ## Table of Contents
 
@@ -36,7 +56,8 @@ A command-line tool that generates randomized quizzes from CSV files and provide
 ### Prerequisites
 
 - Python 3.10 or higher
-- No external dependencies required
+- Flask 3.0+ (only required for web interface)
+- No other external dependencies required
 
 ### Setup
 
@@ -57,10 +78,16 @@ A command-line tool that generates randomized quizzes from CSV files and provide
    source .venv/bin/activate
    ```
 
-3. Verify installation:
+3. (Optional for web interface) Install Flask:
+   ```bash
+   pip install Flask>=3.0.0
+   ```
+
+4. Verify installation:
    ```bash
    python import_quiz.py --help
    python run_quiz.py --help
+   python web_quiz.py --help  # If Flask installed
    ```
 
 ## Quick Start
@@ -90,8 +117,15 @@ Output: `data/quizzes/quiz_YYYYMMDD_HHMMSS.json`
 
 ### 3. Take the quiz
 
+**Option A: Command Line**
 ```bash
 python run_quiz.py data/quizzes/quiz_YYYYMMDD_HHMMSS.json
+```
+
+**Option B: Web Browser** (recommended)
+```bash
+python web_quiz.py
+# Open http://127.0.0.1:5000 in your browser
 ```
 
 ## Usage
@@ -147,6 +181,102 @@ python import_quiz.py data/input/history.csv -m 20
 Generate in non-interactive environment (CI/CD):
 ```bash
 python import_quiz.py data/input/questions.csv --force
+```
+
+### Using the Web Interface
+
+The web interface provides a modern, browser-based way to take quizzes with real-time feedback and progress tracking.
+
+#### Starting the Web Server
+
+```bash
+# Install Flask (required for web interface)
+pip install Flask>=3.0.0
+
+# Start the web server
+python web_quiz.py
+```
+
+The server will start at `http://127.0.0.1:5000` by default.
+
+#### Advanced Options
+
+```bash
+# Run on custom port
+python web_quiz.py --port 8080
+
+# Make accessible from other devices on network
+python web_quiz.py --host 0.0.0.0 --port 8080
+
+# Enable debug mode
+python web_quiz.py --debug
+```
+
+#### Web Interface Features
+
+**Quiz Taking:**
+- 📋 **Smart Quiz Selection**: Browse all quizzes by folder with automatic organization
+- ⏱️ **Real-time Timer**: Track time spent with live countdown
+- 📊 **Visual Progress Bar**: See completion percentage at a glance
+- ✅ **Instant Feedback**: Immediate correct/incorrect indication with visual cues
+- ⌨️ **Keyboard Shortcuts**: Press Enter to submit, Escape to quit
+- 📝 **Auto-focus Input**: Seamless typing experience without clicking
+
+**Dashboard & Analytics:**
+- 📈 **Performance Metrics**: Total quizzes taken, average score, pass rate
+- 📊 **Quiz Breakdown Chart**: Visual pie chart of passed vs failed quizzes
+- 📉 **Question Analysis**: See your correct/incorrect answer distribution
+- 🕐 **Activity Timeline**: Chronological list of recent quiz attempts with scores
+- 🎯 **Quick Stats**: Average time per quiz, total questions answered
+
+**Design & UX:**
+- 🎨 **Beautiful Blue Theme**: Professional design with primary blue (#2563eb) color scheme
+- 🌙 **Automatic Dark Mode**: Respects system preferences with smooth transitions
+- 📱 **Fully Responsive**: Perfect layout on any screen size (desktop/tablet/mobile)
+- 🔔 **Overlay Notifications**: Elegant non-blocking notifications with icons
+- 🎯 **Intuitive Navigation**: 250px sidebar with collapsible sections
+- ✨ **Modern Animations**: Smooth transitions and hover effects
+
+**Reports & Logging:**
+- 📄 **Automatic HTML Reports**: Professional styled reports with pass/fail status
+- 📊 **Detailed Failure Breakdown**: See exactly which questions you missed
+- 💾 **Report History**: All reports saved to `data/reports/` directory
+- 🐛 **Error Logging**: Comprehensive logging to `logs/web_quiz.log`
+- 🔄 **Log Rotation**: Automatic 10MB rotation keeping 5 backup files
+
+#### Error Logging
+
+The web server automatically logs all errors and important events to help with debugging:
+
+**Log File Location**: `logs/web_quiz.log`
+
+**Log Features**:
+- Automatic log rotation (max 10MB per file, keeps 5 backups)
+- Detailed error messages with stack traces
+- Request logging for debugging
+- Separate DEBUG level for file (detailed) and INFO level for console
+- Timestamps and line numbers for easy debugging
+
+**Log Levels**:
+- `DEBUG`: Detailed information (file only)
+- `INFO`: General informational messages
+- `WARNING`: Warning messages for non-critical issues
+- `ERROR`: Error messages with stack traces
+- `CRITICAL`: Critical errors that may cause server failure
+
+**Viewing Logs**:
+```bash
+# View the current log file
+cat logs/web_quiz.log
+
+# View in real-time (Linux/Mac)
+tail -f logs/web_quiz.log
+
+# View in real-time (Windows PowerShell)
+Get-Content logs/web_quiz.log -Wait
+
+# View last 50 lines
+tail -n 50 logs/web_quiz.log
 ```
 
 #### Managing Existing Quizzes
@@ -401,12 +531,13 @@ Q5: Who wrote Romeo and Juliet?
 ```
 quizzer/
 ├── import_quiz.py          # Main script: CSV → JSON converter
-├── run_quiz.py             # Main script: Interactive quiz runner
+├── run_quiz.py             # Main script: CLI quiz runner
+├── web_quiz.py             # Main script: Web interface server (Flask)
 ├── quizzer/                # Helper package
 │   ├── __init__.py
 │   ├── normalizer.py       # Answer normalization logic
 │   └── quiz_data.py        # Data models (Quiz, Question, QuizResult)
-├── tests/
+├── tests/                  # Test suite (57 tests)
 │   └── (test files)
 ├── data/
 │   ├── input/              # ← CSV source files go here
@@ -414,6 +545,10 @@ quizzer/
 │   │   └── sample_questions.csv
 │   ├── quizzes/            # ← Generated quiz JSON files
 │   │   └── README.md
+│   ├── reports/            # ← Auto-generated HTML reports
+│   │   └── README.md
+│   └── README.md
+├── logs/                   # ← Web server logs (auto-created)
 │   └── README.md
 ├── examples/
 │   └── sample_questions.csv  # Demo file (also copied to data/input/)
@@ -465,11 +600,20 @@ CSV import and quiz generation:
 - Generates JSON files
 
 #### `run_quiz.py`
-Interactive quiz runner:
+Interactive CLI quiz runner:
 - Loads quiz JSON
 - Presents questions
 - Validates answers
 - Generates reports
+
+#### `web_quiz.py`
+Web interface server:
+- Flask-based REST API
+- Serves embedded HTML/CSS/JavaScript
+- Real-time quiz taking
+- Dashboard with analytics
+- Error logging
+- HTML report generation
 
 ### Running Tests
 
@@ -493,16 +637,25 @@ See [tests/README.md](tests/README.md) for detailed testing documentation.
 
 ### Contributing
 
-Contributions are welcome! Areas for enhancement:
+Contributions are welcome! Priority areas for enhancement:
 
-- [ ] Unit tests for all modules
+- [ ] Question explanations (3rd CSV column)
+- [ ] Review mode with immediate feedback
 - [ ] Question categories/tags
-- [ ] Time tracking per question
-- [ ] Historical performance statistics
-- [ ] Web-based UI
+- [ ] Per-question time tracking
+- [ ] Historical performance graphs
 - [ ] Multiple quiz modes (practice vs. exam)
 - [ ] Answer variants (accept synonyms)
 - [ ] Spaced repetition algorithm
+- [ ] Progressive Web App (PWA)
+- [ ] Multi-user authentication
+
+**Completed:**
+- [x] Web-based UI with Flask
+- [x] Dashboard with analytics
+- [x] Dark mode support
+- [x] Comprehensive error logging
+- [x] Responsive design
 
 ## License
 

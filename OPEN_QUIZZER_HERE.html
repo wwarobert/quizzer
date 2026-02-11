@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Quizzer Web Interface</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            text-align: center;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #764ba2;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .version {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .layout-preview {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 10px;
+            margin: 30px 0;
+            text-align: left;
+            background: #f5f6fa;
+            padding: 20px;
+            border-radius: 12px;
+        }
+        .sidebar-preview {
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 300px;
+        }
+        .dashboard-preview {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        .preview-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .preview-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .dashboard-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .steps {
+            background: #fff3cd;
+            color: #856404;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .steps li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        .code {
+            background: #f8f9fa;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .warning {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Quizzer Web Interface</h1>
+        <div class="version">Version 4.0 - Narrow Sidebar + Comprehensive Reports</div>
+        
+        <h2>📐 Layout Preview (What You Should See)</h2>
+        <div class="layout-preview">
+            <div class="sidebar-preview">
+                <div class="preview-title">← LEFT SIDEBAR (200px)</div>
+                <div class="preview-item">📊 Dashboard</div>
+                <div class="preview-item">▶ Available Quizzes</div>
+                <div class="preview-item" style="margin-left: 15px;">• Quiz 1</div>
+                <div class="preview-item" style="margin-left: 15px;">• Quiz 2</div>
+            </div>
+            <div class="dashboard-preview">
+                <div class="preview-title">DASHBOARD REPORTS (Right Column) →</div>
+                <div class="dashboard-item">📊 Overall Statistics (6 cards)</div>
+                <div class="dashboard-item">📈 Performance Trends</div>
+                <div class="dashboard-item">📊 Quiz Breakdown Table</div>
+                <div class="dashboard-item">🕐 Recent Activity Timeline</div>
+                <div class="dashboard-item">✅ Pass/Fail Analysis</div>
+            </div>
+        </div>
+
+        <div class="warning">
+            ⚠️ IMPORTANT: You MUST clear your browser cache!
+        </div>
+
+        <h2>🚀 How to Open (3 Options)</h2>
+        
+        <div class="steps">
+            <h3>Option 1: Open in NEW Browser Window (RECOMMENDED)</h3>
+            <ol>
+                <li>Click the button below to open in a NEW browser window</li>
+                <li>This will use a fresh session without cache</li>
+                <li>You should see the two-column layout immediately</li>
+            </ol>
+        </div>
+
+        <a href="http://127.0.0.1:5000" target="_blank" class="btn" onclick="openInNewWindow()">
+            🌐 Open Quizzer (New Window)
+        </a>
+
+        <div class="steps">
+            <h3>Option 2: Hard Refresh in Current Browser</h3>
+            <ol>
+                <li>Open: <a href="http://127.0.0.1:5000" target="_blank">http://127.0.0.1:5000</a></li>
+                <li>Press <span class="code">Ctrl + Shift + R</span> (Windows/Linux)</li>
+                <li>Or <span class="code">Cmd + Shift + R</span> (Mac)</li>
+                <li>This forces the browser to bypass cache and reload everything</li>
+            </ol>
+        </div>
+
+        <div class="steps">
+            <h3>Option 3: Clear Browser Cache Manually</h3>
+            <ol>
+                <li>Open browser settings</li>
+                <li>Go to Privacy/History</li>
+                <li>Click "Clear browsing data"</li>
+                <li>Select "Cached images and files"</li>
+                <li>Click Clear</li>
+                <li>Then visit: <a href="http://127.0.0.1:5000" target="_blank">http://127.0.0.1:5000</a></li>
+            </ol>
+        </div>
+
+        <h2>✅ How to Verify It's Working</h2>
+        <div class="steps">
+            <ul style="list-style: none; padding: 0;">
+                <li>✓ You should see a <strong>PURPLE SIDEBAR on the LEFT (200px)</strong></li>
+                <li>✓ Sidebar narrower than before, optimized for menu items only</li>
+                <li>✓ Dashboard with <strong>6 STATISTICS CARDS</strong> on the right</li>
+                <li>✓ <strong>Performance Trends</strong> section with visual bars</li>
+                <li>✓ <strong>Quiz Performance Breakdown</strong> table</li>
+                <li>✓ <strong>Recent Activity</strong> timeline view</li>
+                <li>✓ <strong>Pass/Fail Analysis</strong> with detailed stats</li>
+                <li>✓ "Available Quizzes" expandable menu in sidebar</li>
+                <li>✓ Toggle button (☰) to collapse sidebar</li>
+            </ul>
+        </div>
+
+        <h2>🔍 Check Version</h2>
+        <p>Click below to verify the server is running Version 4.0:</p>
+        <a href="http://127.0.0.1:5000/version" target="_blank" class="btn">
+            Check Server Version
+        </a>
+        <p style="margin-top: 15px; color: #666; font-size: 0.9em;">
+            Should show: "version": "4.0"<br>
+            "layout": "Two-Column: Narrow Sidebar (200px) + Comprehensive Dashboard"
+        </p>
+    </div>
+
+    <script>
+        function openInNewWindow() {
+            // Add timestamp to URL to force fresh load
+            const url = 'http://127.0.0.1:5000?t=' + new Date().getTime();
+            window.open(url, '_blank', 'width=1400,height=900');
+        }
+
+        // Auto-check version on load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/version');
+                const data = await res4.0') {
+                    console.log('✓ Server is running Version 4
+                
+                if (data.version === '3.0') {
+                    console.log('✓ Server is running Version 3.0');
+                    console.log('✓ Layout:', data.layout);
+                } else {
+                    console.warn('⚠️ Server version mismatch:', data.version);
+                }
+            } catch (error) {
+                console.error('Could not connect to server. Make sure it is running on http://127.0.0.1:5000');
+            }
+        });
+    </script>
+</body>
+</html>
