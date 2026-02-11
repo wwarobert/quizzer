@@ -198,7 +198,7 @@ HTML_TEMPLATE = '''
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- UI Version: 5.0 - BLUE THEME (250px sidebar) + DARK MODE - Generated: {{ timestamp }} -->
+    <!-- UI Version: 5.0 - BLUE THEME (300px sidebar) + DARK MODE - Generated: {{ timestamp }} -->
     <title>Quizzer - Performance Dashboard</title>
     <style>
         * {
@@ -251,7 +251,7 @@ HTML_TEMPLATE = '''
             left: 0;
             top: 0;
             bottom: 0;
-            width: 250px;
+            width: 300px;
             background: var(--sidebar-bg);
             color: white;
             padding: 20px;
@@ -262,7 +262,7 @@ HTML_TEMPLATE = '''
         }
 
         .sidebar.collapsed {
-            transform: translateX(-250px);
+            transform: translateX(-300px);
         }
 
         .sidebar-header {
@@ -374,7 +374,7 @@ HTML_TEMPLATE = '''
 
         /* Main Content Area */
         .main-content {
-            margin-left: 250px;
+            margin-left: 300px;
             padding: 30px;
             min-height: 100vh;
             transition: margin-left 0.3s ease;
@@ -1004,7 +1004,7 @@ HTML_TEMPLATE = '''
 
         @media (max-width: 768px) {
             .sidebar {
-                transform: translateX(-250px);
+                transform: translateX(-300px);
             }
 
             .sidebar.mobile-visible {
@@ -1887,9 +1887,9 @@ def version():
     """Return version info to verify what's being served."""
     return jsonify({
         'version': '5.0',
-        'layout': 'Two-Column: Blue Theme Sidebar (250px) + Comprehensive Dashboard',
-        'sidebar_width': '250px',
-        'main_content_margin': '250px from left',
+        'layout': 'Two-Column: Blue Theme Sidebar (300px) + Comprehensive Dashboard',
+        'sidebar_width': '300px',
+        'main_content_margin': '300px from left',
         'theme': 'Blue on white with dark mode support',
         'dashboard_features': [
             'Overall Statistics (6 stat cards)',

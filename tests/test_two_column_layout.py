@@ -39,10 +39,10 @@ def test_two_column_layout():
         ("Recent activity timeline", '<div class="timeline">'),
         ("Recent runs list", 'id="recentRunsList"'),
         
-        # Check for CSS layout (Version 5.0 - 250px sidebar)
+        # Check for CSS layout (Version 5.0 - 300px sidebar)
         ("Sidebar CSS position", 'position: fixed;'),
-        ("Sidebar width", 'width: 250px;'),
-        ("Main content margin", 'margin-left: 250px;'),
+        ("Sidebar width", 'width: 300px;'),
+        ("Main content margin", 'margin-left: 300px;'),
         
         # Check for JavaScript functions
         ("Toggle sidebar function", 'function toggleSidebar()'),
@@ -67,7 +67,7 @@ def test_two_column_layout():
     
     if failed == 0:
         print("\n✅ SUCCESS! Two-column layout IS present in the HTML template!")
-        print("   - Left column: Sidebar (250px, blue gradient)")
+        print("   - Left column: Sidebar (300px, blue gradient)")
         print("   - Right column: Dashboard (main content area)")
         print("\nIf you still see the old layout in your browser:")
         print("   1. Press Ctrl+Shift+R to hard refresh")
