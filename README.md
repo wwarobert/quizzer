@@ -125,6 +125,7 @@ python import_quiz.py questions.csv \
 | `-n, --number` | Number of quiz variations to generate | `1` |
 | `-m, --max-questions` | Maximum questions per quiz | `50` |
 | `--prefix` | Prefix for quiz IDs | `quiz` |
+| `--force` | Automatically delete existing quizzes without prompting | `false` |
 
 #### Examples
 
@@ -142,6 +143,36 @@ Generate quiz with only 20 questions:
 ```bash
 python import_quiz.py data/input/history.csv -m 20
 ```
+
+Generate in non-interactive environment (CI/CD):
+```bash
+python import_quiz.py data/input/questions.csv --force
+```
+
+#### Managing Existing Quizzes
+
+When importing quizzes into an existing folder (e.g., re-importing the same CSV file), the tool will detect existing quiz files and prompt you to decide whether to keep or delete them:
+
+```
+Reading questions from: data/input/az-104.csv
+Loaded 200 questions
+
+⚠️  Found 5 existing quiz(zes) in this folder:
+  - az-104_20260209_164742_1.json
+  - az-104_20260209_164742_2.json
+  - az-104_20260209_164742_3.json
+  - az-104_20260209_164742_4.json
+  - az-104_20260209_164742_5.json
+
+Do you want to DELETE these quizzes before importing? (yes/no): 
+```
+
+**Behavior:**
+- Choose `yes`/`y`: Old quizzes are deleted **before** new quizzes are created
+- Choose `no`/`n`: Old quizzes are kept and new quizzes are added alongside them
+- Use `--force` flag: Automatically deletes old quizzes without prompting (useful for CI/CD)
+- This ensures you can refresh quiz sets without accidentally accumulating old versions
+- Only JSON files in the target folder are affected
 
 ### Taking Quizzes
 

@@ -11,6 +11,10 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
@@ -141,17 +145,19 @@ jobs:
     
     - name: Test import_quiz script
       run: |
-        python import_quiz.py data/input/sample_questions.csv -n 1
-        test -f data/quizzes/quiz_*.json || exit 1
+        python import_quiz.py data/input/sample_questions.csv -n 1 --force
+        # Quiz files are organized in subdirectories by CSV name
+        test -f data/quizzes/sample_questions/quiz_*.json || exit 1
         echo "✅ Quiz generation successful" >> $GITHUB_STEP_SUMMARY
-    
+
     - name: Test quiz file structure
       run: |
         python -c "
         import json
         from pathlib import Path
-        quiz_files = list(Path('data/quizzes').glob('quiz_*.json'))
+        quiz_files = list(Path('data/quizzes/sample_questions').glob('quiz_*.json'))
         if not quiz_files:
+            print('No quiz files found!')
             exit(1)
         with open(quiz_files[0]) as f:
             data = json.load(f)

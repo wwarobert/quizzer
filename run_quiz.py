@@ -29,35 +29,35 @@ from quizzer import answers_match, format_answer_display, Quiz, QuizResult
 def select_quiz_folder(base_dir: str = "data/quizzes") -> Path:
     """
     Interactively select a quiz folder if multiple exist.
-    
+
     Args:
         base_dir: Base directory containing quiz folders
-    
+
     Returns:
         Path to selected folder
     """
     base_path = Path(base_dir)
-    
+
     if not base_path.exists():
         print(f"Error: Quiz directory not found: {base_path}")
         sys.exit(1)
-    
+
     # Get all subdirectories
     subdirs = [d for d in base_path.iterdir() if d.is_dir()]
-    
+
     if len(subdirs) == 0:
         print(f"Error: No quiz folders found in {base_path}")
         sys.exit(1)
-    
+
     if len(subdirs) == 1:
         return subdirs[0]
-    
+
     # Multiple folders - ask user to select
     print("\nAvailable quiz folders:")
     for i, folder in enumerate(subdirs, 1):
         quiz_count = len(list(folder.glob("*.json")))
         print(f"  {i}. {folder.name} ({quiz_count} quizzes)")
-    
+
     while True:
         try:
             choice = input("\nSelect folder (1-{0}): ".format(len(subdirs)))
@@ -74,20 +74,20 @@ def select_quiz_folder(base_dir: str = "data/quizzes") -> Path:
 def select_random_quiz(quiz_dir: str = "data/quizzes") -> Path:
     """
     Select a random quiz from the quiz directory.
-    
+
     Args:
         quiz_dir: Base directory containing quiz folders
-    
+
     Returns:
         Path to randomly selected quiz file
     """
     import random
-    
+
     base_path = Path(quiz_dir)
-    
+
     # Check if there are subfolders or direct quiz files
     subdirs = [d for d in base_path.iterdir() if d.is_dir()]
-    
+
     if subdirs:
         # Select folder (interactive if multiple)
         folder = select_quiz_folder(quiz_dir)
@@ -95,11 +95,11 @@ def select_random_quiz(quiz_dir: str = "data/quizzes") -> Path:
     else:
         # Look for quiz files directly in base directory
         quiz_files = list(base_path.glob("*.json"))
-    
+
     if not quiz_files:
         print(f"Error: No quiz files found in {base_path}")
         sys.exit(1)
-    
+
     # Select random quiz
     selected = random.choice(quiz_files)
     print(f"Selected random quiz: {selected.name}")
@@ -109,18 +109,18 @@ def select_random_quiz(quiz_dir: str = "data/quizzes") -> Path:
 def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
     """
     Generate an HTML report for quiz results.
-    
+
     Args:
         result: QuizResult object with quiz results
         quiz: Quiz object with quiz metadata
-    
+
     Returns:
         HTML string with formatted report
     """
     pass_status = "PASS" if result.passed else "FAIL"
     status_color = "#28a745" if result.passed else "#dc3545"
     coverage_color = "#28a745" if result.score_percentage >= 80 else "#ffc107" if result.score_percentage >= 60 else "#dc3545"
-    
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -133,14 +133,14 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             padding: 0;
             box-sizing: border-box;
         }}
-        
+
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }}
-        
+
         .container {{
             max-width: 900px;
             margin: 0 auto;
@@ -149,24 +149,24 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
         }}
-        
+
         .header {{
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px;
             text-align: center;
         }}
-        
+
         .header h1 {{
             font-size: 2.5em;
             margin-bottom: 10px;
         }}
-        
+
         .header .quiz-id {{
             opacity: 0.9;
             font-size: 1.1em;
         }}
-        
+
         .status-banner {{
             background: {status_color};
             color: white;
@@ -177,19 +177,19 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             text-transform: uppercase;
             letter-spacing: 2px;
         }}
-        
+
         .summary {{
             padding: 40px;
             background: #f8f9fa;
         }}
-        
+
         .stats {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }}
-        
+
         .stat-card {{
             background: white;
             padding: 20px;
@@ -197,27 +197,27 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             text-align: center;
         }}
-        
+
         .stat-value {{
             font-size: 2.5em;
             font-weight: bold;
             margin: 10px 0;
         }}
-        
+
         .stat-label {{
             color: #6c757d;
             text-transform: uppercase;
             font-size: 0.85em;
             letter-spacing: 1px;
         }}
-        
+
         .score-circle {{
             position: relative;
             width: 150px;
             height: 150px;
             margin: 20px auto;
         }}
-        
+
         .score-text {{
             position: absolute;
             top: 50%;
@@ -227,7 +227,7 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             font-weight: bold;
             color: {coverage_color};
         }}
-        
+
         .metadata {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -236,34 +236,34 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             background: #e9ecef;
             border-radius: 8px;
         }}
-        
+
         .metadata-item {{
             display: flex;
             flex-direction: column;
         }}
-        
+
         .metadata-label {{
             font-size: 0.8em;
             color: #6c757d;
             text-transform: uppercase;
             margin-bottom: 5px;
         }}
-        
+
         .metadata-value {{
             font-weight: 600;
             color: #212529;
         }}
-        
+
         .failures {{
             padding: 40px;
         }}
-        
+
         .failures h2 {{
             color: #212529;
             margin-bottom: 20px;
             font-size: 1.8em;
         }}
-        
+
         .failure-card {{
             background: #fff3cd;
             border-left: 4px solid #ffc107;
@@ -271,12 +271,12 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             margin-bottom: 20px;
             border-radius: 4px;
         }}
-        
+
         .failure-card.incorrect {{
             background: #f8d7da;
             border-left-color: #dc3545;
         }}
-        
+
         .question-number {{
             background: #6c757d;
             color: white;
@@ -286,14 +286,14 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             display: inline-block;
             margin-bottom: 10px;
         }}
-        
+
         .question-text {{
             font-size: 1.2em;
             font-weight: 600;
             margin: 10px 0;
             color: #212529;
         }}
-        
+
         .answer-row {{
             display: grid;
             grid-template-columns: 120px 1fr;
@@ -303,41 +303,41 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             background: white;
             border-radius: 4px;
         }}
-        
+
         .answer-label {{
             font-weight: 600;
             color: #6c757d;
         }}
-        
+
         .answer-value {{
             font-family: 'Courier New', monospace;
         }}
-        
+
         .answer-value.incorrect {{
             color: #dc3545;
         }}
-        
+
         .answer-value.correct {{
             color: #28a745;
         }}
-        
+
         .perfect-score {{
             text-align: center;
             padding: 60px 40px;
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
         }}
-        
+
         .perfect-score h2 {{
             font-size: 3em;
             margin-bottom: 20px;
         }}
-        
+
         .perfect-score p {{
             font-size: 1.3em;
             opacity: 0.95;
         }}
-        
+
         .footer {{
             padding: 20px;
             text-align: center;
@@ -345,18 +345,18 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             color: white;
             font-size: 0.9em;
         }}
-        
+
         .footer a {{
             color: #667eea;
             text-decoration: none;
         }}
-        
+
         @media print {{
             body {{
                 background: white;
                 padding: 0;
             }}
-            
+
             .container {{
                 box-shadow: none;
             }}
@@ -369,34 +369,34 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             <h1>📊 Quiz Report</h1>
             <p class="quiz-id">{result.quiz_id}</p>
         </div>
-        
+
         <div class="status-banner">
             {pass_status}
         </div>
-        
+
         <div class="summary">
             <div class="stats">
                 <div class="stat-card">
                     <div class="stat-label">Total Questions</div>
                     <div class="stat-value">{result.total_questions}</div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-label">Correct Answers</div>
                     <div class="stat-value" style="color: #28a745;">{result.correct_answers}</div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-label">Failed Questions</div>
                     <div class="stat-value" style="color: #dc3545;">{len(result.failures)}</div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-label">Score</div>
                     <div class="stat-value" style="color: {coverage_color};">{result.score_percentage:.1f}%</div>
                 </div>
             </div>
-            
+
             <div class="metadata">
                 <div class="metadata-item">
                     <span class="metadata-label">Quiz ID</span>
@@ -417,7 +417,7 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             </div>
         </div>
 """
-    
+
     if result.failures:
         html += f"""
         <div class="failures">
@@ -448,7 +448,7 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
             <p>Congratulations! You answered all questions correctly.</p>
         </div>
 """
-    
+
     html += f"""
         <div class="footer">
             <p>Generated by Quizzer • {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
@@ -463,27 +463,27 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
 def save_html_report(result: QuizResult, quiz: Quiz, output_dir: str = "data/reports") -> Path:
     """
     Save quiz results as HTML report.
-    
+
     Args:
         result: QuizResult object
         quiz: Quiz object
         output_dir: Directory to save reports (default: data/reports)
-    
+
     Returns:
         Path to saved HTML file
     """
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-    
+
     # Use quiz_id for filename so it gets overwritten on each run
     filename = f"{result.quiz_id}_report.html"
     filepath = output_path / filename
-    
+
     html_content = generate_html_report(result, quiz)
-    
+
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(html_content)
-    
+
     return filepath
 
 
@@ -502,7 +502,7 @@ def print_header():
 def print_question(question_num: int, total: int, question_text: str):
     """
     Print a formatted question.
-    
+
     Args:
         question_num: Current question number (1-indexed)
         total: Total number of questions
@@ -514,7 +514,7 @@ def print_question(question_num: int, total: int, question_text: str):
 def get_user_answer() -> str:
     """
     Get answer input from the user.
-    
+
     Returns:
         User's answer string (may be empty if they skip)
     """
@@ -529,11 +529,11 @@ def get_user_answer() -> str:
 def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
     """
     Run the quiz interactively and collect results.
-    
+
     Args:
         quiz: Quiz object to run
         pass_threshold: Minimum percentage to pass (default: 80.0)
-    
+
     Returns:
         QuizResult object with complete results
     """
@@ -548,13 +548,13 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
     print("  - Whitespace is ignored")
     print("  - After each answer, press Enter to continue")
     print("\nPress Ctrl+C to quit at any time.\n")
-    
+
     input("Press Enter to start...")
-    
+
     start_time = time.time()
     correct_count = 0
     failures: List[Dict[str, str]] = []
-    
+
     for idx, question in enumerate(quiz.questions, 1):
         # Clear screen and display question
         clear_screen()
@@ -562,12 +562,12 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
         print(f"Question {idx}/{len(quiz.questions)}".center(60))
         print("=" * 60 + "\n")
         print(f"{question.question}\n")
-        
+
         user_answer = get_user_answer()
-        
+
         # Compare answers
         is_correct = answers_match(user_answer, question.original_answer)
-        
+
         # Display result
         print("\n" + "-" * 60)
         if is_correct:
@@ -581,25 +581,25 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
                 'user_answer': format_answer_display(user_answer) if user_answer else "(no answer)",
                 'correct_answer': question.original_answer
             })
-        
+
         # Show detailed answer
         print(f"\nYour answer: {format_answer_display(user_answer) if user_answer else '(no answer)'}")
         print(f"Correct answer: {question.original_answer}")
         print("-" * 60)
-        
+
         # Wait for user to press Enter before continuing
         if idx < len(quiz.questions):
             input("\nPress Enter to continue to the next question...")
-    
+
     # Calculate time spent
     end_time = time.time()
     time_spent = end_time - start_time
-    
+
     # Calculate results
     total_questions = len(quiz.questions)
     score_percentage = (correct_count / total_questions) * 100
     passed = score_percentage >= pass_threshold
-    
+
     # Create result object
     result = QuizResult(
         quiz_id=quiz.quiz_id,
@@ -611,14 +611,14 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
         failures=failures,
         time_spent=time_spent
     )
-    
+
     return result
 
 
 def display_results(result: QuizResult):
     """
     Display quiz results to the console.
-    
+
     Args:
         result: QuizResult object to display
     """
@@ -626,40 +626,40 @@ def display_results(result: QuizResult):
     print("\n" + "=" * 60)
     print("QUIZ COMPLETE".center(60))
     print("=" * 60 + "\n")
-    
+
     # Summary statistics
     incorrect_count = result.total_questions - result.correct_answers
     mins, secs = divmod(int(result.time_spent), 60)
     time_str = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
-    
+
     print(f"Total Questions:     {result.total_questions}")
     print(f"Correct Answers:     {result.correct_answers}")
     print(f"Incorrect Answers:   {incorrect_count}")
     print(f"Time Spent:          {time_str}")
     print(f"\nScore:               {result.correct_answers}/{result.total_questions} ({result.score_percentage:.1f}%)")
-    
+
     if result.passed:
         print("Result:              ✓ PASS")
     else:
         print("Result:              ✗ FAIL")
-    
+
     print("\n" + "=" * 60)
 
 
 def get_quiz_folders(base_dir: str = "data/quizzes") -> List[Path]:
     """
     Get list of subdirectories containing quiz files.
-    
+
     Args:
         base_dir: Base directory where quizzes are stored
-    
+
     Returns:
         List of Path objects for subdirectories containing quiz files
     """
     base_path = Path(base_dir)
     if not base_path.exists():
         return []
-    
+
     # Find all subdirectories that contain .json files
     folders = []
     for item in base_path.iterdir():
@@ -668,12 +668,12 @@ def get_quiz_folders(base_dir: str = "data/quizzes") -> List[Path]:
             json_files = list(item.glob("*.json"))
             # Filter out non-quiz files (like metadata)
             quiz_files = [
-                f for f in json_files 
+                f for f in json_files
                 if f.stem not in ['last_import', 'README', 'metadata']
             ]
             if quiz_files:
                 folders.append(item)
-    
+
     # Sort folders alphabetically
     return sorted(folders, key=lambda p: p.name.lower())
 
@@ -681,53 +681,53 @@ def get_quiz_folders(base_dir: str = "data/quizzes") -> List[Path]:
 def select_quiz_folder(folders: List[Path]) -> Path:
     """
     Display folder selection menu and get user choice.
-    
+
     Args:
         folders: List of folder paths to choose from
-    
+
     Returns:
         Selected folder path
-    
+
     Raises:
         SystemExit: If user cancels or provides invalid input
     """
     print("\n" + "=" * 60)
     print("SELECT QUIZ FOLDER".center(60))
     print("=" * 60 + "\n")
-    
+
     if not folders:
         print("No quiz folders found in data/quizzes/")
         print("\nPlease create quizzes first using import_quiz.py")
         sys.exit(1)
-    
+
     print("Available quiz folders:\n")
     for idx, folder in enumerate(folders, 1):
         # Count quiz files in folder (all JSON files except metadata)
         json_files = list(folder.glob("*.json"))
         quiz_files = [
-            f for f in json_files 
+            f for f in json_files
             if f.stem not in ['last_import', 'README', 'metadata']
         ]
         quiz_count = len(quiz_files)
         print(f"  {idx}. {folder.name} ({quiz_count} quiz{'zes' if quiz_count != 1 else ''})")
-    
+
     print("\n  0. Exit\n")
-    
+
     try:
         choice = input("Select folder number: ").strip()
-        
+
         if choice == "0":
             print("Cancelled by user.")
             sys.exit(0)
-        
+
         choice_idx = int(choice) - 1
-        
+
         if 0 <= choice_idx < len(folders):
             return folders[choice_idx]
         else:
             print(f"\nError: Invalid selection. Please choose 1-{len(folders)} or 0 to exit.")
             sys.exit(1)
-            
+
     except ValueError:
         print("\nError: Please enter a valid number.")
         sys.exit(1)
@@ -739,63 +739,63 @@ def select_quiz_folder(folders: List[Path]) -> Path:
 def get_random_quiz_from_folder(folder: Path) -> Path:
     """
     Select a random quiz file from the specified folder.
-    
+
     Args:
         folder: Path to folder containing quiz files
-    
+
     Returns:
         Path to randomly selected quiz file
-    
+
     Raises:
         FileNotFoundError: If no quiz files found in folder
     """
     # Get all JSON files, excluding known metadata files
     json_files = list(folder.glob("*.json"))
     quiz_files = [
-        f for f in json_files 
+        f for f in json_files
         if f.stem not in ['last_import', 'README', 'metadata']
     ]
-    
+
     if not quiz_files:
         raise FileNotFoundError(f"No quiz files found in {folder}")
-    
+
     return random.choice(quiz_files)
 
 
 def find_latest_quiz(base_dir: str = "data/quizzes") -> Path:
     """
     Find the most recent quiz file from the last import.
-    
+
     Args:
         base_dir: Base directory where quizzes are stored
-    
+
     Returns:
         Path to the most recent quiz file
-    
+
     Raises:
         FileNotFoundError: If no quizzes found or metadata missing
     """
     base_path = Path(base_dir)
     metadata_file = base_path / "last_import.json"
-    
+
     if metadata_file.exists():
         # Use metadata from last import
         with open(metadata_file, 'r', encoding='utf-8') as f:
             metadata = json.load(f)
-        
+
         quiz_files = metadata.get('quiz_files', [])
         if not quiz_files:
             raise FileNotFoundError("No quiz files found in last import metadata")
-        
+
         # Pick a random quiz from the last import batch
         selected_quiz = random.choice(quiz_files)
         return Path(selected_quiz)
-    
+
     # Fallback: find most recent quiz file by modification time
     quiz_files = list(base_path.rglob("quiz_*.json"))
     if not quiz_files:
         raise FileNotFoundError(f"No quiz files found in {base_path}")
-    
+
     # Sort by modification time, newest first
     latest_quiz = max(quiz_files, key=lambda p: p.stat().st_mtime)
     return latest_quiz
@@ -811,13 +811,13 @@ def main():
 Examples:
   Interactive folder selection (recommended):
     python run_quiz.py
-  
+
   Run a specific quiz file:
     python run_quiz.py data/quizzes/az-104/quiz_001.json
-  
+
   Run with custom pass threshold:
     python run_quiz.py data/quizzes/az-104/quiz_001.json --pass-threshold 75
-  
+
   Run with additional text report:
     python run_quiz.py --report-output custom_reports/
 
@@ -830,14 +830,14 @@ Notes:
 For more information, see README.md
         """
     )
-    
+
     parser.add_argument(
         'quiz_file',
         nargs='?',
         metavar='FILE',
         help='path to quiz JSON file (if omitted, interactive folder selection is shown)'
     )
-    
+
     parser.add_argument(
         '-t', '--pass-threshold',
         type=float,
@@ -845,27 +845,27 @@ For more information, see README.md
         metavar='PERCENT',
         help='minimum score percentage required to pass (default: 80.0)'
     )
-    
+
     parser.add_argument(
         '-r', '--report-output',
         metavar='DIR',
         help='directory to save additional text report (HTML report always generated)'
     )
-    
+
     parser.add_argument(
         '-q', '--quiet',
         action='store_true',
         help='minimal output mode without decorative elements'
     )
-    
+
     parser.add_argument(
         '--version',
         action='version',
         version='%(prog)s 1.0.0'
     )
-    
+
     args = parser.parse_args()
-    
+
     try:
         # Auto-select quiz if not provided
         if args.quiz_file:
@@ -875,50 +875,50 @@ For more information, see README.md
             folders = get_quiz_folders()
             selected_folder = select_quiz_folder(folders)
             quiz_file = get_random_quiz_from_folder(selected_folder)
-            
+
             if not args.quiet:
                 print(f"\nSelected folder: {selected_folder.name}")
                 print(f"Selected quiz: {quiz_file.name}\n")
-        
+
         # Validate quiz file
         if not quiz_file.exists():
             print(f"Error: Quiz file not found: {quiz_file}")
             sys.exit(1)
-        
+
         # Load quiz
         if not args.quiet:
             print(f"Loading quiz from: {quiz_file}")
-        
+
         quiz = Quiz.load(str(quiz_file))
-        
+
         # Run quiz
         result = run_quiz(quiz, args.pass_threshold)
-        
+
         # Display results
         if not args.quiet:
             display_results(result)
         else:
             print(f"Score: {result.score_percentage:.1f}% - {'PASS' if result.passed else 'FAIL'}")
-        
+
         # Always save HTML report
         html_path = save_html_report(result, quiz)
         if not args.quiet:
             print(f"\n📄 HTML report saved to: {html_path}")
-        
+
         # Save text report if requested
         if args.report_output:
             report_dir = Path(args.report_output)
             report_dir.mkdir(parents=True, exist_ok=True)
-            
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             report_file = report_dir / f"report_{quiz.quiz_id}_{timestamp}.txt"
-            
+
             result.save_report(str(report_file))
             print(f"\nText report saved to: {report_file}")
-        
+
         # Exit with code based on pass/fail
         sys.exit(0 if result.passed else 1)
-        
+
     except FileNotFoundError as e:
         print(f"Error: {e}")
         sys.exit(1)

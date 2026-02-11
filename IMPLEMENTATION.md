@@ -1,6 +1,99 @@
-# HTML Report Generation - Implementation Summary
+# Implementation History
 
-## Overview
+## Existing Quiz Management - February 11, 2026
+
+### Overview
+Added interactive prompt to handle existing quizzes when importing new ones to the same folder. Users can now choose to delete old quizzes before importing, preventing accumulation of outdated quiz files.
+
+### Implementation Details
+
+#### New Functions in import_quiz.py
+1. **check_existing_quizzes(output_dir: Path) -> List[Path]**
+   - Scans output directory for existing quiz JSON files
+   - Returns list of Path objects for found quizzes
+   - Returns empty list if directory doesn't exist or has no JSON files
+
+2. **prompt_delete_existing_quizzes(quiz_files: List[Path]) -> bool**
+   - Displays warning with count and names of existing quizzes
+   - Prompts user for yes/no decision
+   - Accepts variations: yes/y/no/n (case-insensitive)
+   - Repeats prompt until valid input received
+   - Returns True for delete, False for keep
+
+3. **delete_quiz_files(quiz_files: List[Path]) -> None**
+   - Deletes specified quiz files
+   - Provides feedback for each file (✓ Deleted or ✗ Failed)
+   - Handles missing files gracefully
+   - Executed **before** directory creation to ensure clean state
+
+#### Modified Workflow in main()
+The import process now follows this sequence:
+1. Read and validate CSV questions
+2. Calculate output directory path
+3. **Check for existing quizzes**
+4. **If found, prompt user for delete decision**
+5. **If yes, delete old quizzes BEFORE proceeding**
+6. Create/ensure output directory exists
+7. Generate new quizzes
+
+### Testing
+
+#### New Test Class: TestExistingQuizManagement
+- `test_check_existing_quizzes_empty_dir`: Verify empty directory returns no files
+- `test_check_existing_quizzes_nonexistent_dir`: Handle non-existent directories
+- `test_check_existing_quizzes_with_quizzes`: Detect existing quiz files
+- `test_check_existing_quizzes_ignores_non_json`: Only detect .json files
+- `test_prompt_delete_existing_quizzes_yes`: User chooses to delete
+- `test_prompt_delete_existing_quizzes_no`: User chooses to keep
+- `test_prompt_delete_existing_quizzes_variations`: Test y/n/yes/no variations
+- `test_prompt_delete_existing_quizzes_invalid_then_valid`: Invalid input handling
+- `test_delete_quiz_files_successful`: Successful deletion
+- `test_delete_quiz_files_partial_failure`: Handle missing files gracefully
+
+#### Integration Tests
+- `test_main_with_existing_quizzes_delete_yes`: Full workflow with deletion
+- `test_main_with_existing_quizzes_delete_no`: Full workflow keeping old quizzes
+
+### User Experience
+
+**Example Interaction:**
+```
+Reading questions from: data/input/az-104.csv
+Loaded 200 questions
+
+⚠️  Found 5 existing quiz(zes) in this folder:
+  - az-104_20260209_164742_1.json
+  - az-104_20260209_164742_2.json
+  - az-104_20260209_164742_3.json
+  - az-104_20260209_164742_4.json
+  - az-104_20260209_164742_5.json
+
+Do you want to DELETE these quizzes before importing? (yes/no): yes
+
+Deleting existing quizzes...
+  ✓ Deleted: az-104_20260209_164742_1.json
+  ✓ Deleted: az-104_20260209_164742_2.json
+  ✓ Deleted: az-104_20260209_164742_3.json
+  ✓ Deleted: az-104_20260209_164742_4.json
+  ✓ Deleted: az-104_20260209_164742_5.json
+Deletion complete.
+
+Generating 4 quiz(zes) from 200 questions
+...
+```
+
+### Benefits
+- Prevents accumulation of old quiz versions
+- User maintains full control over quiz retention
+- Clear feedback on what's being deleted
+- Safe deletion happens before any new files are created
+- Non-destructive default behavior (user must explicitly choose to delete)
+
+---
+
+## HTML Report Generation - February 6, 2026
+
+### Overview
 Successfully implemented automatic HTML report generation for quiz results. Every quiz run now generates a professional, responsive HTML report with detailed results.
 
 ## Implementation Details
