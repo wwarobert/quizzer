@@ -193,24 +193,75 @@ The web interface provides a modern, browser-based way to take quizzes with real
 # Install Flask (required for web interface)
 pip install Flask>=3.0.0
 
-# Start the web server
+# Optional: Install cryptography for HTTPS support
+pip install cryptography>=41.0.0
+
+# Start the web server (HTTPS if cryptography installed, HTTP otherwise)
 python web_quiz.py
 ```
 
-The server will start at `http://127.0.0.1:5000` by default.
+**HTTPS Support**:
+- If `cryptography` is installed: Server runs on `https://127.0.0.1:5000` with auto-generated self-signed certificates
+- If `cryptography` is not installed: Server automatically falls back to HTTP on `http://127.0.0.1:5000`
+
+**⚠️ Browser Security Warning**: 
+When using self-signed certificates for local development, your browser will show a security warning. This is normal and safe for local development:
+1. Click "Advanced" or "Show Details"
+2. Click "Proceed to localhost" or "Accept the Risk and Continue"
+3. The warning only appears once per browser session
 
 #### Advanced Options
 
 ```bash
 # Run on custom port
-python web_quiz.py --port 8080
+python web_quiz.py --port 8443
 
-# Make accessible from other devices on network
-python web_quiz.py --host 0.0.0.0 --port 8080
+# Disable HTTPS (force HTTP only)
+python web_quiz.py --no-https
 
-# Enable debug mode
+# Make accessible from other devices on network (HTTPS)
+python web_quiz.py --host 0.0.0.0 --port 8443
+
+# Use custom SSL certificates (for production)
+python web_quiz.py --cert /path/to/cert.pem --key /path/to/key.pem
+
+# Enable debug mode with auto-reload
 python web_quiz.py --debug
+
+# Configure logging levels (default: ALL - logs everything)
+# Options: ALL, DEBUG, INFO, WARNING, ERROR, CRITICAL
+python web_quiz.py --log-level INFO                    # Set both file and console to INFO
+python web_quiz.py --log-file-level DEBUG --log-console-level WARNING  # Different levels
+python web_quiz.py --log-level ERROR                   # Only errors and above
+
+# Examples of logging combinations
+python web_quiz.py --log-console-level WARNING         # Console: warnings only, File: ALL (DEBUG)
+python web_quiz.py --log-file-level INFO               # File: INFO only, Console: ALL (DEBUG)
 ```
+
+**Logging Configuration**:
+- **Default**: ALL (DEBUG) - Logs all messages to both file and console
+- **`--log-level`**: Set level for both file and console simultaneously
+  - `ALL`: Everything (DEBUG level)
+  - `DEBUG`: Debug messages and above
+  - `INFO`: Information messages and above
+  - `WARNING`: Warnings and errors only
+  - `ERROR`: Errors and critical messages only
+  - `CRITICAL`: Critical messages only
+- **`--log-file-level`**: Override level for file logging only
+- **`--log-console-level`**: Override level for console logging only
+- **Log File**: `logs/web_quiz.log` (rotates at 10MB, keeps 5 backups)
+- **Combinations**: You can use `--log-file-level` and `--log-console-level` together for fine-grained control
+
+**Command-Line Options**:
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--host` | Host to bind to | `127.0.0.1` |
+| `--port` | Port number | `5000` |
+| `--debug` | Enable debug mode | `False` |
+| `--no-https` | Disable HTTPS (use HTTP only) | `False` |
+| `--cert` | Path to SSL certificate | `certs/cert.pem` |
+| `--key` | Path to SSL private key | `certs/key.pem` |
 
 #### Web Interface Features
 

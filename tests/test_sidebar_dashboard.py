@@ -26,11 +26,11 @@ class TestSidebarPresence:
     """Test that sidebar navigation is present in HTML."""
 
     def test_version_comment_present(self, client):
-        """Test that version 2.0 comment is in HTML."""
+        """Test that version 5.0 comment is in HTML."""
         response = client.get('/')
         html = response.data.decode('utf-8')
-        assert 'UI Version: 2.0' in html, "Version 2.0 comment not found - old version being served!"
-        assert 'Sidebar + Dashboard' in html, "Sidebar + Dashboard text not found in version comment"
+        assert 'UI Version: 5.0' in html, "Version 5.0 comment not found - old version being served!"
+        assert 'BLUE THEME' in html, "Blue theme text not found in version comment"
 
     def test_sidebar_element_exists(self, client):
         """Test that sidebar div exists with correct class."""
@@ -119,11 +119,11 @@ class TestDashboardPresence:
             assert stat_id in html, f"Dashboard stat {stat_id} not found"
 
     def test_recent_runs_section(self, client):
-        """Test that recent runs section exists."""
+        """Test that recent activity section exists."""
         response = client.get('/')
         html = response.data.decode('utf-8')
-        assert 'recent-runs' in html, "Recent runs class not found"
-        assert 'Recent Quiz Runs' in html, "Recent Quiz Runs title not found"
+        assert 'timeline' in html, "Timeline class not found"
+        assert 'Recent Activity' in html, "Recent Activity title not found"
         assert 'id="recentRunsList"' in html, "Recent runs list ID not found"
 
     def test_dashboard_css_styles(self, client):

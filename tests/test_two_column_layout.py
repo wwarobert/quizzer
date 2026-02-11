@@ -36,14 +36,13 @@ def test_two_column_layout():
         ("Total runs stat", 'id="totalRuns"'),
         ("Average score stat", 'id="avgScore"'),
         ("Pass rate stat", 'id="passRate"'),
-        ("Recent runs section", '<div class="recent-runs">'),
+        ("Recent activity timeline", '<div class="timeline">'),
         ("Recent runs list", 'id="recentRunsList"'),
         
-        # Check for CSS layout
+        # Check for CSS layout (Version 5.0 - 250px sidebar)
         ("Sidebar CSS position", 'position: fixed;'),
-        ("Sidebar width", 'width: 260px;'),
-        ("Main content margin", 'margin-left: 260px;'),
-        ("Two-column grid", 'grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));'),
+        ("Sidebar width", 'width: 250px;'),
+        ("Main content margin", 'margin-left: 250px;'),
         
         # Check for JavaScript functions
         ("Toggle sidebar function", 'function toggleSidebar()'),
@@ -68,17 +67,23 @@ def test_two_column_layout():
     
     if failed == 0:
         print("\n✅ SUCCESS! Two-column layout IS present in the HTML template!")
-        print("   - Left column: Sidebar (260px, purple gradient)")
+        print("   - Left column: Sidebar (250px, blue gradient)")
         print("   - Right column: Dashboard (main content area)")
         print("\nIf you still see the old layout in your browser:")
         print("   1. Press Ctrl+Shift+R to hard refresh")
         print("   2. Or open OPEN_QUIZZER_HERE.html in your workspace")
-        return True
     else:
         print("\n❌ FAILED! Some two-column layout elements are missing!")
-        return False
+    
+    # Use assert instead of return for pytest
+    assert failed == 0, f"{failed} layout elements are missing from the HTML template"
 
 
 if __name__ == '__main__':
-    success = test_two_column_layout()
-    sys.exit(0 if success else 1)
+    try:
+        test_two_column_layout()
+        print("\n✅ Test passed!")
+        sys.exit(0)
+    except AssertionError as e:
+        print(f"\n❌ Test failed: {e}")
+        sys.exit(1)

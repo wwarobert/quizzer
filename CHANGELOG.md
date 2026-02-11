@@ -2,6 +2,57 @@
 
 All notable changes to the Quizzer project will be documented in this file.
 
+## [Unreleased]
+
+### Added - 2026-02-11
+
+#### Configurable Logging System
+- **Flexible Log Levels**: Control logging verbosity via command-line arguments
+- **Default Behavior**: ALL (DEBUG) level - logs everything for comprehensive troubleshooting
+- **Command-Line Options**:
+  - `--log-level`: Set level for both file and console (ALL, DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  - `--log-file-level`: Override level for file logging only
+  - `--log-console-level`: Override level for console logging only
+- **Independent Control**: Configure file and console logging separately for optimal debugging
+- **Level Hierarchy**: CRITICAL → ERROR → WARNING → INFO → DEBUG (ALL)
+- **Examples**:
+  - `--log-level INFO`: Only INFO and above to both destinations
+  - `--log-file-level DEBUG --log-console-level WARNING`: Detailed file logs, minimal console output
+  - `--log-level ERROR`: Only errors for quiet operation
+- **Smart Defaults**: 'ALL' alias for DEBUG makes maximum logging intuitive
+- **Runtime Feedback**: Server startup shows active log level configuration
+
+**Use Cases**:
+- **Development**: ALL (DEBUG) for complete visibility
+- **Production**: WARNING or ERROR for cleaner logs
+- **Debugging**: DEBUG for files, WARNING for console (reduces noise)
+- **CI/CD**: ERROR or CRITICAL for minimal output
+
+#### HTTPS Support for Web Interface
+- **Automatic HTTPS**: Web server now runs on HTTPS by default with auto-generated self-signed certificates
+- **SSL Certificate Generation**: Automatically creates SSL certificates on first run using `cryptography` library
+- **Self-Signed Certificates**: Development-ready certificates valid for `localhost` and `127.0.0.1`
+- **Graceful Fallback**: If `cryptography` is not installed, server automatically falls back to HTTP
+- **Command-Line Options**:
+  - `--no-https`: Disable HTTPS and force HTTP mode
+  - `--cert <path>`: Use custom SSL certificate file
+  - `--key <path>`: Use custom SSL private key file
+- **Certificate Management**: Certificates stored in `certs/` directory (excluded from git)
+- **Production-Ready**: Support for custom SSL certificates from trusted CAs
+- **Documentation**: Comprehensive README in `certs/` directory with usage instructions
+
+**Security Benefits**:
+- Encrypted communications between browser and server
+- Protection against man-in-the-middle attacks
+- Best practice for web applications (even in development)
+
+**Browser Compatibility**: 
+- All modern browsers supported
+- Self-signed certificate warnings are normal for local development
+- Clear instructions provided for bypassing browser warnings
+
+---
+
 ## [1.5.0] - 2026-02-11
 
 ### Major Release: Web Interface

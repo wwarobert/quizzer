@@ -12,6 +12,7 @@
 
 # Optional dependencies for web interface
 Flask>=3.0.0           # For web-based quiz interface (optional)
+cryptography>=41.0.0   # For HTTPS support (self-signed certificates)
 
 # Development dependencies
 pytest>=7.0.0          # For running tests

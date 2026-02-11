@@ -233,6 +233,10 @@ data/reports/*.html
 logs/
 !logs/README.md
 
+# Ignore SSL certificates (for HTTPS)
+certs/
+!certs/README.md
+
 # Test artifacts
 junit.xml
 report.html

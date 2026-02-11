@@ -9,6 +9,7 @@ import pytest
 import json
 import tempfile
 import shutil
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -70,15 +71,15 @@ class TestWebQuizRoutes:
         assert b'Quizzer' in response.data
         assert b'<!DOCTYPE html>' in response.data
 
-    def test_get_quizzes_empty(self, client, monkeypatch):
+    def test_get_quizzes_empty(self, client, monkeypatch, tmp_path):
         """Test getting quizzes when directory is empty."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            monkeypatch.chdir(tmpdir)
-            response = client.get('/api/quizzes')
-            assert response.status_code == 200
-            data = json.loads(response.data)
-            assert isinstance(data, list)
-            assert len(data) == 0
+        # Use pytest's tmp_path which handles Windows cleanup better
+        monkeypatch.chdir(tmp_path)
+        response = client.get('/api/quizzes')
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert isinstance(data, list)
+        assert len(data) == 0
 
     def test_get_quizzes_with_data(self, client, sample_quiz_dir, monkeypatch):
         """Test getting quizzes when quizzes exist."""
