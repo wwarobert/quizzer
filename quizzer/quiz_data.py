@@ -8,7 +8,6 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-from datetime import datetime
 from typing import List, Dict, Any
 from dataclasses import dataclass, asdict
 import json
@@ -18,7 +17,7 @@ import json
 class Question:
     """
     Represents a single quiz question.
-    
+
     Attributes:
         id: Unique identifier for the question within the quiz
         question: The question text
@@ -29,11 +28,11 @@ class Question:
     question: str
     answer: List[str]
     original_answer: str
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert question to dictionary format."""
         return asdict(self)
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Question':
         """Create Question from dictionary."""
@@ -44,7 +43,7 @@ class Question:
 class Quiz:
     """
     Represents a complete quiz with metadata.
-    
+
     Attributes:
         quiz_id: Unique identifier for the quiz
         created_at: ISO format timestamp of quiz creation
@@ -55,7 +54,7 @@ class Quiz:
     created_at: str
     questions: List[Question]
     source_file: str = ""
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert quiz to dictionary format."""
         return {
@@ -64,7 +63,7 @@ class Quiz:
             'source_file': self.source_file,
             'questions': [q.to_dict() for q in self.questions]
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Quiz':
         """Create Quiz from dictionary."""
@@ -75,25 +74,25 @@ class Quiz:
             questions=questions,
             source_file=data.get('source_file', '')
         )
-    
+
     def save(self, filepath: str) -> None:
         """
         Save quiz to JSON file.
-        
+
         Args:
             filepath: Path where the quiz JSON should be saved
         """
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
-    
+
     @classmethod
     def load(cls, filepath: str) -> 'Quiz':
         """
         Load quiz from JSON file.
-        
+
         Args:
             filepath: Path to the quiz JSON file
-        
+
         Returns:
             Quiz object loaded from file
         """
@@ -106,7 +105,7 @@ class Quiz:
 class QuizResult:
     """
     Stores the results of a completed quiz attempt.
-    
+
     Attributes:
         quiz_id: ID of the quiz that was taken
         completed_at: ISO format timestamp of completion
@@ -125,21 +124,21 @@ class QuizResult:
     passed: bool
     failures: List[Dict[str, str]]
     time_spent: float = 0.0
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary format."""
         return asdict(self)
-    
+
     def generate_report(self) -> str:
         """
         Generate a formatted text report of quiz results.
-        
+
         Returns:
             Multi-line string containing the full quiz report
         """
         mins, secs = divmod(int(self.time_spent), 60)
         time_str = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
-        
+
         lines = [
             f"Quiz Report - {self.quiz_id}",
             f"Date: {self.completed_at}",
@@ -150,7 +149,7 @@ class QuizResult:
             f"Result: {'PASS' if self.passed else 'FAIL'}",
             ""
         ]
-        
+
         if self.failures:
             lines.append(f"Failures ({len(self.failures)}):")
             lines.append("=" * 60)
@@ -163,13 +162,13 @@ class QuizResult:
                 ])
         else:
             lines.append("Perfect score! All answers correct.")
-        
+
         return '\n'.join(lines)
-    
+
     def save_report(self, filepath: str) -> None:
         """
         Save the quiz report to a text file.
-        
+
         Args:
             filepath: Path where the report should be saved
         """
