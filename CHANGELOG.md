@@ -28,6 +28,17 @@ All notable changes to the Quizzer project will be documented in this file.
 - **Debugging**: DEBUG for files, WARNING for console (reduces noise)
 - **CI/CD**: ERROR or CRITICAL for minimal output
 
+### Fixed - 2026-02-11
+
+#### CI/CD Pipeline
+- **Test Failures**: Fixed Flask import errors in GitHub Actions CI pipeline
+  - Root cause: CI workflow only installed pytest/pytest-cov, not project dependencies
+  - Solution: Updated workflow to install all requirements from `requirements.txt`
+  - Impact: test_web_quiz.py, test_sidebar_dashboard.py, test_two_column_layout.py now run successfully
+- **Code Quality**: Updated code-quality job to install project dependencies
+  - Ensures linting tools (pylint, mypy, bandit) can properly analyze web_quiz.py
+  - Safety tool now checks actual project dependencies for vulnerabilities
+
 #### HTTPS Support for Web Interface
 - **Automatic HTTPS**: Web server now runs on HTTPS by default with auto-generated self-signed certificates
 - **SSL Certificate Generation**: Automatically creates SSL certificates on first run using `cryptography` library
