@@ -413,6 +413,198 @@ class TestCSVEdgeCases:
             Path(temp_path).unlink(missing_ok=True)
 
 
+class TestExistingQuizManagement:
+    """Tests for existing quiz detection and deletion functions."""
+    
+    def test_check_existing_quizzes_empty_dir(self):
+        """Test checking for quizzes in empty directory."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            existing = import_quiz.check_existing_quizzes(output_dir)
+            assert len(existing) == 0
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_check_existing_quizzes_nonexistent_dir(self):
+        """Test checking for quizzes in nonexistent directory."""
+        output_dir = Path("nonexistent_directory_12345")
+        existing = import_quiz.check_existing_quizzes(output_dir)
+        assert len(existing) == 0
+    
+    def test_check_existing_quizzes_with_quizzes(self):
+        """Test checking for quizzes in directory with quiz files."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            
+            # Create some quiz files
+            (output_dir / "quiz_001.json").write_text("{}")
+            (output_dir / "quiz_002.json").write_text("{}")
+            (output_dir / "quiz_003.json").write_text("{}")
+            
+            existing = import_quiz.check_existing_quizzes(output_dir)
+            assert len(existing) == 3
+            
+            # Verify they are Path objects
+            assert all(isinstance(p, Path) for p in existing)
+            
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_check_existing_quizzes_ignores_non_json(self):
+        """Test that non-JSON files are ignored."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            
+            # Create various file types
+            (output_dir / "quiz_001.json").write_text("{}")
+            (output_dir / "readme.txt").write_text("test")
+            (output_dir / "data.csv").write_text("test")
+            
+            existing = import_quiz.check_existing_quizzes(output_dir)
+            assert len(existing) == 1  # Only JSON file
+            
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_prompt_delete_existing_quizzes_yes(self):
+        """Test user choosing to delete quizzes."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            quiz_files = [
+                output_dir / "quiz_001.json",
+                output_dir / "quiz_002.json"
+            ]
+            
+            # Create the files
+            for qf in quiz_files:
+                qf.write_text("{}")
+            
+            # Mock user input to respond 'yes'
+            with patch('builtins.input', return_value='yes'):
+                result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
+            
+            assert result is True
+            
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_prompt_delete_existing_quizzes_no(self):
+        """Test user choosing to keep quizzes."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            quiz_files = [output_dir / "quiz_001.json"]
+            quiz_files[0].write_text("{}")
+            
+            # Mock user input to respond 'no'
+            with patch('builtins.input', return_value='no'):
+                result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
+            
+            assert result is False
+            
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_prompt_delete_existing_quizzes_variations(self):
+        """Test various user input variations."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            quiz_files = [output_dir / "quiz_001.json"]
+            quiz_files[0].write_text("{}")
+            
+            # Test 'y'
+            with patch('builtins.input', return_value='y'):
+                result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
+                assert result is True
+            
+            # Test 'n'
+            with patch('builtins.input', return_value='n'):
+                result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
+                assert result is False
+            
+            # Test 'YES' (uppercase)
+            with patch('builtins.input', return_value='YES'):
+                result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
+                assert result is True
+            
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_prompt_delete_existing_quizzes_invalid_then_valid(self):
+        """Test invalid input followed by valid input."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            quiz_files = [output_dir / "quiz_001.json"]
+            quiz_files[0].write_text("{}")
+            
+            # Mock user input: first invalid, then valid
+            with patch('builtins.input', side_effect=['maybe', 'sure', 'yes']):
+                result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
+                assert result is True
+            
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_delete_quiz_files_successful(self):
+        """Test successful deletion of quiz files."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            
+            # Create quiz files
+            quiz_files = [
+                output_dir / "quiz_001.json",
+                output_dir / "quiz_002.json",
+                output_dir / "quiz_003.json"
+            ]
+            for qf in quiz_files:
+                qf.write_text("{}")
+            
+            # Verify files exist
+            assert all(qf.exists() for qf in quiz_files)
+            
+            # Delete them
+            import_quiz.delete_quiz_files(quiz_files)
+            
+            # Verify files are gone
+            assert all(not qf.exists() for qf in quiz_files)
+            
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_delete_quiz_files_partial_failure(self, capsys):
+        """Test deletion with some files missing."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            output_dir = Path(temp_dir)
+            
+            # Create only some of the files
+            quiz_files = [
+                output_dir / "quiz_001.json",
+                output_dir / "quiz_002.json",
+                output_dir / "quiz_003.json"
+            ]
+            quiz_files[0].write_text("{}")
+            quiz_files[2].write_text("{}")
+            # quiz_002.json doesn't exist
+            
+            # Should handle missing files gracefully
+            import_quiz.delete_quiz_files(quiz_files)
+            
+            # Verify existing files were deleted
+            assert not quiz_files[0].exists()
+            assert not quiz_files[2].exists()
+            
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
 class TestMainFunction:
     """Tests for main() function behavior via mocking."""
     
@@ -557,4 +749,87 @@ class TestMainFunction:
         finally:
             Path(csv_path).unlink(missing_ok=True)
             import shutil
+            shutil.rmtree(temp_dir, ignore_errors=True)    
+    def test_main_with_existing_quizzes_delete_yes(self):
+        """Test main function prompts to delete existing quizzes and user chooses yes."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Question", "Answer"])
+            writer.writerow(["New question?", "New answer"])
+            csv_path = f.name
+        
+        temp_dir = tempfile.mkdtemp()
+        csv_basename = Path(csv_path).stem
+        output_dir = Path(temp_dir) / csv_basename
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            # Create existing quiz files
+            old_quiz_1 = output_dir / "old_quiz_1.json"
+            old_quiz_2 = output_dir / "old_quiz_2.json"
+            old_quiz_1.write_text('{"quiz_id": "old_1"}')
+            old_quiz_2.write_text('{"quiz_id": "old_2"}')
+            
+            assert old_quiz_1.exists()
+            assert old_quiz_2.exists()
+            
+            # Run import with user choosing to delete
+            test_args = ['import_quiz.py', csv_path, '--output', temp_dir]
+            
+            with patch.object(sys, 'argv', test_args):
+                with patch('builtins.input', return_value='yes'):
+                    import_quiz.main()
+            
+            # Old quizzes should be deleted
+            assert not old_quiz_1.exists()
+            assert not old_quiz_2.exists()
+            
+            # New quiz should be created
+            new_quiz_files = list(output_dir.glob("quiz_*.json"))
+            assert len(new_quiz_files) >= 1
+            
+        finally:
+            Path(csv_path).unlink(missing_ok=True)
+            shutil.rmtree(temp_dir, ignore_errors=True)
+    
+    def test_main_with_existing_quizzes_delete_no(self):
+        """Test main function prompts to delete existing quizzes and user chooses no."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Question", "Answer"])
+            writer.writerow(["New question?", "New answer"])
+            csv_path = f.name
+        
+        temp_dir = tempfile.mkdtemp()
+        csv_basename = Path(csv_path).stem
+        output_dir = Path(temp_dir) / csv_basename
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            # Create existing quiz files
+            old_quiz_1 = output_dir / "old_quiz_1.json"
+            old_quiz_2 = output_dir / "old_quiz_2.json"
+            old_quiz_1.write_text('{"quiz_id": "old_1"}')
+            old_quiz_2.write_text('{"quiz_id": "old_2"}')
+            
+            assert old_quiz_1.exists()
+            assert old_quiz_2.exists()
+            
+            # Run import with user choosing to keep
+            test_args = ['import_quiz.py', csv_path, '--output', temp_dir]
+            
+            with patch.object(sys, 'argv', test_args):
+                with patch('builtins.input', return_value='no'):
+                    import_quiz.main()
+            
+            # Old quizzes should still exist
+            assert old_quiz_1.exists()
+            assert old_quiz_2.exists()
+            
+            # New quiz should also be created
+            all_quiz_files = list(output_dir.glob("*.json"))
+            assert len(all_quiz_files) >= 3  # 2 old + 1 new
+            
+        finally:
+            Path(csv_path).unlink(missing_ok=True)
             shutil.rmtree(temp_dir, ignore_errors=True)

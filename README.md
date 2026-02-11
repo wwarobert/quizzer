@@ -143,6 +143,30 @@ Generate quiz with only 20 questions:
 python import_quiz.py data/input/history.csv -m 20
 ```
 
+#### Managing Existing Quizzes
+
+When importing quizzes into an existing folder (e.g., re-importing the same CSV file), the tool will detect existing quiz files and prompt you to decide whether to keep or delete them:
+
+```
+Reading questions from: data/input/az-104.csv
+Loaded 200 questions
+
+⚠️  Found 5 existing quiz(zes) in this folder:
+  - az-104_20260209_164742_1.json
+  - az-104_20260209_164742_2.json
+  - az-104_20260209_164742_3.json
+  - az-104_20260209_164742_4.json
+  - az-104_20260209_164742_5.json
+
+Do you want to DELETE these quizzes before importing? (yes/no): 
+```
+
+**Behavior:**
+- Choose `yes`/`y`: Old quizzes are deleted **before** new quizzes are created
+- Choose `no`/`n`: Old quizzes are kept and new quizzes are added alongside them
+- This ensures you can refresh quiz sets without accidentally accumulating old versions
+- Only JSON files in the target folder are affected
+
 ### Taking Quizzes
 
 The `run_quiz.py` script provides an interactive CLI for taking quizzes.

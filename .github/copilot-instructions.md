@@ -189,6 +189,11 @@ quizzer/
 - Randomize question order (use `random.shuffle`)
 - Generate unique quiz IDs (timestamp or UUID)
 - Support batch generation (multiple quizzes from one CSV)
+- **Prompt user to delete existing quizzes before importing to same folder**
+  - Detect existing quiz JSON files in output directory
+  - Ask user: "Do you want to DELETE these quizzes before importing? (yes/no)"
+  - If yes: delete all old quizzes BEFORE creating new ones
+  - If no: keep old quizzes and add new ones alongside them
 - Handle edge cases: empty answers, special characters
 
 ### Quiz Runner Features

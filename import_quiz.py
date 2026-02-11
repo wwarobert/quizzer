@@ -25,6 +25,65 @@ from typing import List, Tuple
 from quizzer import normalize_answer, format_answer_display, Question, Quiz
 
 
+def check_existing_quizzes(output_dir: Path) -> List[Path]:
+    """
+    Check for existing quiz JSON files in the output directory.
+    
+    Args:
+        output_dir: Path to the output directory
+    
+    Returns:
+        List of existing quiz JSON file paths
+    """
+    if not output_dir.exists():
+        return []
+    
+    # Find all JSON files (quizzes) in the directory
+    quiz_files = list(output_dir.glob("*.json"))
+    return quiz_files
+
+
+def prompt_delete_existing_quizzes(quiz_files: List[Path]) -> bool:
+    """
+    Prompt the user whether to delete existing quizzes.
+    
+    Args:
+        quiz_files: List of existing quiz file paths
+    
+    Returns:
+        True if user wants to delete, False if user wants to keep
+    """
+    print(f"\n⚠️  Found {len(quiz_files)} existing quiz(zes) in this folder:")
+    for quiz_file in quiz_files:
+        print(f"  - {quiz_file.name}")
+    
+    while True:
+        response = input("\nDo you want to DELETE these quizzes before importing? (yes/no): ").strip().lower()
+        if response in ['yes', 'y']:
+            return True
+        elif response in ['no', 'n']:
+            return False
+        else:
+            print("Please answer 'yes' or 'no'")
+
+
+def delete_quiz_files(quiz_files: List[Path]) -> None:
+    """
+    Delete quiz files from the directory.
+    
+    Args:
+        quiz_files: List of quiz file paths to delete
+    """
+    print("\nDeleting existing quizzes...")
+    for quiz_file in quiz_files:
+        try:
+            quiz_file.unlink()
+            print(f"  ✓ Deleted: {quiz_file.name}")
+        except Exception as e:
+            print(f"  ✗ Failed to delete {quiz_file.name}: {e}")
+    print("Deletion complete.\n")
+
+
 def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
     """
     Read questions and answers from a CSV file.
@@ -303,6 +362,15 @@ For more information, see README.md
         base_output_dir = Path(args.output)
         csv_basename = Path(args.csv_file).stem  # filename without extension
         output_dir = base_output_dir / csv_basename
+        
+        # Check for existing quizzes before creating new ones
+        existing_quizzes = check_existing_quizzes(output_dir)
+        if existing_quizzes:
+            should_delete = prompt_delete_existing_quizzes(existing_quizzes)
+            if should_delete:
+                delete_quiz_files(existing_quizzes)
+        
+        # Ensure output directory exists
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate quizzes
