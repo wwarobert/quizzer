@@ -6,6 +6,13 @@ All notable changes to the Quizzer project will be documented in this file.
 
 ### Added - 2026-02-11
 
+#### Non-Interactive Mode with --force Flag
+- **New CLI Flag**: Added `--force` flag to skip interactive prompts
+- **Automatic Deletion**: When `--force` is used, existing quizzes are automatically deleted without prompting
+- **CI/CD Friendly**: Enables use in automated pipelines like GitHub Actions
+- **Usage**: `python import_quiz.py input.csv --force`
+- **Backward Compatible**: Existing behavior unchanged when flag is not used
+
 #### Interactive Quiz Management on Import
 - **Existing Quiz Detection**: Import script now detects existing quiz files in the target folder before importing
 - **User Prompt**: Interactive prompt asks users whether to delete or keep existing quizzes

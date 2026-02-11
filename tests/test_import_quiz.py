@@ -833,3 +833,71 @@ class TestMainFunction:
         finally:
             Path(csv_path).unlink(missing_ok=True)
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_main_with_force_flag(self):
+        """Test main function with --force flag automatically deletes quizzes."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Question", "Answer"])
+            writer.writerow(["New question?", "New answer"])
+            csv_path = f.name
+
+        temp_dir = tempfile.mkdtemp()
+        csv_basename = Path(csv_path).stem
+        output_dir = Path(temp_dir) / csv_basename
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            # Create existing quiz files
+            old_quiz_1 = output_dir / "old_quiz_1.json"
+            old_quiz_2 = output_dir / "old_quiz_2.json"
+            old_quiz_1.write_text('{"quiz_id": "old_1"}')
+            old_quiz_2.write_text('{"quiz_id": "old_2"}')
+
+            assert old_quiz_1.exists()
+            assert old_quiz_2.exists()
+
+            # Run import with --force flag (should not prompt)
+            test_args = ['import_quiz.py', csv_path, '--output', temp_dir, '--force']
+
+            with patch.object(sys, 'argv', test_args):
+                # No need to mock input() - it should not be called
+                import_quiz.main()
+
+            # Old quizzes should be deleted
+            assert not old_quiz_1.exists()
+            assert not old_quiz_2.exists()
+
+            # New quiz should be created
+            new_quiz_files = list(output_dir.glob("*.json"))
+            assert len(new_quiz_files) >= 1
+
+        finally:
+            Path(csv_path).unlink(missing_ok=True)
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_main_force_flag_without_existing_quizzes(self):
+        """Test that --force flag works when there are no existing quizzes."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Question", "Answer"])
+            writer.writerow(["Test question?", "Test answer"])
+            csv_path = f.name
+
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            test_args = ['import_quiz.py', csv_path, '--output', temp_dir, '--force']
+
+            with patch.object(sys, 'argv', test_args):
+                import_quiz.main()
+
+            # Should create quiz successfully
+            csv_basename = Path(csv_path).stem
+            output_dir = Path(temp_dir) / csv_basename
+            quiz_files = list(output_dir.glob("*.json"))
+            assert len(quiz_files) >= 1
+
+        finally:
+            Path(csv_path).unlink(missing_ok=True)
+            shutil.rmtree(temp_dir, ignore_errors=True)

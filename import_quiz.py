@@ -300,6 +300,12 @@ For more information, see README.md
     )
 
     parser.add_argument(
+        '--force',
+        action='store_true',
+        help='automatically delete existing quizzes without prompting (useful for CI/CD)'
+    )
+
+    parser.add_argument(
         '--version',
         action='version',
         version='%(prog)s 1.0.0'
@@ -366,9 +372,15 @@ For more information, see README.md
         # Check for existing quizzes before creating new ones
         existing_quizzes = check_existing_quizzes(output_dir)
         if existing_quizzes:
-            should_delete = prompt_delete_existing_quizzes(existing_quizzes)
-            if should_delete:
+            if args.force:
+                # Non-interactive mode: automatically delete
+                print(f"\n--force flag detected, automatically deleting {len(existing_quizzes)} existing quiz(zes)")
                 delete_quiz_files(existing_quizzes)
+            else:
+                # Interactive mode: prompt user
+                should_delete = prompt_delete_existing_quizzes(existing_quizzes)
+                if should_delete:
+                    delete_quiz_files(existing_quizzes)
 
         # Ensure output directory exists
         output_dir.mkdir(parents=True, exist_ok=True)

@@ -145,7 +145,7 @@ jobs:
     
     - name: Test import_quiz script
       run: |
-        python import_quiz.py data/input/sample_questions.csv -n 1
+        python import_quiz.py data/input/sample_questions.csv -n 1 --force
         test -f data/quizzes/quiz_*.json || exit 1
         echo "✅ Quiz generation successful" >> $GITHUB_STEP_SUMMARY
     
