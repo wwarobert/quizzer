@@ -155,10 +155,12 @@ jobs:
         python -c "
         import json
         from pathlib import Path
-        # Look in the sample_questions subdirectory
         quiz_files = list(Path('data/quizzes/sample_questions').glob('quiz_*.json'))
         if not quiz_files:
             print('No quiz files found!')
+            exit(1)
+        with open(quiz_files[0]) as f:
+            data = json.load(f)
         assert 'quiz_id' in data
         assert 'questions' in data
         print('✅ Quiz JSON structure valid')
