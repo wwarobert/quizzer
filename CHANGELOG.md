@@ -69,43 +69,42 @@ All notable changes to the Quizzer project will be documented in this file.
 ### Major Release: Web Interface
 
 #### Web Browser Interface (web_quiz.py)
-- **Flask-Based Server**: Complete web application for taking quizzes in the browser
-- **Beautiful Blue Theme**: Modern design with CSS custom properties (variables)
+- **Flask-Based Server**: Web application for taking quizzes in the browser
+- **Blue Theme**: CSS custom properties (variables)
   - Primary blue (#2563eb) color scheme
-  - Gradient backgrounds and smooth transitions
-  - Professional styling for all components
+  - Gradient backgrounds and transitions
 - **Automatic Dark Mode**: Detects system preferences via `@media (prefers-color-scheme: dark)`
-  - Seamless switching between light and dark themes
+  - Switching between light and dark themes
   - Optimized colors for both modes
-- **Comprehensive Dashboard**: 
+- **Dashboard**: 
   - Performance metrics card (total quizzes, average score, pass rate)
-  - Visual pie charts (quiz breakdown, question analysis)
+  - Pie charts (quiz breakdown, question analysis)
   - Activity timeline with recent quiz attempts
-  - Quick statistics (time tracking, quiz counts)
-- **Interactive Sidebar** (250px width):
+  - Statistics (time tracking, quiz counts)
+- **Sidebar** (250px width):
   - Hierarchical quiz browser organized by folder
   - Expandable/collapsible folder structure
-  - Quick stats section
-  - Smooth hover effects and active highlighting
+  - Stats section
+  - Hover effects and active highlighting
 - **Real-time Quiz Taking**:
-  - Live timer tracking duration (MM:SS format)
-  - Visual progress bar (0-100%)
+  - Timer tracking duration (MM:SS format)
+  - Progress bar (0-100%)
   - Auto-focused input fields
-  - Instant answer feedback with color coding (✓ green / ✗ red)
+  - Answer feedback with color coding (✓ green / ✗ red)
   - Keyboard shortcuts (Enter to submit, Escape to quit)
 - **Overlay Notification System**:
   - Custom notifications instead of browser `alert()` popups
-  - Elegant centered overlays with icons (✓✗ⓘ⚠)
+  - Centered overlays with icons (✓✗ⓘ⚠)
   - Confirmation dialogs with callback support
-  - Non-blocking, user-friendly design
-- **Comprehensive Error Logging**:
+  - Non-blocking design
+- **Error Logging**:
   - Python logging module with `RotatingFileHandler`
   - Log file: `logs/web_quiz.log` (auto-rotates at 10MB, keeps 5 backups)
   - Dual output: DEBUG to file, INFO to console
   - Flask error handlers (404, 500, Exception)
   - All routes wrapped in try-except with detailed logging
   - Stack traces for debugging
-- **Fully Responsive Design**:
+- **Responsive Design**:
   - Desktop: Full sidebar + main content
   - Tablet: Collapsible sidebar
   - Mobile: Stacked layout, optimized cards

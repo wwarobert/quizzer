@@ -1,9 +1,9 @@
 # Quizzer - AI Coding Agent Instructions
 
 ## Project Overview
-Modern quiz platform with both CLI and web interfaces that generates randomized quizzes from CSV files with interactive testing and automatic grading.
+Quiz platform with both CLI and web interfaces that generates randomized quizzes from CSV files with interactive testing and automatic grading.
 
-**Current Status**: Production-ready v1.5 with complete web interface, comprehensive testing suite (57 tests), and professional documentation.
+**Current Status**: Production-ready v1.5 with complete web interface, testing suite (57 tests), and documentation.
 
 ## Core Functionality
 
@@ -27,13 +27,13 @@ Modern quiz platform with both CLI and web interfaces that generates randomized 
 
 3. **Web Interface** (`web_quiz.py`) ✨ NEW
    - Flask-based web server for browser-based quizzes
-   - Beautiful blue theme with automatic dark mode
-   - Comprehensive dashboard with performance analytics
+   - Blue theme (#2563eb) with automatic dark mode
+   - Dashboard with performance analytics
    - Interactive 250px sidebar with quiz browser
    - Real-time progress tracking and timer
    - Instant answer feedback with visual cues
    - Overlay notification system (no alert popups)
-   - Comprehensive error logging with rotation
+   - Error logging with rotation
    - Fully responsive design (desktop/tablet/mobile)
    - RESTful API endpoints
    - Requires: Flask >= 3.0.0
@@ -140,7 +140,7 @@ Correct answer: George Washington
   - Color-coded pass/fail status banner
   - Statistics cards (total, correct, failed, percentage)
   - Detailed failure breakdown with question numbers
-  - Professional styling (print-friendly, mobile-responsive)
+  - Styling (print-friendly, mobile-responsive)
 - **Behavior**: Automatically overwrites previous report for same quiz_id
 - **Generation**: Happens after every quiz completion (no flag needed)
 
@@ -262,7 +262,7 @@ def normalize_answer(answer: str) -> list[str]:
 4. **Hint system**: Provide hints after wrong attempts
 5. **Multiple quiz modes**: Practice (show correct answer) vs. Exam (no feedback until end)
 
-### Advanced Features
+### Enhancement Opportunities
 1. **Statistics tracking**: Historical performance across multiple attempts
 2. **Spaced repetition**: Prioritize questions previously answered incorrectly
 3. **Export formats**: Markdown, PDF reports (HTML already implemented)

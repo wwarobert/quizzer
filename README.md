@@ -5,7 +5,7 @@
 [![Tests](https://img.shields.io/badge/tests-57%20passing-success.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-71%25-yellow.svg)](tests/)
 
-A powerful quiz platform that generates randomized quizzes from CSV files with both command-line and modern web browser interfaces.
+A quiz platform that generates randomized quizzes from CSV files with both command-line and web browser interfaces.
 
 ## Features
 
@@ -13,7 +13,7 @@ A powerful quiz platform that generates randomized quizzes from CSV files with b
 - Simple CSV input format (Question, Answer)
 - Randomized question selection and ordering
 - Smart answer validation (case-insensitive, whitespace-tolerant, multi-answer support)
-- Automatic HTML report generation with professional styling
+- Automatic HTML report generation
 - Time tracking for quiz completion
 - Zero external dependencies for CLI (Python standard library only)
 
@@ -25,18 +25,18 @@ A powerful quiz platform that generates randomized quizzes from CSV files with b
 - Perfect for automation and scripting
 - Lightweight and fast
 
-**Modern Web Interface:**
-- 🎨 Beautiful blue theme with automatic dark mode support
-- 📊 Comprehensive dashboard with performance metrics
-- 📋 Interactive sidebar with quiz browser and statistics
-- ⏱️ Real-time progress tracking and timer
-- ✅ Instant feedback after each answer
-- 🔔 Elegant overlay notifications (no intrusive popups)
-- 📱 Fully responsive design (desktop, tablet, mobile)
-- 📈 Visual charts for quiz performance and question breakdown
-- 🕐 Activity timeline showing recent quiz attempts
-- 📝 One-click HTML report generation
-- 🐛 Comprehensive error logging with automatic rotation
+**Web Interface:**
+- Blue theme (#2563eb) with automatic dark mode support
+- Dashboard with performance metrics and analytics
+- Sidebar with quiz browser and statistics
+- Real-time progress tracking and timer
+- Instant feedback after each answer
+- Overlay notifications (no browser popups)
+- Responsive design (desktop, tablet, mobile)
+- Charts for quiz performance and question breakdown
+- Activity timeline with recent quiz attempts
+- HTML report generation
+- Error logging with automatic rotation
 
 ## Table of Contents
 
@@ -185,7 +185,7 @@ python import_quiz.py data/input/questions.csv --force
 
 ### Using the Web Interface
 
-The web interface provides a modern, browser-based way to take quizzes with real-time feedback and progress tracking.
+The web interface provides a browser-based way to take quizzes with real-time feedback and progress tracking.
 
 #### Starting the Web Server
 
@@ -204,7 +204,7 @@ python web_quiz.py
 - If `cryptography` is installed: Server runs on `https://127.0.0.1:5000` with auto-generated self-signed certificates
 - If `cryptography` is not installed: Server automatically falls back to HTTP on `http://127.0.0.1:5000`
 
-**⚠️ Browser Security Warning**: 
+**Browser Security Warning**: 
 When using self-signed certificates for local development, your browser will show a security warning. This is normal and safe for local development:
 1. Click "Advanced" or "Show Details"
 2. Click "Proceed to localhost" or "Accept the Risk and Continue"
@@ -266,34 +266,34 @@ python web_quiz.py --log-file-level INFO               # File: INFO only, Consol
 #### Web Interface Features
 
 **Quiz Taking:**
-- 📋 **Smart Quiz Selection**: Browse all quizzes by folder with automatic organization
-- ⏱️ **Real-time Timer**: Track time spent with live countdown
-- 📊 **Visual Progress Bar**: See completion percentage at a glance
-- ✅ **Instant Feedback**: Immediate correct/incorrect indication with visual cues
-- ⌨️ **Keyboard Shortcuts**: Press Enter to submit, Escape to quit
-- 📝 **Auto-focus Input**: Seamless typing experience without clicking
+- **Smart Quiz Selection**: Browse all quizzes by folder with automatic organization
+- **Real-time Timer**: Track time spent with live countdown
+- **Visual Progress Bar**: See completion percentage at a glance
+- **Instant Feedback**: Immediate correct/incorrect indication with visual cues
+- **Keyboard Shortcuts**: Press Enter to submit, Escape to quit
+- **Auto-focus Input**: Seamless typing experience without clicking
 
 **Dashboard & Analytics:**
-- 📈 **Performance Metrics**: Total quizzes taken, average score, pass rate
-- 📊 **Quiz Breakdown Chart**: Visual pie chart of passed vs failed quizzes
-- 📉 **Question Analysis**: See your correct/incorrect answer distribution
-- 🕐 **Activity Timeline**: Chronological list of recent quiz attempts with scores
-- 🎯 **Quick Stats**: Average time per quiz, total questions answered
+- **Performance Metrics**: Total quizzes taken, average score, pass rate
+- **Quiz Breakdown Chart**: Visual pie chart of passed vs failed quizzes
+- **Question Analysis**: See your correct/incorrect answer distribution
+- **Activity Timeline**: Chronological list of recent quiz attempts with scores
+- **Quick Stats**: Average time per quiz, total questions answered
 
 **Design & UX:**
-- 🎨 **Beautiful Blue Theme**: Professional design with primary blue (#2563eb) color scheme
-- 🌙 **Automatic Dark Mode**: Respects system preferences with smooth transitions
-- 📱 **Fully Responsive**: Perfect layout on any screen size (desktop/tablet/mobile)
-- 🔔 **Overlay Notifications**: Elegant non-blocking notifications with icons
-- 🎯 **Intuitive Navigation**: 250px sidebar with collapsible sections
-- ✨ **Modern Animations**: Smooth transitions and hover effects
+- **Blue Theme**: Primary blue (#2563eb) color scheme
+- **Automatic Dark Mode**: Respects system preferences with transitions
+- **Responsive Layout**: Adapts to screen size (desktop/tablet/mobile)
+- **Overlay Notifications**: Non-blocking notifications with icons
+- **Navigation**: 250px sidebar with collapsible sections
+- **Animations**: Transitions and hover effects
 
 **Reports & Logging:**
-- 📄 **Automatic HTML Reports**: Professional styled reports with pass/fail status
-- 📊 **Detailed Failure Breakdown**: See exactly which questions you missed
-- 💾 **Report History**: All reports saved to `data/reports/` directory
-- 🐛 **Error Logging**: Comprehensive logging to `logs/web_quiz.log`
-- 🔄 **Log Rotation**: Automatic 10MB rotation keeping 5 backup files
+- **Automatic HTML Reports**: Styled reports with pass/fail status
+- **Detailed Failure Breakdown**: See exactly which questions you missed
+- **Report History**: All reports saved to `data/reports/` directory
+- **Error Logging**: Comprehensive logging to `logs/web_quiz.log`
+- **Log Rotation**: Automatic 10MB rotation keeping 5 backup files
 
 #### Error Logging
 
@@ -338,7 +338,7 @@ When importing quizzes into an existing folder (e.g., re-importing the same CSV 
 Reading questions from: data/input/az-104.csv
 Loaded 200 questions
 
-⚠️  Found 5 existing quiz(zes) in this folder:
+WARNING: Found 5 existing quiz(zes) in this folder:
   - az-104_20260209_164742_1.json
   - az-104_20260209_164742_2.json
   - az-104_20260209_164742_3.json
@@ -398,7 +398,7 @@ Each quiz automatically generates an HTML report with the following features:
 - Score percentage with color coding
 - Complete statistics (total/correct/failed questions)
 - Detailed breakdown of all failed questions
-- Professional styling with gradients and responsive design
+- Responsive design with gradients
 
 Reports are saved to: `data/reports/{quiz_id}_report.html`
 
@@ -591,15 +591,15 @@ quizzer/
 ├── tests/                  # Test suite (57 tests)
 │   └── (test files)
 ├── data/
-│   ├── input/              # ← CSV source files go here
+│   ├── input/              # CSV source files go here
 │   │   ├── README.md
 │   │   └── sample_questions.csv
-│   ├── quizzes/            # ← Generated quiz JSON files
+│   ├── quizzes/            # Generated quiz JSON files
 │   │   └── README.md
-│   ├── reports/            # ← Auto-generated HTML reports
+│   ├── reports/            # Auto-generated HTML reports
 │   │   └── README.md
 │   └── README.md
-├── logs/                   # ← Web server logs (auto-created)
+├── logs/                   # Web server logs (auto-created)
 │   └── README.md
 ├── examples/
 │   └── sample_questions.csv  # Demo file (also copied to data/input/)
