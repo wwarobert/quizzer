@@ -1,27 +1,42 @@
 # Quizzer - AI Coding Agent Instructions
 
 ## Project Overview
-CLI tool that generates randomized quizzes from CSV files and provides interactive testing with automatic grading.
+Modern quiz platform with both CLI and web interfaces that generates randomized quizzes from CSV files with interactive testing and automatic grading.
 
-**Current Status**: Early-stage project with minimal codebase (README, LICENSE, .gitignore only)
+**Current Status**: Production-ready v1.5 with complete web interface, comprehensive testing suite (57 tests), and professional documentation.
 
 ## Core Functionality
 
-### Two-Script Architecture
+### Three-Component Architecture
 1. **Import Script** (`import_quiz.py`)
    - Input: CSV with 2 columns (Question, Answer)
-   - Output: JSON file(s) with randomized question sets in timestamped subfolders
+   - Output: JSON file(s) with randomized question sets in organized subfolders
    - Each quiz contains up to 50 questions randomly selected from the pool
-   - Creates subfolder `data/quizzes/YYYYMMDD_HHMMSS/` for each import batch
+   - Creates subfolder `data/quizzes/<source_name>/` for each CSV file
+   - Interactive management of existing quizzes (delete or keep)
+   - `--force` flag for non-interactive CI/CD pipelines
    
-2. **Quiz Runner** (`run_quiz.py`)
-   - Interactive CLI that loads a quiz JSON (or selects random quiz)
-   - **Optional quiz file**: If not provided, automatically selects random quiz
-   - **Interactive folder selection**: If multiple quiz folders exist, prompts user to choose
+2. **CLI Quiz Runner** (`run_quiz.py`)
+   - Traditional terminal-based quiz interface
+   - Interactive CLI that loads a quiz JSON
    - Presents questions one-by-one
    - Collects and validates user answers
    - Generates pass/fail report (80% threshold)
    - Automatically creates HTML report after completion
+   - Zero external dependencies (Python standard library only)
+
+3. **Web Interface** (`web_quiz.py`) ✨ NEW
+   - Flask-based web server for browser-based quizzes
+   - Beautiful blue theme with automatic dark mode
+   - Comprehensive dashboard with performance analytics
+   - Interactive 250px sidebar with quiz browser
+   - Real-time progress tracking and timer
+   - Instant answer feedback with visual cues
+   - Overlay notification system (no alert popups)
+   - Comprehensive error logging with rotation
+   - Fully responsive design (desktop/tablet/mobile)
+   - RESTful API endpoints
+   - Requires: Flask >= 3.0.0
 
 ### Input Format Specification
 **CSV Structure:**
@@ -160,6 +175,7 @@ pip install -r requirements.txt
 quizzer/
 ├── import_quiz.py          # Main script: CSV → JSON converter
 ├── run_quiz.py             # Main script: Interactive quiz runner
+├── web_quiz.py             # Main script: Web interface server
 ├── quizzer/                # Helper package
 │   ├── __init__.py
 │   ├── normalizer.py       # Answer normalization logic
@@ -167,10 +183,15 @@ quizzer/
 ├── tests/
 │   ├── test_import.py
 │   ├── test_runner.py
-│   └── test_normalizer.py
+│   ├── test_normalizer.py
+│   ├── test_web_quiz.py
+│   └── test_sidebar_dashboard.py
 ├── data/
 │   ├── input/              # Source CSV files
-│   └── quizzes/            # Generated JSON quizzes
+│   ├── quizzes/            # Generated JSON quizzes
+│   └── reports/            # Auto-generated HTML reports
+├── logs/                   # Web server logs (auto-created)
+│   └── README.md
 ├── examples/
 │   └── sample_questions.csv
 └── requirements.txt
@@ -178,6 +199,7 @@ quizzer/
 
 ### Key Dependencies
 - **Standard library**: `csv`, `json`, `argparse`, `datetime`, `re`
+- **Web server**: `Flask >= 3.0.0` (for web interface)
 - **Testing**: `pytest` for unit tests
 - **Optional**: `rich` or `colorama` for enhanced CLI output
 - **Type checking**: `mypy` for type safety
@@ -243,12 +265,14 @@ def normalize_answer(answer: str) -> list[str]:
 ### Advanced Features
 1. **Statistics tracking**: Historical performance across multiple attempts
 2. **Spaced repetition**: Prioritize questions previously answered incorrectly
-3. **Export formats**: Markdown, HTML, PDF reports
-4. **Web UI**: Flask/FastAPI frontend for browser-based quizzes
-5. **Multi-user support**: Track performance by user ID
+3. **Export formats**: Markdown, PDF reports (HTML already implemented)
+4. **~~Web UI~~**: ✅ **IMPLEMENTED** - Flask web interface with dashboard and analytics
+5. **Multi-user support**: Track performance by user ID (web interface ready for this)
 6. **Question pools**: Generate unique quizzes from large question banks (>50 questions)
 7. **Answer variants**: Accept multiple correct answer phrasings
 8. **Partial credit**: Award points for partially correct multi-part answers
+9. **Progressive Web App**: Offline mode with service workers
+10. **Cloud storage integration**: Multi-device sync
 
 ### Data Enhancements
 1. **Question metadata**: Difficulty level, source, tags
@@ -261,11 +285,18 @@ def normalize_answer(answer: str) -> list[str]:
 ### Running the Tool
 ```bash
 # Generate quiz from CSV
-python import_quiz.py data/input/questions.csv --output data/quizzes/
-
-# Run interactive quiz
+pythonCLI quiz
 python run_quiz.py data/quizzes/quiz_001.json
 
+# Run with options
+python run_quiz.py quiz.json --max-questions 25 --pass-threshold 75
+
+# Start web server (requires Flask)
+python web_quiz.py
+
+# Web server with options
+python web_quiz.py --port 8080 --debug
+python web_quiz.py --host 0.0.0.0  # Network access
 # Run with options
 python run_quiz.py quiz.json --max-questions 25 --pass-threshold 75
 ```

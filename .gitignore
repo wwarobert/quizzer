@@ -229,6 +229,14 @@ data/input/*.csv
 data/reports/*.html
 !data/reports/README.md
 
+# Ignore log files (all runtime data)
+logs/
+!logs/README.md
+
+# Ignore SSL certificates (for HTTPS)
+certs/
+!certs/README.md
+
 # Test artifacts
 junit.xml
 report.html

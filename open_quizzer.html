@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0; url=http://127.0.0.1:5000">
+    <title>Opening Quizzer...</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .message {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+        }
+        h1 { font-size: 2.5em; margin-bottom: 20px; }
+        p { font-size: 1.2em; margin: 10px 0; }
+        a {
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        a:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        .instructions {
+            margin-top: 30px;
+            font-size: 0.9em;
+            opacity: 0.8;
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="message">
+        <h1>🎯 Quizzer Dashboard</h1>
+        <p>Opening in your browser...</p>
+        <p>If it doesn't open automatically:</p>
+        <a href="http://127.0.0.1:5000" target="_blank">Click here to open Quizzer</a>
+        
+        <div class="instructions">
+            <strong>To see the new sidebar + dashboard interface:</strong><br>
+            1. Click the link above<br>
+            2. Press <strong>Ctrl + Shift + R</strong> (or Cmd + Shift + R on Mac) to hard refresh<br>
+            3. You should see the purple sidebar on the left with Dashboard view
+        </div>
+    </div>
+    
+    <script>
+        // Log version check
+        fetch('http://127.0.0.1:5000/version')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Server version:', data);
+                if (data.version === '2.0') {
+                    console.log('✓ Version 2.0 (Sidebar + Dashboard) is running!');
+                } else {
+                    console.warn('⚠ Unexpected version:', data.version);
+                }
+            })
+            .catch(err => console.error('Could not fetch version:', err));
+    </script>
+</body>
+</html>

@@ -6,6 +6,123 @@ All notable changes to the Quizzer project will be documented in this file.
 
 ### Added - 2026-02-11
 
+#### Configurable Logging System
+- **Flexible Log Levels**: Control logging verbosity via command-line arguments
+- **Default Behavior**: ALL (DEBUG) level - logs everything for comprehensive troubleshooting
+- **Command-Line Options**:
+  - `--log-level`: Set level for both file and console (ALL, DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  - `--log-file-level`: Override level for file logging only
+  - `--log-console-level`: Override level for console logging only
+- **Independent Control**: Configure file and console logging separately for optimal debugging
+- **Level Hierarchy**: CRITICAL → ERROR → WARNING → INFO → DEBUG (ALL)
+- **Examples**:
+  - `--log-level INFO`: Only INFO and above to both destinations
+  - `--log-file-level DEBUG --log-console-level WARNING`: Detailed file logs, minimal console output
+  - `--log-level ERROR`: Only errors for quiet operation
+- **Smart Defaults**: 'ALL' alias for DEBUG makes maximum logging intuitive
+- **Runtime Feedback**: Server startup shows active log level configuration
+
+**Use Cases**:
+- **Development**: ALL (DEBUG) for complete visibility
+- **Production**: WARNING or ERROR for cleaner logs
+- **Debugging**: DEBUG for files, WARNING for console (reduces noise)
+- **CI/CD**: ERROR or CRITICAL for minimal output
+
+### Fixed - 2026-02-11
+
+#### CI/CD Pipeline
+- **Test Failures**: Fixed Flask import errors in GitHub Actions CI pipeline
+  - Root cause: CI workflow only installed pytest/pytest-cov, not project dependencies
+  - Solution: Updated workflow to install all requirements from `requirements.txt`
+  - Impact: test_web_quiz.py, test_sidebar_dashboard.py, test_two_column_layout.py now run successfully
+- **Code Quality**: Updated code-quality job to install project dependencies
+  - Ensures linting tools (pylint, mypy, bandit) can properly analyze web_quiz.py
+  - Safety tool now checks actual project dependencies for vulnerabilities
+
+#### HTTPS Support for Web Interface
+- **Automatic HTTPS**: Web server now runs on HTTPS by default with auto-generated self-signed certificates
+- **SSL Certificate Generation**: Automatically creates SSL certificates on first run using `cryptography` library
+- **Self-Signed Certificates**: Development-ready certificates valid for `localhost` and `127.0.0.1`
+- **Graceful Fallback**: If `cryptography` is not installed, server automatically falls back to HTTP
+- **Command-Line Options**:
+  - `--no-https`: Disable HTTPS and force HTTP mode
+  - `--cert <path>`: Use custom SSL certificate file
+  - `--key <path>`: Use custom SSL private key file
+- **Certificate Management**: Certificates stored in `certs/` directory (excluded from git)
+- **Production-Ready**: Support for custom SSL certificates from trusted CAs
+- **Documentation**: Comprehensive README in `certs/` directory with usage instructions
+
+**Security Benefits**:
+- Encrypted communications between browser and server
+- Protection against man-in-the-middle attacks
+- Best practice for web applications (even in development)
+
+**Browser Compatibility**: 
+- All modern browsers supported
+- Self-signed certificate warnings are normal for local development
+- Clear instructions provided for bypassing browser warnings
+
+---
+
+## [1.5.0] - 2026-02-11
+
+### Major Release: Web Interface
+
+#### Web Browser Interface (web_quiz.py)
+- **Flask-Based Server**: Complete web application for taking quizzes in the browser
+- **Beautiful Blue Theme**: Modern design with CSS custom properties (variables)
+  - Primary blue (#2563eb) color scheme
+  - Gradient backgrounds and smooth transitions
+  - Professional styling for all components
+- **Automatic Dark Mode**: Detects system preferences via `@media (prefers-color-scheme: dark)`
+  - Seamless switching between light and dark themes
+  - Optimized colors for both modes
+- **Comprehensive Dashboard**: 
+  - Performance metrics card (total quizzes, average score, pass rate)
+  - Visual pie charts (quiz breakdown, question analysis)
+  - Activity timeline with recent quiz attempts
+  - Quick statistics (time tracking, quiz counts)
+- **Interactive Sidebar** (250px width):
+  - Hierarchical quiz browser organized by folder
+  - Expandable/collapsible folder structure
+  - Quick stats section
+  - Smooth hover effects and active highlighting
+- **Real-time Quiz Taking**:
+  - Live timer tracking duration (MM:SS format)
+  - Visual progress bar (0-100%)
+  - Auto-focused input fields
+  - Instant answer feedback with color coding (✓ green / ✗ red)
+  - Keyboard shortcuts (Enter to submit, Escape to quit)
+- **Overlay Notification System**:
+  - Custom notifications instead of browser `alert()` popups
+  - Elegant centered overlays with icons (✓✗ⓘ⚠)
+  - Confirmation dialogs with callback support
+  - Non-blocking, user-friendly design
+- **Comprehensive Error Logging**:
+  - Python logging module with `RotatingFileHandler`
+  - Log file: `logs/web_quiz.log` (auto-rotates at 10MB, keeps 5 backups)
+  - Dual output: DEBUG to file, INFO to console
+  - Flask error handlers (404, 500, Exception)
+  - All routes wrapped in try-except with detailed logging
+  - Stack traces for debugging
+- **Fully Responsive Design**:
+  - Desktop: Full sidebar + main content
+  - Tablet: Collapsible sidebar
+  - Mobile: Stacked layout, optimized cards
+- **RESTful API Endpoints**:
+  - `GET /`: Main HTML page
+  - `GET /api/quizzes`: List all quizzes
+  - `GET /api/quiz?path=<path>`: Load specific quiz
+  - `POST /api/check-answer`: Validate answers
+  - `POST /api/save-report`: Generate HTML report
+  - `GET /version`: Server version info
+- **Command-Line Options**:
+  - `--host`: Bind to specific host (default: 127.0.0.1)
+  - `--port`: Custom port (default: 5000)
+  - `--debug`: Enable debug mode with auto-reload
+- **Usage**: `python web_quiz.py` (requires Flask >= 3.0.0)
+- **Access**: `http://127.0.0.1:5000` by default
+
 #### Non-Interactive Mode with --force Flag
 - **New CLI Flag**: Added `--force` flag to skip interactive prompts
 - **Automatic Deletion**: When `--force` is used, existing quizzes are automatically deleted without prompting
