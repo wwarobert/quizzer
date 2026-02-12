@@ -23,8 +23,8 @@ def test_two_column_layout():
         ("Main content area", '<div class="main-content"'),
         ("Main content ID", 'id="mainContent"'),
         ("Dashboard view", 'id="dashboardView"'),
-        ("Sidebar header", '<div class="sidebar-header">'),
-        ("Toggle sidebar button", '<button class="toggle-sidebar"'),
+        ("Menu section", '<div class="menu-section">'),
+        ("Hamburger menu container", '<div class="hamburger-container"'),
         ("Expandable menu", '<div class="expandable-menu">'),
         ("Quiz menu content", 'id="quizMenuContent"'),
         
@@ -67,7 +67,7 @@ def test_two_column_layout():
     
     if failed == 0:
         print("\n✅ SUCCESS! Two-column layout IS present in the HTML template!")
-        print("   - Left column: Sidebar (300px, blue gradient)")
+        print("   - Left column: Sidebar (300px, navy gradient)")
         print("   - Right column: Dashboard (main content area)")
         print("\nIf you still see the old layout in your browser:")
         print("   1. Press Ctrl+Shift+R to hard refresh")

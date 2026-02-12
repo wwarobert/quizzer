@@ -26,7 +26,7 @@ A quiz platform that generates randomized quizzes from CSV files with both comma
 - Lightweight and fast
 
 **Web Interface:**
-- Blue theme (#2563eb) with automatic dark mode support
+- Custom theme with white sidebar (#ffffff) and blue main page (#77a6f7)
 - Dashboard with performance metrics and analytics
 - Sidebar with quiz browser and statistics
 - Real-time progress tracking and timer
@@ -124,7 +124,14 @@ python run_quiz.py data/quizzes/quiz_YYYYMMDD_HHMMSS.json
 
 **Option B: Web Browser** (recommended)
 ```bash
+# Easy way (auto-installs dependencies):
+python start_server.py
+
+# Or direct:
 python web_quiz.py
+
+# Windows: Double-click start_server.bat
+
 # Open http://127.0.0.1:5000 in your browser
 ```
 
@@ -189,6 +196,15 @@ The web interface provides a browser-based way to take quizzes with real-time fe
 
 #### Starting the Web Server
 
+**Recommended: Use the startup script** (auto-checks dependencies)
+```bash
+# Automatically creates virtual environment and installs requirements if needed
+python start_server.py
+
+# Windows: Simply double-click start_server.bat
+```
+
+**Alternative: Direct start**
 ```bash
 # Install Flask (required for web interface)
 pip install Flask>=3.0.0
@@ -281,11 +297,11 @@ python web_quiz.py --log-file-level INFO               # File: INFO only, Consol
 - **Quick Stats**: Average time per quiz, total questions answered
 
 **Design & UX:**
-- **Blue Theme**: Primary blue (#2563eb) color scheme
+- **Custom Theme**: White sidebar (#ffffff), blue main (#77a6f7), teal/black text (#00887a/#000000), light blue/peach accents (#d3e3fc/#ffccbc)
 - **Automatic Dark Mode**: Respects system preferences with transitions
 - **Responsive Layout**: Adapts to screen size (desktop/tablet/mobile)
 - **Overlay Notifications**: Non-blocking notifications with icons
-- **Navigation**: 250px sidebar with collapsible sections
+- **Navigation**: 300px sidebar with collapsible sections
 - **Animations**: Transitions and hover effects
 
 **Reports & Logging:**

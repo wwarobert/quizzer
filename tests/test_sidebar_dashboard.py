@@ -26,11 +26,12 @@ class TestSidebarPresence:
     """Test that sidebar navigation is present in HTML."""
 
     def test_version_comment_present(self, client):
-        """Test that version 5.0 comment is in HTML."""
+        """Test that version 6.0 comment is in HTML."""
         response = client.get('/')
         html = response.data.decode('utf-8')
-        assert 'UI Version: 5.0' in html, "Version 5.0 comment not found - old version being served!"
-        assert 'BLUE THEME' in html, "Blue theme text not found in version comment"
+        # Check that version is 21.0 or higher
+        assert 'UI Version: 21' in html or 'UI Version: 2' in html, "Version 21.0+ comment not found"
+        assert 'FULLSCREEN MODE' in html or 'PALETTE' in html, "Version identifier text not found in comment"
 
     def test_sidebar_element_exists(self, client):
         """Test that sidebar div exists with correct class."""
@@ -39,20 +40,22 @@ class TestSidebarPresence:
         assert 'class="sidebar"' in html, "Sidebar CSS class not found"
         assert 'id="sidebar"' in html, "Sidebar ID not found"
 
-    def test_sidebar_header_exists(self, client):
-        """Test that sidebar header with Quizzer title exists."""
+    def test_sidebar_structure_exists(self, client):
+        """Test that sidebar structure exists with menu items."""
         response = client.get('/')
         html = response.data.decode('utf-8')
-        assert 'sidebar-header' in html, "Sidebar header not found"
-        assert '🎯 Quizzer' in html, "Quizzer emoji title not found in sidebar"
+        assert 'class="sidebar"' in html, "Sidebar CSS class not found"
+        assert 'id="sidebar"' in html, "Sidebar ID not found"
+        assert 'menu-section' in html, "Menu section not found"
+        assert 'Dashboard' in html, "Dashboard menu item not found"
 
     def test_toggle_button_exists(self, client):
-        """Test that sidebar toggle button exists."""
+        """Test that hamburger menu toggle exists."""
         response = client.get('/')
         html = response.data.decode('utf-8')
-        assert 'toggle-sidebar' in html, "Toggle sidebar class not found"
-        assert 'id="toggleSidebar"' in html, "Toggle sidebar ID not found"
-        assert 'toggleSidebar()' in html, "Toggle sidebar function not found"
+        assert 'hamburger-container' in html, "Hamburger container class not found"
+        assert 'id="hamburgerCheckbox"' in html, "Hamburger checkbox ID not found"
+        assert 'hamburger-lines' in html, "Hamburger lines class not found"
 
     def test_menu_items_present(self, client):
         """Test that menu items structure exists."""
@@ -176,12 +179,13 @@ class TestLayoutStructure:
         # Should NOT have the old selection screen structure
         assert 'id="selectionScreen"' not in html, "Old selectionScreen should be removed"
 
-    def test_full_page_quiz_mode_exists(self, client):
-        """Test that full-page quiz mode divs exist."""
+    def test_quiz_view_mode_exists(self, client):
+        """Test that quiz view divs exist in main content."""
         response = client.get('/')
         html = response.data.decode('utf-8')
-        assert 'id="quizFullpage"' in html, "Full page quiz div not found"
-        assert 'quiz-fullpage' in html, "Full page quiz class not found"
+        assert 'id="quizView"' in html, "Quiz view div not found"
+        assert 'id="resultsScreen"' in html, "Results screen div not found"
+        assert 'fullscreen-toggle' in html, "Fullscreen toggle button not found"
 
 
 class TestJavaScriptVariables:

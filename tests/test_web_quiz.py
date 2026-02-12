@@ -184,7 +184,7 @@ class TestWebQuizFunctionality:
         # Check for main components
         assert 'sidebar' in html
         assert 'dashboardView' in html
-        assert 'quizFullpage' in html
+        assert 'quizView' in html
         assert 'resultsScreen' in html
 
         # Check for key functionality
@@ -267,7 +267,7 @@ class TestWebQuizFrontend:
         html = response.data.decode('utf-8')
         assert 'id="dashboardView"' in html
         assert 'id="quizSelectionView"' in html
-        assert 'id="quizFullpage"' in html
+        assert 'id="quizView"' in html
         assert 'id="resultsScreen"' in html
 
     def test_results_screen_elements(self, client):
