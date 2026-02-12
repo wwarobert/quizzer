@@ -29,7 +29,7 @@ def test_two_column_layout():
         ("Quiz menu content", 'id="quizMenuContent"'),
         
         # Check for dashboard components
-        ("Dashboard header", '<div class="dashboard-header">'),
+        ("Breadcrumb navigation", '<nav class="breadcrumb">'),
         ("Dashboard stats", '<div class="dashboard-stats">'),
         ("Stat cards", '<div class="stat-card">'),
         ("Total quizzes stat", 'id="totalQuizzes"'),

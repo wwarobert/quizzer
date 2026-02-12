@@ -4,6 +4,42 @@ All notable changes to the Quizzer project will be documented in this file.
 
 ## [Unreleased]
 
+### Added - 2026-02-12
+
+#### UX Research Documentation
+- **Jobs-to-be-Done Analysis**: Created JTBD document for certification candidate user persona in `docs/ux/web-quiz-jtbd.md`
+- **User Journey Map**: Documented 5-stage journey from planning to progress tracking in `docs/ux/web-quiz-journey.md`
+- **Flow Specification**: Added Figma-ready flow spec with accessibility checklist in `docs/ux/web-quiz-flow.md`
+- **User Persona**: Certification candidates preparing for high-stakes exams with daily practice sessions
+
+### Changed - 2026-02-12
+
+#### UI/UX Improvements - Minimalistic Redesign
+- **Modal Dialog Improvements**:
+  - Increased width to 720px (from 520px) for better content layout and reduced vertical stacking
+  - Added max-height (70vh) with scrolling to prevent overly tall dialogs
+  - Reduced icon size to 2em for better visual proportions
+  - Lightened overlay opacity to 35% (from 50%)
+  - Removed heavy box-shadows and borders for cleaner appearance
+  - Text alignment changed to left for better readability
+  - Buttons right-aligned with minimal hover effects (no layout shifts)
+  - Message text now preserves line breaks with `white-space: pre-line`
+
+- **Results Screen Enhancements**:
+  - Stat cards: Replaced heavy 2px borders with subtle 1px borders (#EEEEEE)
+  - Removed box-shadows for flatter, cleaner design
+  - Improved spacing and typography hierarchy
+  - Failure items: Removed background boxes, using only left accent border
+  - Compact failure list with better scanability
+  - Added inline "Report saved" message instead of modal popup
+
+- **Streamlined Quiz Completion Flow**:
+  - **Removed confirmation dialog** when clicking "Finish Quiz" button
+  - Users now go **directly to results page** with one click
+  - Eliminated intermediate popups between quiz finish and results display
+  - Results page shows inline status message for saved reports (no modal)
+  - Faster, more efficient workflow for certification exam preparation
+
 ### Added - 2026-02-11
 
 #### Configurable Logging System
