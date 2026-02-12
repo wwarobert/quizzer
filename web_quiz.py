@@ -27,6 +27,10 @@ from flask import Flask, render_template_string, jsonify, request, send_from_dir
 from quizzer import Quiz, QuizResult, normalize_answer
 import run_quiz  # Import for HTML report generation
 
+# Initialize Flask app
+app = Flask(__name__, static_folder='static')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for development
+
 # SSL Certificate Generation
 def generate_self_signed_cert(cert_dir='certs'):
     """
@@ -198,8 +202,9 @@ HTML_TEMPLATE = '''
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- UI Version: 5.0 - BLUE THEME (300px sidebar) + DARK MODE - Generated: {{ timestamp }} -->
+    <!-- UI Version: 22.1 - FIXED HAMBURGER HIDE IN FULLSCREEN MODE - Generated: {{ timestamp }} -->
     <title>Quizzer - Performance Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap">
     <style>
         * {
             margin: 0;
@@ -208,39 +213,39 @@ HTML_TEMPLATE = '''
         }
 
         :root {
-            --primary-blue: #2563eb;
-            --primary-blue-dark: #1e40af;
-            --primary-blue-light: #3b82f6;
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8fafc;
-            --bg-tertiary: #f1f5f9;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --sidebar-bg: linear-gradient(180deg, #2563eb 0%, #1e40af 100%);
-            --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --primary-color: #455A64;
+            --primary-dark: #263238;
+            --primary-light: #B0BEC5;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F7F7F7;
+            --bg-tertiary: #B0BEC5;
+            --text-primary: #263238;
+            --text-secondary: #455A64;
+            --border-color: #B0BEC5;
+            --sidebar-bg: #263238;
+            --card-shadow: 0 2px 8px rgba(69,90,100,0.08);
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --primary-blue: #3b82f6;
-                --primary-blue-dark: #2563eb;
-                --primary-blue-light: #60a5fa;
-                --bg-primary: #0f172a;
-                --bg-secondary: #1e293b;
-                --bg-tertiary: #334155;
-                --text-primary: #f1f5f9;
-                --text-secondary: #94a3b8;
-                --border-color: #334155;
-                --sidebar-bg: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
-                --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                --primary-color: #B0BEC5;
+                --primary-dark: #455A64;
+                --primary-light: #B0BEC5;
+                --bg-primary: #263238;
+                --bg-secondary: #37474F;
+                --bg-tertiary: #455A64;
+                --text-primary: #FFFFFF;
+                --text-secondary: #B0BEC5;
+                --border-color: #455A64;
+                --sidebar-bg: #1C2529;
+                --card-shadow: 0 2px 8px rgba(176,190,197,0.1);
             }
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #F7F7F7;
+            color: #263238;
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -252,17 +257,20 @@ HTML_TEMPLATE = '''
             top: 0;
             bottom: 0;
             width: 300px;
-            background: var(--sidebar-bg);
-            color: white;
+            background: #263238;
+            color: #FFFFFF;
             padding: 20px;
+            padding-top: 30px;
             overflow-y: auto;
-            transition: transform 0.3s ease;
+            transition: transform 0.5s ease-in-out;
             z-index: 1000;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 20px rgba(38,50,56,0.15);
+            transform: translateX(0);
+            border-right: 1px solid #455A64;
         }
 
         .sidebar.collapsed {
-            transform: translateX(-300px);
+            transform: translateX(-100%);
         }
 
         .sidebar-header {
@@ -270,48 +278,177 @@ HTML_TEMPLATE = '''
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid #455A64;
         }
 
         .sidebar-header h1 {
             font-size: 1.5em;
-            color: white;
+            color: #B0BEC5;
+        }
+
+        .toggle-sidebar {
+            display: none;
+        }
+
+        /* Hamburger Menu Container */
+        .hamburger-container {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            z-index: 1001;
+            display: block;
+        }
+
+        /* Hide checkbox */
+        .hamburger-container input[type="checkbox"] {
+            position: absolute;
+            display: block;
+            height: 40px;
+            width: 40px;
+            top: 0;
+            left: 0;
+            z-index: 5;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Hamburger Lines Container */
+        .hamburger-lines {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            height: 36px;
+            width: 36px;
+            position: relative;
+            z-index: 2;
+            background: #FFFFFF;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #B0BEC5;
+            box-shadow: 0 2px 8px rgba(69,90,100,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .hamburger-lines:hover {
+            background: #F7F7F7;
+            border-color: #455A64;
+            box-shadow: 0 4px 12px rgba(69,90,100,0.15);
+        }
+
+        /* Individual Lines */
+        .hamburger-lines .line {
+            display: block;
+            height: 2px;
+            width: 22px;
+            border-radius: 2px;
+            background: #455A64;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-lines .line1 {
+            transform-origin: center;
+        }
+
+        .hamburger-lines .line2 {
+            transform-origin: center;
+        }
+
+        .hamburger-lines .line3 {
+            transform-origin: center;
+        }
+
+        /* Checked State - Transform to X */
+        .hamburger-container input[type="checkbox"]:checked ~ .hamburger-lines {
+            gap: 0;
+        }
+
+        .hamburger-container input[type="checkbox"]:checked ~ .hamburger-lines .line1 {
+            transform: rotate(45deg) translateY(0px);
+        }
+
+        .hamburger-container input[type="checkbox"]:checked ~ .hamburger-lines .line2 {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        .hamburger-container input[type="checkbox"]:checked ~ .hamburger-lines .line3 {
+            transform: rotate(-45deg) translateY(0px);
+        }
+
+        .hamburger-container input[type="checkbox"]:checked ~ .hamburger-lines {
+            background: #455A64;
+        }
+
+        .hamburger-container input[type="checkbox"]:checked ~ .hamburger-lines .line {
+            background: #FFFFFF;
+        }
+
+        /* Logo in Header */
+        .logo {
+            position: absolute;
+            top: 35px;
+            right: 40px;
+            z-index: 1001;
+        }
+
+        .logo-icon {
+            width: 150px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Sidebar Header - No Logo */
+        .sidebar-header {
+            display: none;
         }
 
         .menu-section {
-            margin-bottom: 25px;
+            margin-top: 70px;
         }
 
         .menu-section-title {
             font-size: 0.75em;
             text-transform: uppercase;
             letter-spacing: 1px;
-            opacity: 0.7;
+            color: #B0BEC5;
             margin-bottom: 10px;
             font-weight: 600;
+            opacity: 0.9;
         }
 
         .menu-item {
-            padding: 10px 12px;
-            margin-bottom: 5px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
             border-radius: 6px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.1);
-            font-size: 0.95em;
+            gap: 10px;
+            background: transparent;
+            color: #B0BEC5;
+            font-size: 1rem;
+            font-weight: 400;
+            list-style: none;
+            border: 1px solid transparent;
         }
 
         .menu-item:hover {
-            background: rgba(255,255,255,0.2);
-            transform: translateX(3px);
+            background: #37474F;
+            color: #FFFFFF;
+            transform: translateX(5px);
+            font-weight: 500;
+            border-color: #455A64;
         }
 
         .menu-item.active {
-            background: rgba(255,255,255,0.3);
-            font-weight: 600;
+            background: #455A64;
+            color: #FFFFFF;
+            font-weight: 500;
+            border-color: #B0BEC5;
         }
 
         .menu-item-icon {
@@ -331,11 +468,12 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(255,255,255,0.1);
+            background: #F7F7F7;
+            color: #263238;
         }
 
         .expandable-header:hover {
-            background: rgba(255,255,255,0.2);
+            background: #B0BEC5;
         }
 
         .expandable-content {
@@ -356,11 +494,13 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             transition: all 0.2s ease;
             font-size: 0.9em;
-            background: rgba(255,255,255,0.05);
+            background: #FFFFFF;
+            color: #263238;
+            border: 1px solid #B0BEC5;
         }
 
         .quiz-menu-item:hover {
-            background: rgba(255,255,255,0.15);
+            background: #F7F7F7;
             transform: translateX(3px);
         }
 
@@ -384,39 +524,21 @@ HTML_TEMPLATE = '''
             margin-left: 0;
         }
 
-        .toggle-sidebar {
-            position: fixed;
-            left: 260px;
-            top: 20px;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: var(--card-shadow);
-            z-index: 999;
-            transition: left 0.3s ease;
-        }
-
-        .toggle-sidebar.collapsed {
-            left: 10px;
-        }
-
         /* Dashboard */
         .dashboard-header {
-            background: var(--primary-blue);
-            color: white;
+            background: #FFFFFF;
+            color: #263238;
             padding: 40px;
             border-radius: 12px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 2px 8px rgba(69,90,100,0.08);
+            border-bottom: 2px solid #B0BEC5;
         }
 
         .dashboard-header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
-            color: white;
+            color: #455A64;
         }
 
         .dashboard-stats {
@@ -427,44 +549,46 @@ HTML_TEMPLATE = '''
         }
 
         .stat-card {
-            background: var(--bg-primary);
+            background: #FFFFFF;
             padding: 25px;
             border-radius: 12px;
             box-shadow: var(--card-shadow);
-            border: 1px solid var(--border-color);
-            transition: transform 0.2s ease;
+            border: 1px solid #B0BEC5;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .stat-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 16px rgba(69,90,100,0.12);
+            border-color: #455A64;
+            background: #FFFFFF;
         }
 
         .stat-value {
             font-size: 2.5em;
             font-weight: bold;
-            color: var(--primary-blue);
+            color: #455A64;
             margin-bottom: 5px;
         }
 
         .stat-label {
-            color: var(--text-secondary);
+            color: #263238;
             font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .report-section {
-            background: var(--bg-primary);
+            background: #FFFFFF;
             padding: 30px;
             border-radius: 12px;
             box-shadow: var(--card-shadow);
-            border: 1px solid var(--border-color);
+            border: 1px solid #B0BEC5;
             margin-bottom: 25px;
         }
 
         .report-section h2 {
-            color: var(--text-primary);
+            color: #455A64;
             margin-bottom: 20px;
             font-size: 1.5em;
             display: flex;
@@ -518,7 +642,7 @@ HTML_TEMPLATE = '''
         .trend-label {
             width: 150px;
             font-size: 0.9em;
-            color: #666;
+            color: #455A64;
         }
 
         .trend-bar-container {
@@ -552,21 +676,22 @@ HTML_TEMPLATE = '''
         }
 
         .analysis-item {
-            background: var(--bg-tertiary);
+            background: #ffffff;
             padding: 15px;
             border-radius: 8px;
-            border-left: 4px solid var(--primary-blue);
+            border: 1px solid #B0BEC5;
+            border-left: 3px solid #455A64;
         }
 
         .analysis-value {
             font-size: 1.8em;
             font-weight: bold;
-            color: var(--primary-blue);
+            color: #455A64;
             margin-bottom: 5px;
         }
 
         .analysis-label {
-            color: var(--text-secondary);
+            color: #455A64;
             font-size: 0.9em;
         }
 
@@ -582,7 +707,7 @@ HTML_TEMPLATE = '''
             top: 0;
             bottom: 0;
             width: 2px;
-            background: var(--border-color);
+            background: #B0BEC5;
         }
 
         .timeline-item {
@@ -598,15 +723,16 @@ HTML_TEMPLATE = '''
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: var(--primary-blue);
-            border: 2px solid var(--bg-primary);
+            background: #455A64;
+            border: 2px solid #FFFFFF;
         }
 
         .timeline-content {
-            background: var(--bg-tertiary);
+            background: #FFFFFF;
             padding: 15px;
             border-radius: 8px;
-            border-left: 3px solid var(--primary-blue);
+            border: 1px solid #B0BEC5;
+            border-left: 3px solid #455A64;
         }
 
         .badge {
@@ -618,66 +744,68 @@ HTML_TEMPLATE = '''
         }
 
         .badge-pass {
-            background: #d4edda;
-            color: #155724;
+            background: #E8F5E9;
+            color: #2E7D32;
         }
 
         .badge-fail {
-            background: #f8d7da;
-            color: #721c24;
+            background: #FFEBEE;
+            color: #C62828;
         }
 
         .badge-excellent {
-            background: #cce5ff;
-            color: #004085;
+            background: #455A64;
+            color: #FFFFFF;
         }
 
 
         .run-item {
             padding: 15px;
-            border-left: 4px solid var(--primary-blue);
-            background: var(--bg-tertiary);
+            border-left: 3px solid #455A64;
+            background: #FFFFFF;
             margin-bottom: 15px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
+            border: 1px solid #B0BEC5;
         }
 
         .run-item:hover {
-            background: var(--bg-secondary);
+            background: #F7F7F7;
             transform: translateX(3px);
+            box-shadow: 0 2px 8px rgba(69,90,100,0.1);
         }
 
         .run-item.passed {
-            border-left-color: #28a745;
+            border-left-color: #2E7D32;
         }
 
         .run-item.failed {
-            border-left-color: #dc3545;
+            border-left-color: #C62828;
         }
 
         .run-title {
             font-weight: 600;
-            color: var(--text-primary);
+            color: #263238;
             margin-bottom: 5px;
         }
 
         .run-meta {
-            color: var(--text-secondary);
+            color: #455A64;
             font-size: 0.85em;
         }
 
         /* Quiz Selection */
         .quiz-selection {
-            background: var(--bg-primary);
+            background: #FFFFFF;
             padding: 30px;
             border-radius: 12px;
             box-shadow: var(--card-shadow);
-            border: 1px solid var(--border-color);
+            border: 1px solid #B0BEC5;
         }
 
         .quiz-selection h2 {
-            color: var(--text-primary);
+            color: #455A64;
             margin-bottom: 20px;
             font-size: 1.8em;
         }
@@ -687,35 +815,62 @@ HTML_TEMPLATE = '''
         }
 
         .quiz-item {
-            background: var(--bg-tertiary);
+            background: #F7F7F7;
             padding: 20px;
             margin-bottom: 15px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            border: 2px solid transparent;
+            border: 1px solid #B0BEC5;
         }
 
         .quiz-item:hover {
-            background: var(--bg-secondary);
-            border-color: var(--primary-blue);
+            background: #FFFFFF;
+            border-color: #455A64;
             transform: translateX(5px);
-            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 3px 12px rgba(69,90,100,0.12);
         }
 
         .quiz-item-title {
             font-weight: 600;
-            color: var(--text-primary);
+            color: #263238;
             font-size: 1.2em;
             margin-bottom: 8px;
         }
 
         .quiz-item-details {
-            color: var(--text-secondary);
+            color: #455A64;
             font-size: 0.9em;
         }
 
-        /* Full Page Quiz Mode */
+        /* Quiz View */
+        #quizView {
+            padding: 20px;
+        }
+
+        #quizView .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        #quizView .quiz-title {
+            font-size: 1.8em;
+            color: #263238;
+            font-weight: 600;
+        }
+
+        .quiz-container {
+            background: #FFFFFF;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(69,90,100,0.15);
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Full Page Quiz Mode (Legacy - kept for results screen) */
         .quiz-fullpage {
             position: fixed;
             top: 0;
@@ -730,13 +885,7 @@ HTML_TEMPLATE = '''
             padding: 20px;
         }
 
-        .quiz-container {
-            background: var(--bg-primary);
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 800px;
-            width: 100%;
+        .quiz-fullpage .quiz-container {
             max-height: 90vh;
             overflow-y: auto;
         }
@@ -746,76 +895,79 @@ HTML_TEMPLATE = '''
         }
 
         .progress-bar {
-            background: var(--bg-tertiary);
+            background: #F7F7F7;
             height: 10px;
             border-radius: 4px;
             margin-bottom: 20px;
             overflow: hidden;
+            border: 1px solid #B0BEC5;
         }
 
         .progress-fill {
-            background: linear-gradient(90deg, var(--primary-blue), var(--primary-blue-dark));
+            background: linear-gradient(90deg, #455A64, #263238);
             height: 100%;
             transition: width 0.3s ease;
         }
 
         .progress-text {
             text-align: center;
-            color: var(--text-secondary);
+            color: #455A64;
             margin-bottom: 20px;
-            font-weight: 600;
+            font-weight: 500;
         }
 
         .question-text {
             font-size: 1.3em;
-            color: var(--text-primary);
+            color: #263238;
             margin-bottom: 20px;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         .answer-input {
             width: 100%;
             padding: 12px;
-            border: 2px solid var(--border-color);
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            border: 1px solid #B0BEC5;
+            background: #FFFFFF;
+            color: #263238;
             border-radius: 8px;
             font-size: 1.1em;
             margin-bottom: 20px;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .answer-input:focus {
             outline: none;
-            border-color: var(--primary-blue);
+            border-color: #455A64;
+            box-shadow: 0 0 0 3px rgba(69,90,100,0.1);
         }
 
         .button {
-            background: var(--primary-blue);
-            color: white;
-            border: none;
+            background: #455A64;
+            color: #FFFFFF;
+            border: 1px solid transparent;
             padding: 12px 30px;
             border-radius: 8px;
             font-size: 1.1em;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            font-weight: 500;
         }
 
         .button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
-            background: var(--primary-blue-dark);
+            box-shadow: 0 4px 12px rgba(69,90,100,0.2);
+            background: #263238;
+            border: 1px solid #B0BEC5;
         }
 
         .button:disabled {
-            background: #ccc;
+            background: #B0BEC5;
             cursor: not-allowed;
             transform: none;
         }
 
         .button-secondary {
-            background: #6c757d;
+            background: #B0BEC5;
             margin-left: 10px;
         }
 
@@ -827,15 +979,15 @@ HTML_TEMPLATE = '''
         }
 
         .feedback-correct {
-            background: #d4edda;
-            color: #155724;
-            border: 2px solid #c3e6cb;
+            background: #E8F5E9;
+            color: #2E7D32;
+            border: 1px solid #81C784;
         }
 
         .feedback-incorrect {
-            background: #f8d7da;
-            color: #721c24;
-            border: 2px solid #f5c6cb;
+            background: #FFEBEE;
+            color: #C62828;
+            border: 1px solid #E57373;
         }
 
         .results-summary {
@@ -850,11 +1002,11 @@ HTML_TEMPLATE = '''
         }
 
         .results-pass {
-            color: #28a745;
+            color: #2E7D32;
         }
 
         .results-fail {
-            color: #dc3545;
+            color: #C62828;
         }
 
         .results-stats {
@@ -865,20 +1017,21 @@ HTML_TEMPLATE = '''
         }
 
         .stat-card {
-            background: #f8f9fa;
+            background: #FFFFFF;
             padding: 20px;
             border-radius: 8px;
             text-align: center;
+            border: 2px solid #B0BEC5;
         }
 
         .stat-value {
             font-size: 2em;
             font-weight: bold;
-            color: #667eea;
+            color: #455A64;
         }
 
         .stat-label {
-            color: #666;
+            color: #455A64;
             margin-top: 5px;
         }
 
@@ -887,30 +1040,87 @@ HTML_TEMPLATE = '''
         }
 
         .failure-item {
-            background: #fff3cd;
+            background: #F7F7F7;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
-            border-left: 4px solid #ffc107;
+            border-left: 3px solid #455A64;
+            border: 1px solid #B0BEC5;
+            border-left: 3px solid #455A64;
         }
 
         .failure-question {
             font-weight: 600;
-            color: #333;
+            color: #263238;
             margin-bottom: 10px;
         }
 
         .failure-answer {
-            color: #dc3545;
+            color: #C62828;
             margin-bottom: 5px;
         }
 
         .failure-correct {
-            color: #28a745;
+            color: #2E7D32;
         }
 
         .hidden {
             display: none !important;
+        }
+
+        /* Fullscreen Mode */
+        body.fullscreen-mode .sidebar,
+        body.fullscreen-mode .hamburger-container,
+        body.fullscreen-mode .logo,
+        body.fullscreen-mode .timer,
+        body.fullscreen-mode .dashboard-header,
+        body.fullscreen-mode #quitBtn {
+            display: none !important;
+        }
+
+        body.fullscreen-mode .main-content {
+            margin-left: 0;
+            padding: 20px;
+        }
+
+        body.fullscreen-mode #quizView {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        body.fullscreen-mode .quiz-header {
+            margin-bottom: 40px;
+        }
+
+        .fullscreen-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1500;
+            background: #455A64;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 1.1em;
+            box-shadow: 0 2px 8px rgba(69,90,100,0.3);
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .fullscreen-toggle:hover {
+            background: #263238;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(69,90,100,0.4);
+        }
+
+        body.fullscreen-mode .fullscreen-toggle {
+            display: block;
+        }
+
+        #quizView .fullscreen-toggle {
+            display: block;
         }
 
         /* Overlay Notifications */
@@ -929,13 +1139,14 @@ HTML_TEMPLATE = '''
         }
 
         .notification-box {
-            background: var(--bg-primary);
+            background: #FFFFFF;
             border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 20px rgba(69,90,100,0.15);
             padding: 30px;
             max-width: 500px;
             width: 100%;
             text-align: center;
+            border: 1px solid #B0BEC5;
         }
 
         .notification-icon {
@@ -946,14 +1157,14 @@ HTML_TEMPLATE = '''
         .notification-title {
             font-size: 1.5em;
             font-weight: 600;
-            color: var(--text-primary);
+            color: #263238;
             margin-bottom: 10px;
         }
 
         .notification-message {
-            color: var(--text-secondary);
+            color: #455A64;
             margin-bottom: 20px;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         .notification-buttons {
@@ -977,26 +1188,26 @@ HTML_TEMPLATE = '''
         }
 
         .notification-btn-primary {
-            background: var(--primary-blue);
+            background: #455A64;
             color: white;
         }
 
         .notification-btn-primary:hover {
-            background: var(--primary-blue-dark);
+            background: #263238;
         }
 
         .notification-btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
+            background: #F7F7F7;
+            color: #263238;
         }
 
         .notification-btn-secondary:hover {
-            background: var(--bg-secondary);
+            background: #B0BEC5;
         }
 
         .timer {
             text-align: right;
-            color: var(--text-secondary);
+            color: #455A64;
             font-weight: 600;
             margin-bottom: 15px;
             font-size: 1.1em;
@@ -1015,10 +1226,6 @@ HTML_TEMPLATE = '''
                 margin-left: 0;
             }
 
-            .toggle-sidebar {
-                left: 10px;
-            }
-
             .dashboard-stats {
                 grid-template-columns: 1fr;
             }
@@ -1026,25 +1233,30 @@ HTML_TEMPLATE = '''
     </style>
 </head>
 <body>
-    <!-- Toggle Sidebar Button -->
-    <button class="toggle-sidebar" id="toggleSidebar" onclick="toggleSidebar()">☰</button>
+    <!-- Animated Hamburger Menu -->
+    <div class="hamburger-container" id="hamburgerContainer">
+        <input type="checkbox" id="hamburgerCheckbox">
+        <div class="hamburger-lines">
+            <span class="line line1"></span>
+            <span class="line line2"></span>
+            <span class="line line3"></span>
+        </div>
+    </div>
+
+    <!-- Logo -->
+    <div class="logo">
+        <img src="/static/images/quizzer-logo.png?v={{ timestamp }}" alt="Quizzer" class="logo-icon">
+    </div>
 
     <!-- Sidebar Navigation -->
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h1>🎯 Quizzer</h1>
-        </div>
 
         <div class="menu-section">
-            <div class="menu-section-title">Navigation</div>
             <div class="menu-item active" onclick="showView('dashboard')">
                 <span class="menu-item-icon">📊</span>
                 <span>Dashboard</span>
             </div>
-        </div>
 
-        <div class="menu-section">
-            <div class="menu-section-title">Quizzes</div>
             <div class="expandable-menu">
                 <div class="expandable-header" onclick="toggleQuizMenu()">
                     <span>Available Quizzes</span>
@@ -1098,7 +1310,7 @@ HTML_TEMPLATE = '''
             <div class="report-section">
                 <h2>📈 Performance Trends</h2>
                 <div id="performanceTrends">
-                    <p style="color: #666; text-align: center; padding: 20px;">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
                         Complete some quizzes to see your performance trends
                     </p>
                 </div>
@@ -1108,7 +1320,7 @@ HTML_TEMPLATE = '''
             <div class="report-section">
                 <h2>📊 Quiz Performance Breakdown</h2>
                 <div id="quizBreakdown">
-                    <p style="color: #666; text-align: center; padding: 20px;">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
                         No quiz data available yet
                     </p>
                 </div>
@@ -1118,7 +1330,7 @@ HTML_TEMPLATE = '''
             <div class="report-section">
                 <h2>🕐 Recent Activity</h2>
                 <div id="recentRunsList">
-                    <p style="color: #666; text-align: center; padding: 20px;">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
                         No quiz runs yet. Select a quiz from the menu to get started!
                     </p>
                 </div>
@@ -1128,7 +1340,7 @@ HTML_TEMPLATE = '''
             <div class="report-section">
                 <h2>✅ Pass/Fail Analysis</h2>
                 <div id="passFailAnalysis">
-                    <p style="color: #666; text-align: center; padding: 20px;">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
                         Complete quizzes to see pass/fail analysis
                     </p>
                 </div>
@@ -1142,36 +1354,42 @@ HTML_TEMPLATE = '''
                 <ul id="quizList" class="quiz-list"></ul>
             </div>
         </div>
-    </div>
 
-    <!-- Full Page Quiz Mode -->
-    <div id="quizFullpage" class="quiz-fullpage hidden">
-        <div class="quiz-container">
-            <div class="timer" id="timer">Time: 0:00</div>
-            <div class="progress-bar">
-                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
-            </div>
-            <div class="progress-text" id="progressText">Question 1 of 10</div>
-
-            <div id="feedback" class="feedback hidden"></div>
-
-            <div class="question-container">
-                <div class="question-text" id="questionText"></div>
-                <input
-                    type="text"
-                    id="answerInput"
-                    class="answer-input"
-                    placeholder="Enter your answer..."
-                    autocomplete="off"
-                />
+        <!-- Quiz View (replaces dashboard during quiz) -->
+        <div id="quizView" class="view hidden">
+            <button id="fullscreenToggle" class="fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
+            
+            <div class="quiz-header">
+                <h1 class="quiz-title" id="quizPageTitle">Quiz</h1>
             </div>
 
-            <button id="submitBtn" class="button">Submit Answer</button>
-            <button id="quitBtn" class="button button-secondary">Quit</button>
+            <div class="quiz-container">
+                <div class="timer" id="timer">Time: 0:00</div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">Question 1 of 10</div>
+
+                <div id="feedback" class="feedback hidden"></div>
+
+                <div class="question-container">
+                    <div class="question-text" id="questionText"></div>
+                    <input
+                        type="text"
+                        id="answerInput"
+                        class="answer-input"
+                        placeholder="Enter your answer..."
+                        autocomplete="off"
+                    />
+                </div>
+
+                <button id="submitBtn" class="button">Submit Answer</button>
+                <button id="quitBtn" class="button button-secondary">Quit Quiz</button>
+            </div>
         </div>
     </div>
 
-    <!-- Results Screen -->
+    <!-- Results Screen (Full Page Overlay) -->
     <div id="resultsScreen" class="quiz-fullpage hidden">
         <div class="quiz-container">
             <h2>Quiz Complete!</h2>
@@ -1259,22 +1477,75 @@ HTML_TEMPLATE = '''
             ]);
         }
 
-        // Sidebar Toggle
+        // Sidebar Toggle via Hamburger
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
-            const toggleBtn = document.getElementById('toggleSidebar');
+            const hamburgerCheckbox = document.getElementById('hamburgerCheckbox');
             
             sidebarCollapsed = !sidebarCollapsed;
             
             if (sidebarCollapsed) {
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('expanded');
-                toggleBtn.classList.add('collapsed');
+                hamburgerCheckbox.checked = false;
             } else {
                 sidebar.classList.remove('collapsed');
                 mainContent.classList.remove('expanded');
-                toggleBtn.classList.remove('collapsed');
+                hamburgerCheckbox.checked = true;
+            }
+        }
+
+        // Handle hamburger checkbox change
+        function handleHamburgerChange() {
+            const checkbox = document.getElementById('hamburgerCheckbox');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            
+            console.log('Hamburger changed! Checked:', checkbox.checked);
+            
+            if (checkbox.checked) {
+                // Open sidebar
+                console.log('Opening sidebar');
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+                sidebarCollapsed = false;
+            } else {
+                // Close sidebar
+                console.log('Closing sidebar');
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+                sidebarCollapsed = true;
+            }
+        }
+
+        // Initialize sidebar button on page load
+        function initSidebarButton() {
+            const hamburgerCheckbox = document.getElementById('hamburgerCheckbox');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const isMobile = window.innerWidth <= 768;
+            
+            console.log('Initializing hamburger menu. Mobile:', isMobile);
+            
+            // Add event listener to hamburger checkbox
+            hamburgerCheckbox.addEventListener('change', handleHamburgerChange);
+            console.log('Event listener attached to hamburger checkbox');
+            
+            if (isMobile) {
+                // On mobile, sidebar starts hidden
+                sidebarCollapsed = true;
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+                hamburgerCheckbox.checked = false; // Shows 3 lines
+                console.log('Mobile: Sidebar collapsed, checkbox unchecked');
+            } else {
+                // On desktop, sidebar starts visible
+                sidebarCollapsed = false;
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+                hamburgerCheckbox.checked = true; // Shows X
+                console.log('Desktop: Sidebar visible, checkbox checked');
             }
         }
 
@@ -1310,11 +1581,15 @@ HTML_TEMPLATE = '''
             } else if (viewName === 'quizSelection') {
                 document.getElementById('quizSelectionView').classList.remove('hidden');
                 displayQuizList();
+            } else if (viewName === 'quiz') {
+                document.getElementById('quizView').classList.remove('hidden');
             }
 
             // Update active menu item
             document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.menu-item')?.classList.add('active');
+            if (event && event.target) {
+                event.target.closest('.menu-item')?.classList.add('active');
+            }
         }
 
         // Load quiz list
@@ -1352,7 +1627,7 @@ HTML_TEMPLATE = '''
             listEl.innerHTML = '';
 
             if (quizzes.length === 0) {
-                listEl.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No quizzes available. Import some CSV files first!</p>';
+                listEl.innerHTML = '<p style="color: #B0BEC5; text-align: center; padding: 20px;">No quizzes available. Import some CSV files first!</p>';
                 return;
             }
 
@@ -1378,17 +1653,26 @@ HTML_TEMPLATE = '''
 
         async function startQuiz(quizPath) {
             console.log('Starting quiz:', quizPath);
-            const response = await fetch(`/api/quiz?path=${encodeURIComponent(quizPath)}`);
-            currentQuiz = await response.json();
-            currentQuestionIndex = 0;
-            correctCount = 0;
-            failures = [];
-            startTime = Date.now();
+            try {
+                const response = await fetch(`/api/quiz?path=${encodeURIComponent(quizPath)}`);
+                if (!response.ok) {
+                    throw new Error('Failed to load quiz');
+                }
+                currentQuiz = await response.json();
+                currentQuestionIndex = 0;
+                correctCount = 0;
+                failures = [];
+                startTime = Date.now();
 
-            // Show full page quiz mode
-            document.getElementById('quizFullpage').classList.remove('hidden');
-            startTimer();
-            displayQuestion();
+                // Show quiz view instead of fullpage overlay
+                showView('quiz');
+                document.getElementById('quizPageTitle').textContent = currentQuiz.quiz_id || 'Quiz';
+                startTimer();
+                displayQuestion();
+            } catch (error) {
+                console.error('Error starting quiz:', error);
+                showNotification('❌', 'Error', 'Failed to load quiz: ' + error.message);
+            }
         }
 
         function startTimer() {
@@ -1424,47 +1708,60 @@ HTML_TEMPLATE = '''
 
         async function submitAnswer() {
             const userAnswer = document.getElementById('answerInput').value.trim();
-            if (!userAnswer) return;
+            if (!userAnswer) {
+                showNotification('⚠️', 'Empty Answer', 'Please enter an answer before submitting.');
+                return;
+            }
 
             document.getElementById('submitBtn').disabled = true;
 
-            const question = currentQuiz.questions[currentQuestionIndex];
-            const response = await fetch('/api/check-answer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_answer: userAnswer,
-                    correct_answer: question.original_answer
-                })
-            });
-
-            const result = await response.json();
-            const feedbackEl = document.getElementById('feedback');
-            feedbackEl.classList.remove('hidden', 'feedback-correct', 'feedback-incorrect');
-
-            if (result.correct) {
-                correctCount++;
-                feedbackEl.textContent = '✓ Correct!';
-                feedbackEl.classList.add('feedback-correct');
-            } else {
-                failures.push({
-                    question_id: question.id,
-                    question: question.question,
-                    user_answer: userAnswer,
-                    correct_answer: question.original_answer
+            try {
+                const question = currentQuiz.questions[currentQuestionIndex];
+                const response = await fetch('/api/check-answer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_answer: userAnswer,
+                        correct_answer: question.original_answer
+                    })
                 });
-                feedbackEl.innerHTML = `✗ Incorrect<br>Correct answer: ${question.original_answer}`;
-                feedbackEl.classList.add('feedback-incorrect');
-            }
 
-            setTimeout(() => {
-                currentQuestionIndex++;
-                if (currentQuestionIndex < currentQuiz.questions.length) {
-                    displayQuestion();
-                } else {
-                    showResults();
+                if (!response.ok) {
+                    throw new Error('Failed to check answer');
                 }
-            }, 2000);
+
+                const result = await response.json();
+                const feedbackEl = document.getElementById('feedback');
+                feedbackEl.classList.remove('hidden', 'feedback-correct', 'feedback-incorrect');
+
+                if (result.correct) {
+                    correctCount++;
+                    feedbackEl.textContent = '✓ Correct!';
+                    feedbackEl.classList.add('feedback-correct');
+                } else {
+                    failures.push({
+                        question_id: question.id,
+                        question: question.question,
+                        user_answer: userAnswer,
+                        correct_answer: question.original_answer
+                    });
+                    feedbackEl.innerHTML = `✗ Incorrect<br>Correct answer: ${question.original_answer}`;
+                    feedbackEl.classList.add('feedback-incorrect');
+                }
+
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < currentQuiz.questions.length) {
+                        displayQuestion();
+                    } else {
+                        showResults();
+                    }
+                }, 2000);
+            } catch (error) {
+                console.error('Error submitting answer:', error);
+                showNotification('❌', 'Error', 'Failed to submit answer: ' + error.message);
+                document.getElementById('submitBtn').disabled = false;
+            }
         }
 
         function showResults() {
@@ -1514,11 +1811,12 @@ HTML_TEMPLATE = '''
                     failuresListEl.appendChild(div);
                 });
             } else {
-                failuresListEl.innerHTML = '<p style="text-align: center; color: #28a745; font-size: 1.2em; font-weight: 600;">🎉 Perfect Score!</p>';
+                failuresListEl.innerHTML = '<p style="text-align: center; color: #455A64; font-size: 1.2em; font-weight: 600;">🎉 Perfect Score!</p>';;
             }
 
-            // Hide quiz, show results
-            document.getElementById('quizFullpage').classList.add('hidden');
+            // Hide quiz view, exit fullscreen, show results
+            document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
+            document.body.classList.remove('fullscreen-mode');
             document.getElementById('resultsScreen').classList.remove('hidden');
             
             // Generate HTML report
@@ -1547,6 +1845,8 @@ HTML_TEMPLATE = '''
                 () => {
                     console.log('User confirmed quit, showing results');
                     try {
+                        // Exit fullscreen mode if active
+                        document.body.classList.remove('fullscreen-mode');
                         showResults();
                     } catch (error) {
                         console.error('Error showing results:', error);
@@ -1558,6 +1858,7 @@ HTML_TEMPLATE = '''
 
         function backToSelection() {
             document.getElementById('resultsScreen').classList.add('hidden');
+            document.body.classList.remove('fullscreen-mode');
             showView('dashboard');
             updateDashboard();
         }
@@ -1715,7 +2016,7 @@ HTML_TEMPLATE = '''
         function displayRecentRuns() {
             const listEl = document.getElementById('recentRunsList');
             if (quizRuns.length === 0) {
-                listEl.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No quiz runs yet</p>';
+                listEl.innerHTML = '<p style="color: #B0BEC5; text-align: center; padding: 20px;">No quiz runs yet</p>';
                 return;
             }
             
@@ -1735,7 +2036,7 @@ HTML_TEMPLATE = '''
                                 <strong>${run.quiz_id}</strong>
                                 <span class="badge badge-${badge}">${badgeText}</span>
                             </div>
-                            <div style="color: #666; font-size: 0.9em;">
+                            <div style="color: #B0BEC5; font-size: 0.9em;">
                                 ${timeStr}<br>
                                 Score: <strong>${run.score.toFixed(1)}%</strong> • 
                                 ${run.correct}/${run.total_questions} correct •
@@ -1766,16 +2067,16 @@ HTML_TEMPLATE = '''
             
             let html = '<div class="analysis-grid">';
             html += `
-                <div class="analysis-item" style="border-left-color: #28a745;">
-                    <div class="analysis-value" style="color: #28a745;">${passed}</div>
+                <div class="analysis-item" style="border-left-color: #455A64;">
+                    <div class="analysis-value" style="color: #455A64;">${passed}</div>
                     <div class="analysis-label">Passed Quizzes</div>
                 </div>
-                <div class="analysis-item" style="border-left-color: #dc3545;">
-                    <div class="analysis-value" style="color: #dc3545;">${failed}</div>
+                <div class="analysis-item" style="border-left-color: #455A64;">
+                    <div class="analysis-value" style="color: #455A64;">${failed}</div>
                     <div class="analysis-label">Failed Quizzes</div>
                 </div>
-                <div class="analysis-item" style="border-left-color: #ffc107;">
-                    <div class="analysis-value" style="color: #ffc107;">${excellent}</div>
+                <div class="analysis-item" style="border-left-color: #B0BEC5;">
+                    <div class="analysis-value" style="color: #455A64;">${excellent}</div>
                     <div class="analysis-label">Excellent (90%+)</div>
                 </div>
                 <div class="analysis-item">
@@ -1795,6 +2096,19 @@ HTML_TEMPLATE = '''
             analysisEl.innerHTML = html;
         }
 
+        // Toggle Fullscreen Mode
+        function toggleFullscreen() {
+            document.body.classList.toggle('fullscreen-mode');
+            const btn = document.getElementById('fullscreenToggle');
+            if (document.body.classList.contains('fullscreen-mode')) {
+                btn.textContent = '✕'; // X symbol for exit
+                btn.title = 'Exit Fullscreen';
+            } else {
+                btn.textContent = '⛶'; // Fullscreen symbol
+                btn.title = 'Toggle Fullscreen';
+            }
+        }
+
         // Initialize event listeners when DOM is ready
         function initEventListeners() {
             console.log('Initializing event listeners...');
@@ -1803,12 +2117,14 @@ HTML_TEMPLATE = '''
             const quitBtn = document.getElementById('quitBtn');
             const backBtn = document.getElementById('backBtn');
             const answerInput = document.getElementById('answerInput');
+            const fullscreenToggle = document.getElementById('fullscreenToggle');
 
             console.log('Elements found:', {
                 submitBtn: !!submitBtn,
                 quitBtn: !!quitBtn,
                 backBtn: !!backBtn,
-                answerInput: !!answerInput
+                answerInput: !!answerInput,
+                fullscreenToggle: !!fullscreenToggle
             });
 
             if (submitBtn) {
@@ -1849,6 +2165,14 @@ HTML_TEMPLATE = '''
                 console.log('Answer input listener attached');
             }
 
+            if (fullscreenToggle) {
+                fullscreenToggle.addEventListener('click', function(e) {
+                    console.log('Fullscreen toggle clicked');
+                    toggleFullscreen();
+                });
+                console.log('Fullscreen toggle listener attached');
+            }
+
             console.log('All event listeners initialized');
         }
 
@@ -1856,27 +2180,61 @@ HTML_TEMPLATE = '''
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 console.log('DOMContentLoaded event fired');
+                initSidebarButton();
                 initEventListeners();
                 loadQuizzes();
             });
         } else {
             // DOM is already ready
             console.log('DOM already ready');
+            initSidebarButton();
             initEventListeners();
             loadQuizzes();
         }
+
+        // Handle window resize to update sidebar state
+        window.addEventListener('resize', function() {
+            const isMobile = window.innerWidth <= 768;
+            const hamburgerCheckbox = document.getElementById('hamburgerCheckbox');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            
+            if (isMobile && !sidebarCollapsed) {
+                // Switching to mobile view, collapse sidebar
+                sidebarCollapsed = true;
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+                hamburgerCheckbox.checked = false;
+            } else if (!isMobile && sidebarCollapsed) {
+                // Switching to desktop view, expand sidebar
+                sidebarCollapsed = false;
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+                hamburgerCheckbox.checked = true;
+            }
+        });
     </script>
 </body>
 </html>
 '''
 
 
+@app.after_request
+def add_header(response):
+    """Add headers to prevent caching during development"""
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
+
 @app.route('/')
 def index():
     """Serve the main quiz interface."""
     try:
         logger.debug('Serving main page')
-        return render_template_string(HTML_TEMPLATE, timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        # Use timestamp for cache busting
+        cache_buster = datetime.now().strftime('%Y%m%d%H%M%S')
+        return render_template_string(HTML_TEMPLATE, timestamp=cache_buster)
     except Exception as e:
         logger.error(f'Error serving main page: {e}', exc_info=True)
         raise
@@ -1887,10 +2245,10 @@ def version():
     """Return version info to verify what's being served."""
     return jsonify({
         'version': '5.0',
-        'layout': 'Two-Column: Blue Theme Sidebar (300px) + Comprehensive Dashboard',
+        'layout': 'Two-Column: Custom Theme Sidebar (300px) + Comprehensive Dashboard',
         'sidebar_width': '300px',
         'main_content_margin': '300px from left',
-        'theme': 'Blue on white with dark mode support',
+        'theme': 'Modern Minimalist (#FFFFFF, #F7F7F7, #B0BEC5, #455A64, #263238) with dark mode support',
         'dashboard_features': [
             'Overall Statistics (6 stat cards)',
             'Performance Trends (visual bars)',
