@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-57%20passing-success.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-71%25-yellow.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-226%20passing-success.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen.svg)](tests/)
 
 A quiz platform that generates randomized quizzes from CSV files with both command-line and web browser interfaces.
 
@@ -26,11 +26,14 @@ A quiz platform that generates randomized quizzes from CSV files with both comma
 - Lightweight and fast
 
 **Web Interface:**
-- Custom theme with white sidebar (#ffffff) and blue main page (#77a6f7)
+- Modern minimalistic Scandinavian design
+- Clean, light interface with centered elements
+- White sidebar with compact menu structure
 - Dashboard with performance metrics and analytics
-- Sidebar with quiz browser and statistics
+- Breadcrumb navigation for easy orientation
 - Real-time progress tracking and timer
 - Instant feedback after each answer
+- Fullscreen mode for distraction-free quizzing
 - Overlay notifications (no browser popups)
 - Responsive design (desktop, tablet, mobile)
 - Charts for quiz performance and question breakdown
