@@ -267,9 +267,10 @@ class TestWebQuizTestMode:
             )
         )
 
-        # Monkeypatch the Path in web_quiz module
+        # Monkeypatch the Path in routes module
         monkeypatch.setattr(
-            "web_quiz.Path", lambda x: quizzes_dir if x == "data/quizzes" else Path(x)
+            "quizzer.web.routes.Path",
+            lambda x: quizzes_dir if x == "data/quizzes" else Path(x),
         )
         return quizzes_dir
 
