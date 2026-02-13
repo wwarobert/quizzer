@@ -14,14 +14,24 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-import web_quiz
+from quizzer.web import create_app
 
 
 @pytest.fixture
 def client():
-    """Create a test client for the Flask app."""
-    web_quiz.app.config["TESTING"] = True
-    with web_quiz.app.test_client() as client:
+    """Create a test client for the Flask app (production mode)."""
+    app = create_app(test_mode=False)
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client
+
+
+@pytest.fixture
+def client_test_mode():
+    """Create a test client for the Flask app (test mode enabled)."""
+    app = create_app(test_mode=True)
+    app.config["TESTING"] = True
+    with app.test_client() as client:
         yield client
 
 
@@ -79,20 +89,17 @@ class TestWebQuizRoutes:
         assert isinstance(data, list)
         assert len(data) == 0
 
-    def test_get_quizzes_with_data(self, client, sample_quiz_dir, monkeypatch):
+    def test_get_quizzes_with_data(self, client_test_mode, sample_quiz_dir, monkeypatch):
         """Test getting quizzes when quizzes exist."""
         monkeypatch.chdir(sample_quiz_dir)
-        # Enable test mode to see quizzes in 'test' folder
-        web_quiz.app.config["TEST_MODE"] = True
-        response = client.get("/api/quizzes")
+        # Use test mode client to see quizzes in 'test' folder
+        response = client_test_mode.get("/api/quizzes")
         assert response.status_code == 200
         data = json.loads(response.data)
         assert isinstance(data, list)
         assert len(data) >= 1
         assert "quiz_id" in data[0]
         assert "num_questions" in data[0]
-        # Reset test mode
-        web_quiz.app.config["TEST_MODE"] = False
 
     def test_get_quiz_no_path(self, client):
         """Test getting quiz without providing path."""
@@ -195,10 +202,9 @@ class TestWebQuizFunctionality:
         assert "toggleSidebar" in html
         assert "updateDashboard" in html
 
-        # Check for styling
-        assert "background:" in html or "background :" in html
-        assert ".sidebar" in html
-        assert ".menu-item" in html
+        # Check for external CSS reference
+        assert "static/css/style.css" in html or "url_for('static'" in html
+        assert "<link rel=" in html  # CSS link tag present
 
     def test_api_endpoints_exist(self, client):
         """Test that all required API endpoints exist."""
@@ -334,41 +340,38 @@ class TestWebQuizFrontend:
         assert "let sidebarCollapsed" in html
 
     def test_css_styling_present(self, client):
-        """Test that CSS styling is present in the HTML."""
+        """Test that CSS styling is loaded via external stylesheet."""
         response = client.get("/")
         html = response.data.decode("utf-8")
-        assert "<style>" in html
-        assert ".button" in html
-        assert ".sidebar" in html
-        assert ".dashboard" in html
+        # CSS should be loaded from external file, not inline
+        assert "static/css/style.css" in html or "url_for('static'" in html
+        assert '<link rel="stylesheet"' in html
+        assert '<script src=' in html  # JS also external
         assert ".menu-item" in html
 
 
 class TestWebQuizWorkflow:
     """Tests for complete quiz workflow scenarios."""
 
-    def test_answer_submission_workflow(self, client, sample_quiz_dir, monkeypatch):
+    def test_answer_submission_workflow(self, client_test_mode, sample_quiz_dir, monkeypatch):
         """Test complete workflow of getting quiz and submitting answers."""
         monkeypatch.chdir(sample_quiz_dir)
 
-        # Enable test mode to see quizzes in 'test' folder
-        web_quiz.app.config["TEST_MODE"] = True
-
-        # Get quiz list
-        response = client.get("/api/quizzes")
+        # Get quiz list (using test mode client)
+        response = client_test_mode.get("/api/quizzes")
         assert response.status_code == 200
         quizzes = json.loads(response.data)
         assert len(quizzes) > 0
 
         # Load a specific quiz
         quiz_path = quizzes[0]["path"]
-        response = client.get(f"/api/quiz?path={quiz_path}")
+        response = client_test_mode.get(f"/api/quiz?path={quiz_path}")
         assert response.status_code == 200
         quiz = json.loads(response.data)
 
         # Submit correct answer for first question
         question = quiz["questions"][0]
-        response = client.post(
+        response = client_test_mode.post(
             "/api/check-answer",
             json={
                 "user_answer": question["original_answer"],
@@ -378,9 +381,6 @@ class TestWebQuizWorkflow:
         assert response.status_code == 200
         result = json.loads(response.data)
         assert result["correct"] is True
-
-        # Reset test mode
-        web_quiz.app.config["TEST_MODE"] = False
 
     def test_multiple_answer_checks(self, client):
         """Test checking multiple answers in sequence."""

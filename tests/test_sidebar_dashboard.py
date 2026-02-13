@@ -12,14 +12,15 @@ import pytest
 
 # Import the Flask app
 sys.path.insert(0, str(Path(__file__).parent.parent))
-import web_quiz
+from quizzer.web import create_app
 
 
 @pytest.fixture
 def client():
     """Create a test client for the Flask app."""
-    web_quiz.app.config["TESTING"] = True
-    with web_quiz.app.test_client() as client:
+    app = create_app(test_mode=False)
+    app.config["TESTING"] = True
+    with app.test_client() as client:
         yield client
 
 
@@ -27,16 +28,17 @@ class TestSidebarPresence:
     """Test that sidebar navigation is present in HTML."""
 
     def test_version_comment_present(self, client):
-        """Test that version 6.0 comment is in HTML."""
+        """Test that version comment is in HTML."""
         response = client.get("/")
         html = response.data.decode("utf-8")
         # Check that version is 21.0 or higher
         assert (
             "UI Version: 21" in html or "UI Version: 2" in html
         ), "Version 21.0+ comment not found"
+        # Check that version comment has a description (FIX, NEW, UPDATE, etc.)
         assert (
-            "FULLSCREEN MODE" in html or "PALETTE" in html
-        ), "Version identifier text not found in comment"
+            "FIX:" in html or "NEW:" in html or "UPDATE:" in html or "FULLSCREEN MODE" in html or "PALETTE" in html
+        ), "Version description not found in comment"
 
     def test_sidebar_element_exists(self, client):
         """Test that sidebar div exists with correct class."""
@@ -78,12 +80,12 @@ class TestSidebarPresence:
         assert "toggleQuizMenu" in html, "Toggle quiz menu function not found"
 
     def test_sidebar_css_styles(self, client):
-        """Test that sidebar CSS styles are defined."""
+        """Test that sidebar CSS is loaded from external file."""
         response = client.get("/")
         html = response.data.decode("utf-8")
-        assert ".sidebar {" in html, "Sidebar CSS definition not found"
-        assert ".menu-item {" in html, "Menu item CSS not found"
-        assert ".expandable-menu" in html, "Expandable menu CSS not found"
+        # CSS should be in external file
+        assert "static/css/style.css" in html, "External CSS file not linked"
+        assert '<link rel="stylesheet"' in html, "CSS link tag not found"
 
 
 class TestDashboardPresence:
@@ -96,10 +98,11 @@ class TestDashboardPresence:
         assert 'id="dashboardView"' in html, "Dashboard view ID not found"
 
     def test_dashboard_header_exists(self, client):
-        """Test that dashboard header exists."""
+        """Test that dashboard view exists."""
         response = client.get("/")
         html = response.data.decode("utf-8")
-        assert "dashboard-header" in html, "Dashboard header class not found"
+        # Check for dashboard elements
+        assert 'id="dashboardView"' in html or 'id="dashboard"' in html, "Dashboard view not found"
         assert "Dashboard" in html, "Dashboard title not found"
 
     def test_dashboard_stats_cards(self, client):
@@ -135,12 +138,12 @@ class TestDashboardPresence:
         assert 'id="recentRunsList"' in html, "Recent runs list ID not found"
 
     def test_dashboard_css_styles(self, client):
-        """Test that dashboard CSS styles are defined."""
+        """Test that dashboard CSS is loaded from external file."""
         response = client.get("/")
         html = response.data.decode("utf-8")
-        assert ".dashboard-header" in html, "Dashboard header CSS not found"
-        assert ".dashboard-stats" in html, "Dashboard stats CSS not found"
-        assert ".stat-card" in html, "Stat card CSS not found"
+        # CSS should be in external file
+        assert "static/css/style.css" in html, "External CSS file not linked"
+        assert '<link rel="stylesheet"' in html, "CSS link tag not found"
 
 
 class TestLayoutStructure:
@@ -220,13 +223,12 @@ class TestResponsiveLayout:
     """Test responsive layout elements."""
 
     def test_media_queries_exist(self, client):
-        """Test that responsive media queries are present."""
+        """Test that responsive CSS is loaded from external file."""
         response = client.get("/")
         html = response.data.decode("utf-8")
-        assert "@media" in html, "Media queries not found"
-        assert (
-            "max-width: 768px" in html or "max-width:768px" in html
-        ), "Mobile breakpoint not found"
+        # CSS should be in external file
+        assert "static/css/style.css" in html, "External CSS file not linked"
+        assert '<link rel="stylesheet"' in html, "CSS link tag not found"
 
 
 def test_print_html_structure(client):

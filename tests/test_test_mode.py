@@ -19,9 +19,9 @@ spec = importlib.util.spec_from_file_location("run_quiz", "run_quiz.py")
 run_quiz = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(run_quiz)
 
-# Import web_quiz module
+# Import quizzer.web module
 sys.path.insert(0, str(Path(__file__).parent.parent))
-import web_quiz  # noqa: E402 - Must modify sys.path before importing
+from quizzer.web import create_app  # noqa: E402 - Must modify sys.path before importing
 
 
 class TestIsTestData:
@@ -202,10 +202,19 @@ class TestWebQuizTestMode:
     """Tests for web quiz test mode filtering."""
 
     @pytest.fixture
-    def client(self):
-        """Create a test client for the Flask app."""
-        web_quiz.app.config["TESTING"] = True
-        with web_quiz.app.test_client() as client:
+    def client_production(self):
+        """Create a test client for the Flask app in production mode."""
+        app = create_app(test_mode=False)
+        app.config["TESTING"] = True
+        with app.test_client() as client:
+            yield client
+
+    @pytest.fixture
+    def client_test_mode(self):
+        """Create a test client for the Flask app in test mode."""
+        app = create_app(test_mode=True)
+        app.config["TESTING"] = True
+        with app.test_client() as client:
             yield client
 
     @pytest.fixture
@@ -264,10 +273,9 @@ class TestWebQuizTestMode:
         )
         return quizzes_dir
 
-    def test_production_mode_excludes_samples(self, client, quiz_files):
+    def test_production_mode_excludes_samples(self, client_production, quiz_files):
         """Test that production mode excludes sample quizzes via API."""
-        web_quiz.app.config["TEST_MODE"] = False
-        response = client.get("/api/quizzes")
+        response = client_production.get("/api/quizzes")
         data = response.get_json()
 
         # Should only have production quiz
@@ -279,10 +287,9 @@ class TestWebQuizTestMode:
         assert "sample_001" not in quiz_ids
         assert not any("sample" in q.get("path", "").lower() for q in data)
 
-    def test_test_mode_includes_samples(self, client, quiz_files):
+    def test_test_mode_includes_samples(self, client_test_mode, quiz_files):
         """Test that test mode includes sample quizzes via API."""
-        web_quiz.app.config["TEST_MODE"] = True
-        response = client.get("/api/quizzes")
+        response = client_test_mode.get("/api/quizzes")
         data = response.get_json()
 
         # Should have both production and sample quizzes
@@ -303,9 +310,10 @@ class TestIntegration:
 
     def test_web_server_respects_test_mode_flag(self):
         """Test that web server properly handles test mode configuration."""
-        # Test that config is set correctly
-        web_quiz.app.config["TEST_MODE"] = False
-        assert web_quiz.app.config["TEST_MODE"] is False
+        # Test production mode
+        app_prod = create_app(test_mode=False)
+        assert app_prod.config["TEST_MODE"] is False
 
-        web_quiz.app.config["TEST_MODE"] = True
-        assert web_quiz.app.config["TEST_MODE"] is True
+        # Test test mode
+        app_test = create_app(test_mode=True)
+        assert app_test.config["TEST_MODE"] is True

@@ -8,11 +8,13 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from web_quiz import HTML_TEMPLATE
-
 
 def test_two_column_layout():
     """Verify the HTML contains the two-column sidebar + dashboard layout"""
+
+    # Load HTML template from file
+    template_path = Path(__file__).parent.parent / "templates" / "index.html"
+    html_content = template_path.read_text(encoding="utf-8")
 
     print("🔍 Checking HTML template for two-column layout...")
     print("=" * 70)
@@ -38,10 +40,8 @@ def test_two_column_layout():
         ("Pass rate stat", 'id="passRate"'),
         ("Recent activity timeline", '<div class="timeline">'),
         ("Recent runs list", 'id="recentRunsList"'),
-        # Check for CSS layout (Version 5.0 - 300px sidebar)
-        ("Sidebar CSS position", "position: fixed;"),
-        ("Sidebar width", "width: 300px;"),
-        ("Main content margin", "margin-left: 300px;"),
+        # Check for CSS file link (CSS moved to external file)
+        ("External CSS file", "css/style.css"),
         # Check for JavaScript functions
         ("Toggle sidebar function", "function toggleSidebar()"),
         ("Toggle quiz menu function", "function toggleQuizMenu()"),
@@ -53,7 +53,7 @@ def test_two_column_layout():
     failed = 0
 
     for check_name, check_string in checks:
-        if check_string in HTML_TEMPLATE:
+        if check_string in html_content:
             print(f"✓ {check_name:<30} FOUND")
             passed += 1
         else:
