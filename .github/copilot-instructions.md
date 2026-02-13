@@ -193,7 +193,7 @@ quizzer/
 ├── logs/                   # Web server logs (auto-created)
 │   └── README.md
 ├── examples/
-│   └── sample_questions.csv
+│   └── sample_questions.csv  # Demo file with 25 basic questions
 └── requirements.txt
 ```
 
@@ -224,6 +224,33 @@ quizzer/
 - Save progress (optional: resume interrupted quizzes)
 - Export report as text file
 - Support quiet mode (no emoji/color for automation)
+- **Test mode**: `--test-mode` flag shows sample quizzes (hidden by default in production)
+- **Test data filtering**: Uses `is_test_data()` helper function to identify sample/test/demo/example data
+
+### Web Interface Features
+- Flask-based web server with HTTPS support
+- Blue theme with automatic dark mode
+- Dashboard with performance analytics
+- Real-time progress tracking
+- **Test mode**: `--test-mode` flag shows sample quizzes (hidden by default in production)
+- Production mode (default): Automatically filters out quizzes from test data folders
+- Test mode: Shows all quizzes including samples for development/testing
+- **Test data filtering**: Uses `is_test_data()` helper function for consistent filtering
+
+### Helper Functions
+**Test Data Identification:**
+```python
+from quizzer import is_test_data, TEST_DATA_PATTERNS
+
+# Check if a folder contains test/sample data
+if is_test_data(folder_path):
+    # Skip in production mode
+    pass
+
+# Patterns: ['sample', 'test', 'demo', 'example']
+# Checks only the immediate folder name, not full path
+# Case-insensitive matching
+```
 
 ### Answer Normalization Module
 **Critical function:**
@@ -285,11 +312,16 @@ def normalize_answer(answer: str) -> list[str]:
 ### Running the Tool
 ```bash
 # Generate quiz from CSV
-pythonCLI quiz
+python import_quiz.py data/input/questions.csv
+
+# Run CLI quiz
 python run_quiz.py data/quizzes/quiz_001.json
 
 # Run with options
 python run_quiz.py quiz.json --max-questions 25 --pass-threshold 75
+
+# Run in test mode (shows sample quizzes)
+python run_quiz.py --test-mode
 
 # Start web server (requires Flask)
 python web_quiz.py
@@ -297,8 +329,7 @@ python web_quiz.py
 # Web server with options
 python web_quiz.py --port 8080 --debug
 python web_quiz.py --host 0.0.0.0  # Network access
-# Run with options
-python run_quiz.py quiz.json --max-questions 25 --pass-threshold 75
+python web_quiz.py --test-mode     # Show sample quizzes
 ```
 
 ### Testing

@@ -23,7 +23,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
 
-from quizzer import answers_match, format_answer_display, Quiz, QuizResult
+from quizzer import answers_match, format_answer_display, Quiz, QuizResult, is_test_data
 
 
 def select_quiz_folder(base_dir: str = "data/quizzes") -> Path:
@@ -646,15 +646,25 @@ def display_results(result: QuizResult):
     print("\n" + "=" * 60)
 
 
-def get_quiz_folders(base_dir: str = "data/quizzes") -> List[Path]:
+def get_quiz_folders(base_dir: str = "data/quizzes", test_mode: bool = False) -> List[Path]:
     """
     Get list of subdirectories containing quiz files.
 
     Args:
         base_dir: Base directory where quizzes are stored
+        test_mode: If False (default), exclude sample quizzes for production
 
     Returns:
         List of Path objects for subdirectories containing quiz files
+        
+    Examples:
+        >>> # Production mode - hide test data
+        >>> folders = get_quiz_folders(test_mode=False)
+        >>> assert not any(is_test_data(f) for f in folders)
+        
+        >>> # Test mode - show all
+        >>> folders = get_quiz_folders(test_mode=True)
+        >>> assert len(folders) >= 0
     """
     base_path = Path(base_dir)
     if not base_path.exists():
@@ -663,16 +673,22 @@ def get_quiz_folders(base_dir: str = "data/quizzes") -> List[Path]:
     # Find all subdirectories that contain .json files
     folders = []
     for item in base_path.iterdir():
-        if item.is_dir():
-            # Check if directory contains any JSON files (quiz files have timestamp pattern)
-            json_files = list(item.glob("*.json"))
-            # Filter out non-quiz files (like metadata)
-            quiz_files = [
-                f for f in json_files
-                if f.stem not in ['last_import', 'README', 'metadata']
-            ]
-            if quiz_files:
-                folders.append(item)
+        if not item.is_dir():
+            continue
+            
+        # Skip test data folders in production mode
+        if not test_mode and is_test_data(item):
+            continue
+            
+        # Check if directory contains any JSON files (quiz files have timestamp pattern)
+        json_files = list(item.glob("*.json"))
+        # Filter out non-quiz files (like metadata)
+        quiz_files = [
+            f for f in json_files
+            if f.stem not in ['last_import', 'README', 'metadata']
+        ]
+        if quiz_files:
+            folders.append(item)
 
     # Sort folders alphabetically
     return sorted(folders, key=lambda p: p.name.lower())
@@ -859,6 +875,12 @@ For more information, see README.md
     )
 
     parser.add_argument(
+        '--test-mode',
+        action='store_true',
+        help='enable test mode (show sample quizzes, hidden by default in production)'
+    )
+
+    parser.add_argument(
         '--version',
         action='version',
         version='%(prog)s 1.0.0'
@@ -872,7 +894,12 @@ For more information, see README.md
             quiz_file = Path(args.quiz_file)
         else:
             # Show folder selection menu
-            folders = get_quiz_folders()
+            test_mode: bool = args.test_mode
+            folders = get_quiz_folders(test_mode=test_mode)
+            
+            if not args.quiet and test_mode:
+                print("\n⚠️  TEST MODE: Sample quizzes are visible\n", file=sys.stderr)
+            
             selected_folder = select_quiz_folder(folders)
             quiz_file = get_random_quiz_from_folder(selected_folder)
 

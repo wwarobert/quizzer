@@ -24,12 +24,13 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template_string, jsonify, request, send_from_directory, redirect
 
-from quizzer import Quiz, QuizResult, normalize_answer
+from quizzer import Quiz, QuizResult, normalize_answer, is_test_data
 import run_quiz  # Import for HTML report generation
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for development
+app.config['TEST_MODE'] = False  # Production mode by default (hide sample quizzes)
 
 # SSL Certificate Generation
 def generate_self_signed_cert(cert_dir='certs'):
@@ -2398,12 +2399,18 @@ def get_quizzes():
         logger.debug('Fetching quiz list')
         quizzes_dir = Path('data/quizzes')
         quiz_files = []
+        test_mode: bool = app.config.get('TEST_MODE', False)
 
         if quizzes_dir.exists():
             # Search recursively for all quiz JSON files
             for quiz_file in quizzes_dir.rglob('*.json'):
                 # Skip last_import.json metadata file
                 if quiz_file.name == 'last_import.json':
+                    continue
+
+                # Skip test data quizzes in production mode
+                if not test_mode and is_test_data(quiz_file.parent):
+                    logger.debug(f'Skipping test data quiz in production mode: {quiz_file}')
                     continue
 
                 try:
@@ -2424,7 +2431,7 @@ def get_quizzes():
 
         # Sort by creation date (newest first)
         quiz_files.sort(key=lambda x: x.get('created_at', ''), reverse=True)
-        logger.info(f'Found {len(quiz_files)} quizzes')
+        logger.info(f'Found {len(quiz_files)} quizzes (test_mode={test_mode})')
         return jsonify(quiz_files)
     except Exception as e:
         logger.error(f'Error fetching quizzes: {e}', exc_info=True)
@@ -2562,6 +2569,12 @@ Examples:
     )
     
     parser.add_argument(
+        '--test-mode',
+        action='store_true',
+        help='enable test mode (show sample quizzes, hidden by default in production)'
+    )
+    
+    parser.add_argument(
         '--no-https',
         action='store_true',
         help='disable HTTPS (use HTTP only, not recommended for production)'
@@ -2601,6 +2614,9 @@ Examples:
     )
 
     args = parser.parse_args()
+    
+    # Set test mode in app config
+    app.config['TEST_MODE'] = args.test_mode
     
     # Configure logging based on arguments
     log_level_map = {
@@ -2663,6 +2679,11 @@ Examples:
     print("🎯 Quizzer Web Interface")
     print(f"{'='*60}")
     print(f"\n🌐 Server starting at: {protocol}://{args.host}:{args.port}")
+    
+    if args.test_mode:
+        print("⚠️  TEST MODE: Sample quizzes are visible")
+    else:
+        print("✅ PRODUCTION MODE: Sample quizzes hidden")
     
     # Show logging configuration
     level_names_display = {

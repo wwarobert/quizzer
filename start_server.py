@@ -99,9 +99,13 @@ def start_server():
     print("\n🚀 Starting Quizzer Web Server...")
     print("=" * 50)
     
-    # Use subprocess.run without capture_output so output goes directly to console
+    # Build command as list to avoid shell injection
+    # Pass through any command-line arguments (e.g., --test-mode, --port, etc.)
+    cmd = [str(python_exe), "web_quiz.py"] + sys.argv[1:]
+    
+    # Use subprocess.run without shell=True for security
     try:
-        subprocess.run(f'"{python_exe}" web_quiz.py', shell=True)
+        subprocess.run(cmd, shell=False)
     except KeyboardInterrupt:
         print("\n\n🛑 Server stopped by user")
 
