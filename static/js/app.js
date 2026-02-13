@@ -60,13 +60,14 @@ let quizzes = [];
             return messages[Math.floor(Math.random() * messages.length)];
         }
 
-        // Notification System
+        // Notification System (adds focus trap and Esc-to-close)
         function showNotification(icon, title, message, buttons = [{ text: 'OK', primary: true }]) {
             const overlay = document.getElementById('notificationOverlay');
             const iconEl = document.getElementById('notificationIcon');
             const titleEl = document.getElementById('notificationTitle');
             const messageEl = document.getElementById('notificationMessage');
             const buttonsEl = document.getElementById('notificationButtons');
+            const closeBtn = document.getElementById('notificationCloseBtn');
 
             iconEl.textContent = icon;
             titleEl.textContent = title;
@@ -85,6 +86,29 @@ let quizzes = [];
             });
 
             overlay.classList.remove('hidden');
+
+            // Focus trap and Esc-to-close for dialog
+            const focusable = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            (first || closeBtn)?.focus();
+
+            function onKeyDown(e) {
+                if (e.key === 'Escape') {
+                    overlay.classList.add('hidden');
+                    overlay.removeEventListener('keydown', onKeyDown);
+                }
+                if (e.key === 'Tab') {
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                }
+            }
+            overlay.addEventListener('keydown', onKeyDown);
         }
 
         function showConfirm(icon, title, message, onConfirm, onCancel) {
@@ -170,13 +194,16 @@ let quizzes = [];
         function toggleQuizMenu() {
             const content = document.getElementById('quizMenuContent');
             const chevron = document.getElementById('quizChevron');
+            const toggleBtn = document.getElementById('quizMenuToggle');
             
             if (content.classList.contains('expanded')) {
                 content.classList.remove('expanded');
                 chevron.classList.remove('rotated');
+                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
             } else {
                 content.classList.add('expanded');
                 chevron.classList.add('rotated');
+                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
                 // Load quizzes if not already loaded
                 if (quizzes.length === 0) {
                     loadQuizzes();
@@ -203,9 +230,22 @@ let quizzes = [];
             }
 
             // Update active menu item
-            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+                item.removeAttribute('aria-current');
+            });
             if (event && event.target) {
-                event.target.closest('.menu-item')?.classList.add('active');
+                const active = event.target.closest('.menu-item');
+                if (active) {
+                    active.classList.add('active');
+                    active.setAttribute('aria-current', 'page');
+                }
+            }
+
+            // Move focus to the view title for screen readers
+            const title = document.querySelector(`#${viewName}View .view-title`);
+            if (title) {
+                title.focus();
             }
         }
 
@@ -292,6 +332,9 @@ let quizzes = [];
 
                 // Show quiz view instead of fullpage overlay
                 showView('quiz');
+                // Move focus to quiz title
+                const title = document.getElementById('quizTitle');
+                if (title) title.focus();
                 const quizName = currentQuiz.quiz_id || 'Quiz';
                 document.getElementById('quizBreadcrumb').textContent = quizName;
                 startTimer();
