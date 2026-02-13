@@ -13,106 +13,146 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-import json
 import argparse
+import json
 import logging
-import sys
 import ssl
-import os
-from pathlib import Path
+import sys
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from flask import Flask, render_template_string, jsonify, request, send_from_directory, redirect
+from pathlib import Path
+from typing import Optional, Tuple
 
-from quizzer import Quiz, QuizResult, normalize_answer, is_test_data
+from flask import (
+    Flask,
+    jsonify,
+    render_template_string,
+    request,
+    send_file,
+)
+
 import run_quiz  # Import for HTML report generation
+from quizzer import Quiz, QuizResult, is_test_data, normalize_answer
+from quizzer.constants import (
+    CERT_DIR_NAME,
+    CERT_FILENAME,
+    CERT_VALIDITY_DAYS,
+    DATA_DIR_NAME,
+    KEY_FILENAME,
+    LOGS_DIR_NAME,
+    QUIZZES_DIR_NAME,
+    REPORTS_DIR_NAME,
+)
 
 # Initialize Flask app
-app = Flask(__name__, static_folder='static')
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for development
-app.config['TEST_MODE'] = False  # Production mode by default (hide sample quizzes)
+app = Flask(__name__, static_folder="static")
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0  # Disable caching for development
+app.config["TEST_MODE"] = False  # Production mode by default
+
+# Directory paths - using constants for consistency
+BASE_DIR = Path(__file__).parent
+QUIZZES_DIR = BASE_DIR / DATA_DIR_NAME / QUIZZES_DIR_NAME
+REPORTS_DIR = BASE_DIR / DATA_DIR_NAME / REPORTS_DIR_NAME
+LOGS_DIR = BASE_DIR / LOGS_DIR_NAME
+
 
 # SSL Certificate Generation
-def generate_self_signed_cert(cert_dir='certs'):
+def generate_self_signed_cert(
+    cert_dir: str = CERT_DIR_NAME,
+) -> Tuple[Optional[Path], Optional[Path]]:
     """
     Generate self-signed SSL certificates for HTTPS.
-    
+
+    Why we use HTTPS even in development:
+    Modern browsers require HTTPS for certain features (geolocation, PWA, etc.)
+    and encrypting traffic is good practice even locally.
+
     Args:
         cert_dir: Directory to store certificates (default: 'certs')
-        
+
     Returns:
         tuple: (cert_path, key_path) or (None, None) if generation fails
     """
     try:
-        from cryptography import x509
-        from cryptography.x509.oid import NameOID
-        from cryptography.hazmat.primitives import hashes
-        from cryptography.hazmat.primitives.asymmetric import rsa
-        from cryptography.hazmat.primitives import serialization
         from datetime import timedelta
-        
-        cert_path = Path(cert_dir) / 'cert.pem'
-        key_path = Path(cert_dir) / 'key.pem'
-        
+
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+
+        cert_path = Path(cert_dir) / CERT_FILENAME
+        key_path = Path(cert_dir) / KEY_FILENAME
+
         # Check if certificates already exist
         if cert_path.exists() and key_path.exists():
             return str(cert_path), str(key_path)
-        
+
         # Create certs directory if it doesn't exist
         Path(cert_dir).mkdir(exist_ok=True)
-        
+
         # Generate private key
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
         )
-        
+
         # Generate certificate
-        subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Local"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, "Localhost"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Quizzer Development"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "localhost"),
-        ])
-        
-        cert = x509.CertificateBuilder().subject_name(
-            subject
-        ).issuer_name(
-            issuer
-        ).public_key(
-            private_key.public_key()
-        ).serial_number(
-            x509.random_serial_number()
-        ).not_valid_before(
-            datetime.utcnow()
-        ).not_valid_after(
-            datetime.utcnow() + timedelta(days=365)
-        ).add_extension(
-            x509.SubjectAlternativeName([
-                x509.DNSName("localhost"),
-                x509.DNSName("127.0.0.1"),
-            ]),
-            critical=False,
-        ).sign(private_key, hashes.SHA256())
-        
+        subject = issuer = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Local"),
+                x509.NameAttribute(NameOID.LOCALITY_NAME, "Localhost"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Quizzer Development"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "localhost"),
+            ]
+        )
+
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(private_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.utcnow())
+            .not_valid_after(
+                # Certificate valid for 1 year - balance security with convenience
+                datetime.utcnow()
+                + timedelta(days=CERT_VALIDITY_DAYS)
+            )
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [
+                        x509.DNSName("localhost"),
+                        x509.DNSName("127.0.0.1"),
+                    ]
+                ),
+                critical=False,
+            )
+            .sign(private_key, hashes.SHA256())
+        )
+
         # Write certificate to file
-        with open(cert_path, 'wb') as f:
+        with open(cert_path, "wb") as f:
             f.write(cert.public_bytes(serialization.Encoding.PEM))
-        
+
         # Write private key to file
-        with open(key_path, 'wb') as f:
-            f.write(private_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption()
-            ))
-        
+        with open(key_path, "wb") as f:
+            f.write(
+                private_key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.TraditionalOpenSSL,
+                    encryption_algorithm=serialization.NoEncryption(),
+                )
+            )
+
         print(f"✅ Generated self-signed certificates in '{cert_dir}/' directory")
         return str(cert_path), str(key_path)
-        
+
     except ImportError:
-        print("⚠️  cryptography package not installed. Install with: pip install cryptography")
+        print(
+            "⚠️  cryptography package not installed. Install with: pip install cryptography"
+        )
         print("   Running without HTTPS support.")
         return None, None
     except Exception as e:
@@ -125,74 +165,75 @@ def generate_self_signed_cert(cert_dir='certs'):
 def setup_logging(file_level=logging.DEBUG, console_level=logging.DEBUG):
     """
     Configure logging with file and console handlers.
-    
+
     Args:
         file_level: Log level for file handler (default: DEBUG - logs everything)
         console_level: Log level for console handler (default: DEBUG - logs everything)
-    
+
     Returns:
         logger: Configured logger instance
     """
-    logs_dir = Path('logs')
+    logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
-    
+
     # Create logger
-    logger = logging.getLogger('quizzer')
+    logger = logging.getLogger("quizzer")
     logger.setLevel(logging.DEBUG)  # Set to lowest level, handlers will filter
-    
+
     # Remove existing handlers to avoid duplicates
     logger.handlers.clear()
-    
+
     # File handler with rotation (max 10MB, keep 5 backup files)
-    log_file = logs_dir / 'web_quiz.log'
+    log_file = logs_dir / "web_quiz.log"
     file_handler = RotatingFileHandler(
-        log_file,
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
+        log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"  # 10MB
     )
     file_handler.setLevel(file_level)
     file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     file_handler.setFormatter(file_formatter)
-    
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(console_level)
     console_formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
+        "%(asctime)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S"
     )
     console_handler.setFormatter(console_formatter)
-    
+
     # Add handlers
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
-    
+
     return logger
 
+
 logger = setup_logging()  # Will be reconfigured in main() based on CLI args
+
 
 # Flask error handlers
 @app.errorhandler(404)
 def not_found_error(error):
-    logger.warning(f'404 Not Found: {request.url}')
-    return jsonify({'error': 'Resource not found'}), 404
+    logger.warning(f"404 Not Found: {request.url}")
+    return jsonify({"error": "Resource not found"}), 404
+
 
 @app.errorhandler(500)
 def internal_error(error):
-    logger.error(f'500 Internal Server Error: {error}', exc_info=True)
-    return jsonify({'error': 'Internal server error'}), 500
+    logger.error(f"500 Internal Server Error: {error}", exc_info=True)
+    return jsonify({"error": "Internal server error"}), 500
+
 
 @app.errorhandler(Exception)
 def handle_exception(error):
-    logger.error(f'Unhandled exception: {error}', exc_info=True)
-    return jsonify({'error': 'An unexpected error occurred'}), 500
+    logger.error(f"Unhandled exception: {error}", exc_info=True)
+    return jsonify({"error": "An unexpected error occurred"}), 500
+
 
 # HTML Template - Version 2.0 - Sidebar and Dashboard Layout
-HTML_TEMPLATE = '''
+HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1078,76 +1119,245 @@ HTML_TEMPLATE = '''
             border: 1px solid #E57373;
         }
 
-        .results-summary {
+        .results-dashboard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+
+        .results-header {
             text-align: center;
-            margin: 30px 0;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease-out;
         }
 
-        .results-score {
-            font-size: 3em;
-            font-weight: bold;
-            margin: 20px 0;
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .results-pass {
-            color: #2E7D32;
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .results-fail {
-            color: #C62828;
+        .results-status-badge {
+            display: inline-block;
+            padding: 12px 32px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .results-stats {
+        .results-status-pass {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .results-status-fail {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .results-title {
+            font-size: 2.5em;
+            margin: 15px 0;
+            font-weight: 300;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .results-motivational {
+            font-size: 1.3em;
+            margin: 20px auto;
+            max-width: 700px;
+            line-height: 1.6;
+            font-weight: 400;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .results-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .results-stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 30px 0;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
         }
 
-        .report-saved {
-            text-align: center;
-            color: #90A4AE;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
-
-        .stat-card {
-            background: #FFFFFF;
+        .results-stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             padding: 30px;
-            border-radius: 8px;
+            border-radius: 16px;
             text-align: center;
-            border: 1px solid #EEEEEE;
-            box-shadow: none;
-            transition: border-color 0.2s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .stat-card:hover {
-            border-color: #E0E0E0;
+        .results-stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
         }
 
-        .stat-value {
-            font-size: 2em;
+        .results-stat-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .results-stat-value {
+            font-size: 3em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+
+        .results-stat-label {
+            color: #6c757d;
+            font-size: 1em;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .results-failures-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .results-section-title {
+            font-size: 1.5em;
+            color: #37474F;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .results-failures-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .results-failure-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #dc3545;
+            transition: transform 0.2s ease;
+        }
+
+        .results-failure-item:hover {
+            transform: translateX(5px);
+        }
+
+        .results-failure-question {
             font-weight: 600;
             color: #37474F;
+            margin-bottom: 10px;
+            font-size: 1.05em;
         }
 
-        .stat-label {
-            color: #78909C;
-            margin-top: 6px;
-            font-size: 0.9em;
-        }
-
-        .failures-list {
-            margin-top: 30px;
-        }
-
-        .failure-item {
-            background: transparent;
-            padding: 10px 12px;
-            border-radius: 4px;
+        .results-failure-answer {
+            color: #dc3545;
             margin-bottom: 8px;
-            border-left: 2px solid #37474F;
+            padding-left: 20px;
+        }
+
+        .results-failure-correct {
+            color: #28a745;
+            padding-left: 20px;
+            font-weight: 500;
+        }
+
+        .results-actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .results-button {
+            padding: 16px 40px;
             border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .results-button-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .results-button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .results-button-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .results-button-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .results-title {
+                font-size: 2em;
+            }
+            
+            .results-motivational {
+                font-size: 1.1em;
+            }
+            
+            .results-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .results-stat-value {
+                font-size: 2.5em;
+            }
+        }
         }
 
         .failure-question {
@@ -1462,6 +1672,16 @@ HTML_TEMPLATE = '''
                     </p>
                 </div>
             </div>
+
+            <!-- Results History -->
+            <div class="report-section">
+                <h2>📜 Results History</h2>
+                <div id="resultsHistory">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
+                        No quiz results yet. Complete a quiz to see your history!
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- Quiz Selection View -->
@@ -1510,38 +1730,47 @@ HTML_TEMPLATE = '''
         </div>
     </div>
 
-    <!-- Results Screen (Full Page Overlay) -->
-    <div id="resultsScreen" class="quiz-fullpage hidden">
-        <div class="quiz-container">
-            <h2>Quiz Complete!</h2>
-            <div class="results-summary">
-                <div id="resultStatus" class="results-score"></div>
+    <!-- Results Screen (Full Page Dashboard Style) -->
+    <div id="resultsScreen" class="results-dashboard hidden">
+        <div class="results-header">
+            <div class="results-status-badge" id="resultStatusBadge"></div>
+            <h1 class="results-title">Quiz Complete</h1>
+            <p class="results-motivational" id="motivationalMessage"></p>
+        </div>
+
+        <div class="results-content">
+            <div class="results-stats-grid">
+                <div class="results-stat-card">
+                    <div class="results-stat-icon">📊</div>
+                    <div class="results-stat-value" id="finalScore">0%</div>
+                    <div class="results-stat-label">Final Score</div>
+                </div>
+                <div class="results-stat-card">
+                    <div class="results-stat-icon">✅</div>
+                    <div class="results-stat-value" id="correctAnswers">0</div>
+                    <div class="results-stat-label">Correct</div>
+                </div>
+                <div class="results-stat-card">
+                    <div class="results-stat-icon">❌</div>
+                    <div class="results-stat-value" id="incorrectAnswers">0</div>
+                    <div class="results-stat-label">Incorrect</div>
+                </div>
+                <div class="results-stat-card">
+                    <div class="results-stat-icon">📝</div>
+                    <div class="results-stat-value" id="totalQuestions">0</div>
+                    <div class="results-stat-label">Total Questions</div>
+                </div>
             </div>
 
-            <div class="results-stats">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalQuestions">0</div>
-                    <div class="stat-label">Total Questions</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="correctAnswers">0</div>
-                    <div class="stat-label">Correct</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="incorrectAnswers">0</div>
-                    <div class="stat-label">Incorrect</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="finalScore">0%</div>
-                    <div class="stat-label">Score</div>
-                </div>
+            <div id="failuresSection" class="results-failures-section hidden">
+                <h3 class="results-section-title">📋 Review Incorrect Answers</h3>
+                <div id="failuresList" class="results-failures-list"></div>
             </div>
 
-            <p id="reportSavedMessage" class="report-saved hidden"></p>
-
-            <div id="failuresList" class="failures-list"></div>
-
-            <button id="backBtn" class="button">Back to Dashboard</button>
+            <div class="results-actions">
+                <button id="backBtn" class="results-button results-button-primary">Back to Dashboard</button>
+                <button id="retakeBtn" class="results-button results-button-secondary">Retake Quiz</button>
+            </div>
         </div>
     </div>
 
@@ -1565,6 +1794,57 @@ HTML_TEMPLATE = '''
         let timerInterval = null;
         let quizRuns = JSON.parse(localStorage.getItem('quizRuns') || '[]');
         let sidebarCollapsed = false;
+
+        // Motivational Messages Configuration
+        const motivationalMessages = {
+            perfect: [
+                "🎉 Perfect Score! You're absolutely crushing it!",
+                "💯 Flawless! Your expertise is truly impressive!",
+                "🌟 Outstanding! A perfect demonstration of mastery!",
+                "🏆 Perfect execution! You've reached the pinnacle!"
+            ],
+            excellent: [ // 90-99%
+                "🌟 Excellent work! You're clearly on top of your game!",
+                "💪 Nearly perfect! Your dedication shows!",
+                "✨ Exceptional performance! Just shy of perfection!",
+                "🚀 Impressive! You're reaching for the stars!"
+            ],
+            good: [ // 80-89%
+                "✅ Well done! You've passed with solid knowledge!",
+                "👍 Good job! You're demonstrating strong understanding!",
+                "💚 Nice work! You've got the fundamentals down!",
+                "🎯 Passed! Keep up the good momentum!"
+            ],
+            close: [ // 70-79%
+                "😊 Close! You're almost there! Review and try again!",
+                "📚 Not bad! A bit more study and you'll ace it!",
+                "💪 Keep pushing! You're on the right track!",
+                "🔄 Good effort! One more review should do it!"
+            ],
+            failed: [ // <70%
+                "📖 Don't give up! Learning takes time and practice.",
+                "💡 This is a learning opportunity! Review and come back stronger!",
+                "🌱 Every expert was once a beginner. Keep studying!",
+                "🔍 Take time to review. You'll get there with persistence!",
+                "💪 Challenges make you stronger! Don't stop now!"
+            ]
+        };
+
+        function getMotivationalMessage(scorePercentage) {
+            let messages;
+            if (scorePercentage === 100) {
+                messages = motivationalMessages.perfect;
+            } else if (scorePercentage >= 90) {
+                messages = motivationalMessages.excellent;
+            } else if (scorePercentage >= 80) {
+                messages = motivationalMessages.good;
+            } else if (scorePercentage >= 70) {
+                messages = motivationalMessages.close;
+            } else {
+                messages = motivationalMessages.failed;
+            }
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
 
         // Notification System
         function showNotification(icon, title, message, buttons = [{ text: 'OK', primary: true }]) {
@@ -1909,41 +2189,54 @@ HTML_TEMPLATE = '''
             // Save run to local storage
             const run = {
                 quiz_id: currentQuiz.quiz_id,
+                quiz_path: currentQuizPath,
                 timestamp: new Date().toISOString(),
                 score: parseFloat(scorePercentage),
                 passed: passed,
                 total_questions: totalQuestions,
                 correct: correctCount,
-                time_spent: timeSpent
+                time_spent: timeSpent,
+                failures: failures
             };
             quizRuns.unshift(run);
-            if (quizRuns.length > 50) quizRuns = quizRuns.slice(0, 50); // Keep last 50
+            if (quizRuns.length > 100) quizRuns = quizRuns.slice(0, 100); // Keep last 100
             localStorage.setItem('quizRuns', JSON.stringify(quizRuns));
 
+            // Update stats
             document.getElementById('totalQuestions').textContent = totalQuestions;
             document.getElementById('correctAnswers').textContent = correctCount;
             document.getElementById('incorrectAnswers').textContent = failures.length;
             document.getElementById('finalScore').textContent = scorePercentage + '%';
 
-            const statusEl = document.getElementById('resultStatus');
-            statusEl.textContent = passed ? '✓ PASS' : '✗ FAIL';
-            statusEl.className = 'results-score ' + (passed ? 'results-pass' : 'results-fail');
+            // Update status badge
+            const statusBadge = document.getElementById('resultStatusBadge');
+            statusBadge.textContent = passed ? '✓ PASS' : '✗ FAIL';
+            statusBadge.className = 'results-status-badge ' + (passed ? 'results-status-pass' : 'results-status-fail');
 
+            // Show motivational message
+            const score = parseFloat(scorePercentage);
+            const motivationalMsg = getMotivationalMessage(score);
+            document.getElementById('motivationalMessage').textContent = motivationalMsg;
+
+            // Handle failures section
+            const failuresSection = document.getElementById('failuresSection');
             const failuresListEl = document.getElementById('failuresList');
+            
             if (failures.length > 0) {
-                failuresListEl.innerHTML = '<h3 style="margin-bottom: 15px;">Incorrect Answers:</h3>';
+                failuresSection.classList.remove('hidden');
+                failuresListEl.innerHTML = '';
                 failures.forEach(failure => {
                     const div = document.createElement('div');
-                    div.className = 'failure-item';
+                    div.className = 'results-failure-item';
                     div.innerHTML = `
-                        <div class="failure-question">Q${failure.question_id}: ${failure.question}</div>
-                        <div class="failure-answer">Your answer: ${failure.user_answer}</div>
-                        <div class="failure-correct">Correct answer: ${failure.correct_answer}</div>
+                        <div class="results-failure-question">Q${failure.question_id}: ${failure.question}</div>
+                        <div class="results-failure-answer">❌ Your answer: ${failure.user_answer}</div>
+                        <div class="results-failure-correct">✅ Correct answer: ${failure.correct_answer}</div>
                     `;
                     failuresListEl.appendChild(div);
                 });
             } else {
-                failuresListEl.innerHTML = '<p style="text-align: center; color: #455A64; font-size: 1.2em; font-weight: 600;">🎉 Perfect Score!</p>';;
+                failuresSection.classList.add('hidden');
             }
 
             // Hide quiz view, exit fullscreen, show results
@@ -1951,9 +2244,8 @@ HTML_TEMPLATE = '''
             document.body.classList.remove('fullscreen-mode');
             document.getElementById('resultsScreen').classList.remove('hidden');
             
-            // Generate HTML report
-            console.log('Generating HTML report...');
-            generateHtmlReport();
+            // No longer generate HTML report automatically - results page IS the report
+            console.log('Results displayed - no separate HTML report generated');
         }
 
         function showScreen(screenId) {
@@ -2066,6 +2358,7 @@ HTML_TEMPLATE = '''
                 displayQuizBreakdown();
                 displayRecentRuns();
                 displayPassFailAnalysis();
+                displayResultsHistory();
             } else {
                 document.getElementById('avgScore').textContent = '0%';
                 document.getElementById('passRate').textContent = '0%';
@@ -2228,6 +2521,48 @@ HTML_TEMPLATE = '''
             analysisEl.innerHTML = html;
         }
 
+        function displayResultsHistory() {
+            const historyEl = document.getElementById('resultsHistory');
+            if (quizRuns.length === 0) {
+                historyEl.innerHTML = '<p style="color: #B0BEC5; text-align: center; padding: 20px;">No quiz results yet</p>';
+                return;
+            }
+            
+            let html = '<table class="report-table"><thead><tr>';
+            html += '<th>Date & Time</th>';
+            html += '<th>Quiz</th>';
+            html += '<th>Score</th>';
+            html += '<th>Result</th>';
+            html += '<th>Time</th>';
+            html += '<th>Report</th>';
+            html += '</tr></thead><tbody>';
+            
+            quizRuns.forEach(run => {
+                const date = new Date(run.timestamp);
+                const dateStr = date.toLocaleDateString();
+                const timeStr = date.toLocaleTimeString();
+                const badge = run.passed ? 'badge-pass' : 'badge-fail';
+                const badgeText = run.passed ? '✓ Pass' : '✗ Fail';
+                const minutes = Math.floor(run.time_spent / 60);
+                const seconds = run.time_spent % 60;
+                const timeSpent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                html += `
+                    <tr>
+                        <td style="font-size: 0.9em;">${dateStr}<br><span style="color: #B0BEC5;">${timeStr}</span></td>
+                        <td><strong>${run.quiz_id}</strong></td>
+                        <td><strong>${run.score.toFixed(1)}%</strong> (${run.correct}/${run.total_questions})</td>
+                        <td><span class="badge ${badge}">${badgeText}</span></td>
+                        <td>${timeSpent}</td>
+                        <td><a href="/report/${run.quiz_id}" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: 500;">View Report →</a></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            historyEl.innerHTML = html;
+        }
+
         // Toggle Fullscreen Mode
         function toggleFullscreen() {
             document.body.classList.toggle('fullscreen-mode');
@@ -2250,13 +2585,15 @@ HTML_TEMPLATE = '''
             const backBtn = document.getElementById('backBtn');
             const answerInput = document.getElementById('answerInput');
             const fullscreenToggle = document.getElementById('fullscreenToggle');
+            const retakeBtn = document.getElementById('retakeBtn');
 
             console.log('Elements found:', {
                 submitBtn: !!submitBtn,
                 quitBtn: !!quitBtn,
                 backBtn: !!backBtn,
                 answerInput: !!answerInput,
-                fullscreenToggle: !!fullscreenToggle
+                fullscreenToggle: !!fullscreenToggle,
+                retakeBtn: !!retakeBtn
             });
 
             if (submitBtn) {
@@ -2305,6 +2642,18 @@ HTML_TEMPLATE = '''
                 console.log('Fullscreen toggle listener attached');
             }
 
+            if (retakeBtn) {
+                retakeBtn.addEventListener('click', function(e) {
+                    console.log('Retake button clicked');
+                    e.preventDefault();
+                    // Restart the same quiz
+                    if (currentQuizPath) {
+                        startQuiz(currentQuizPath);
+                    }
+                });
+                console.log('Retake button listener attached');
+            }
+
             console.log('All event listeners initialized');
         }
 
@@ -2348,195 +2697,220 @@ HTML_TEMPLATE = '''
     </script>
 </body>
 </html>
-'''
+"""
 
 
 @app.after_request
 def add_header(response):
     """Add headers to prevent caching during development"""
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
+    response.headers["Cache-Control"] = (
+        "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
+    )
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "-1"
     return response
 
-@app.route('/')
+
+@app.route("/")
 def index():
     """Serve the main quiz interface."""
     try:
-        logger.debug('Serving main page')
+        logger.debug("Serving main page")
         # Use timestamp for cache busting
-        cache_buster = datetime.now().strftime('%Y%m%d%H%M%S')
+        cache_buster = datetime.now().strftime("%Y%m%d%H%M%S")
         return render_template_string(HTML_TEMPLATE, timestamp=cache_buster)
     except Exception as e:
-        logger.error(f'Error serving main page: {e}', exc_info=True)
+        logger.error(f"Error serving main page: {e}", exc_info=True)
         raise
 
 
-@app.route('/version')
+@app.route("/version")
 def version():
     """Return version info to verify what's being served."""
-    return jsonify({
-        'version': '5.0',
-        'layout': 'Two-Column: Custom Theme Sidebar (300px) + Comprehensive Dashboard',
-        'sidebar_width': '300px',
-        'main_content_margin': '300px from left',
-        'theme': 'Modern Minimalist (#FFFFFF, #F7F7F7, #B0BEC5, #455A64, #263238) with dark mode support',
-        'dashboard_features': [
-            'Overall Statistics (6 stat cards)',
-            'Performance Trends (visual bars)',
-            'Quiz Performance Breakdown (detailed table)',
-            'Recent Activity (timeline view)',
-            'Pass/Fail Analysis (comprehensive stats)'
-        ],
-        'timestamp': datetime.now().isoformat()
-    })
+    return jsonify(
+        {
+            "version": "5.0",
+            "layout": "Two-Column: Custom Theme Sidebar (300px) + Comprehensive Dashboard",
+            "sidebar_width": "300px",
+            "main_content_margin": "300px from left",
+            "theme": "Modern Minimalist (#FFFFFF, #F7F7F7, #B0BEC5, #455A64, #263238) with dark mode support",
+            "dashboard_features": [
+                "Overall Statistics (6 stat cards)",
+                "Performance Trends (visual bars)",
+                "Quiz Performance Breakdown (detailed table)",
+                "Recent Activity (timeline view)",
+                "Pass/Fail Analysis (comprehensive stats)",
+            ],
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
 
 
-@app.route('/api/quizzes')
+@app.route("/api/quizzes")
 def get_quizzes():
     """Get list of available quizzes."""
     try:
-        logger.debug('Fetching quiz list')
-        quizzes_dir = Path('data/quizzes')
+        logger.debug("Fetching quiz list")
+        quizzes_dir = Path("data/quizzes")
         quiz_files = []
-        test_mode: bool = app.config.get('TEST_MODE', False)
+        test_mode: bool = app.config.get("TEST_MODE", False)
 
         if quizzes_dir.exists():
             # Search recursively for all quiz JSON files
-            for quiz_file in quizzes_dir.rglob('*.json'):
+            for quiz_file in quizzes_dir.rglob("*.json"):
                 # Skip last_import.json metadata file
-                if quiz_file.name == 'last_import.json':
+                if quiz_file.name == "last_import.json":
                     continue
 
                 # Skip test data quizzes in production mode
                 if not test_mode and is_test_data(quiz_file.parent):
-                    logger.debug(f'Skipping test data quiz in production mode: {quiz_file}')
+                    logger.debug(
+                        f"Skipping test data quiz in production mode: {quiz_file}"
+                    )
                     continue
 
                 try:
-                    with open(quiz_file, 'r', encoding='utf-8') as f:
+                    with open(quiz_file, "r", encoding="utf-8") as f:
                         data = json.load(f)
-                        quiz_files.append({
-                            'path': str(quiz_file),
-                            'quiz_id': data.get('quiz_id', quiz_file.stem),
-                            'num_questions': len(data.get('questions', [])),
-                            'source_file': data.get('source_file', ''),
-                            'created_at': data.get('created_at', '')
-                        })
+                        quiz_files.append(
+                            {
+                                "path": str(quiz_file),
+                                "quiz_id": data.get("quiz_id", quiz_file.stem),
+                                "num_questions": len(data.get("questions", [])),
+                                "source_file": data.get("source_file", ""),
+                                "created_at": data.get("created_at", ""),
+                            }
+                        )
                 except (json.JSONDecodeError, IOError) as e:
-                    logger.warning(f'Error loading quiz file {quiz_file}: {e}')
+                    logger.warning(f"Error loading quiz file {quiz_file}: {e}")
                     continue
         else:
-            logger.warning(f'Quizzes directory does not exist: {quizzes_dir}')
+            logger.warning(f"Quizzes directory does not exist: {quizzes_dir}")
 
         # Sort by creation date (newest first)
-        quiz_files.sort(key=lambda x: x.get('created_at', ''), reverse=True)
-        logger.info(f'Found {len(quiz_files)} quizzes (test_mode={test_mode})')
+        quiz_files.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        logger.info(f"Found {len(quiz_files)} quizzes (test_mode={test_mode})")
         return jsonify(quiz_files)
     except Exception as e:
-        logger.error(f'Error fetching quizzes: {e}', exc_info=True)
-        return jsonify({'error': 'Failed to fetch quizzes'}), 500
+        logger.error(f"Error fetching quizzes: {e}", exc_info=True)
+        return jsonify({"error": "Failed to fetch quizzes"}), 500
 
 
-@app.route('/api/quiz')
+@app.route("/api/quiz")
 def get_quiz():
     """Get a specific quiz by path."""
-    quiz_path = request.args.get('path')
+    quiz_path = request.args.get("path")
     if not quiz_path:
-        logger.warning('Quiz path not provided in request')
-        return jsonify({'error': 'No quiz path provided'}), 400
+        logger.warning("Quiz path not provided in request")
+        return jsonify({"error": "No quiz path provided"}), 400
 
     try:
-        logger.debug(f'Loading quiz: {quiz_path}')
+        logger.debug(f"Loading quiz: {quiz_path}")
         quiz = Quiz.load(quiz_path)
-        logger.info(f'Quiz loaded successfully: {quiz.quiz_id}')
+        logger.info(f"Quiz loaded successfully: {quiz.quiz_id}")
         return jsonify(quiz.to_dict())
     except FileNotFoundError:
-        logger.error(f'Quiz file not found: {quiz_path}')
-        return jsonify({'error': 'Quiz not found'}), 404
+        logger.error(f"Quiz file not found: {quiz_path}")
+        return jsonify({"error": "Quiz not found"}), 404
     except Exception as e:
-        logger.error(f'Error loading quiz {quiz_path}: {e}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error loading quiz {quiz_path}: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/check-answer', methods=['POST'])
+@app.route("/api/check-answer", methods=["POST"])
 def check_answer():
     """Check if user's answer is correct."""
     try:
         data = request.json
-        user_answer = data.get('user_answer', '')
-        correct_answer = data.get('correct_answer', '')
+        user_answer = data.get("user_answer", "")
+        correct_answer = data.get("correct_answer", "")
 
         # Normalize and compare answers
         user_normalized = normalize_answer(user_answer)
         correct_normalized = normalize_answer(correct_answer)
 
         is_correct = user_normalized == correct_normalized
-        
-        logger.debug(f'Answer check: user="{user_answer}" correct="{correct_answer}" result={is_correct}')
 
-        return jsonify({
-            'correct': is_correct,
-            'normalized_user': user_normalized,
-            'normalized_correct': correct_normalized
-        })
+        logger.debug(
+            f'Answer check: user="{user_answer}" correct="{correct_answer}" result={is_correct}'
+        )
+
+        return jsonify(
+            {
+                "correct": is_correct,
+                "normalized_user": user_normalized,
+                "normalized_correct": correct_normalized,
+            }
+        )
     except Exception as e:
-        logger.error(f'Error checking answer: {e}', exc_info=True)
-        return jsonify({'error': 'Failed to check answer'}), 500
+        logger.error(f"Error checking answer: {e}", exc_info=True)
+        return jsonify({"error": "Failed to check answer"}), 500
 
 
-@app.route('/api/save-report', methods=['POST'])
+@app.route("/api/save-report", methods=["POST"])
 def save_report():
     """Generate and save HTML report for quiz results."""
     try:
-        logger.debug('Saving quiz report')
+        logger.debug("Saving quiz report")
         data = request.json
-        result_data = data.get('result', {})
-        quiz_data = data.get('quiz', {})
+        result_data = data.get("result", {})
+        quiz_data = data.get("quiz", {})
 
         # Reconstruct Quiz object
         quiz = Quiz(
-            quiz_id=quiz_data['quiz_id'],
-            created_at=quiz_data.get('created_at', ''),
-            source_file=quiz_data.get('source_file', ''),
-            questions=[]
+            quiz_id=quiz_data["quiz_id"],
+            created_at=quiz_data.get("created_at", ""),
+            source_file=quiz_data.get("source_file", ""),
+            questions=[],
         )
 
         # Reconstruct QuizResult object
         result = QuizResult(
-            quiz_id=result_data['quiz_id'],
-            total_questions=result_data['total_questions'],
-            correct_answers=result_data['correct_count'],
-            failures=result_data['failures'],
-            score_percentage=result_data['score_percentage'],
-            passed=result_data['passed'],
+            quiz_id=result_data["quiz_id"],
+            total_questions=result_data["total_questions"],
+            correct_answers=result_data["correct_count"],
+            failures=result_data["failures"],
+            score_percentage=result_data["score_percentage"],
+            passed=result_data["passed"],
             completed_at=datetime.now().isoformat(),
-            time_spent=result_data.get('time_spent', 0)
+            time_spent=result_data.get("time_spent", 0),
         )
 
         # Generate and save HTML report
         report_path = run_quiz.save_html_report(result, quiz)
-        logger.info(f'Report saved successfully: {report_path}')
+        logger.info(f"Report saved successfully: {report_path}")
 
-        return jsonify({
-            'success': True,
-            'report_path': str(report_path)
-        })
+        return jsonify({"success": True, "report_path": str(report_path)})
 
     except Exception as e:
-        logger.error(f'Error saving report: {e}', exc_info=True)
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        logger.error(f"Error saving report: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/report/<quiz_id>")
+def view_report(quiz_id: str):
+    """Serve HTML report for a completed quiz."""
+    try:
+        report_path = REPORTS_DIR / f"{quiz_id}_report.html"
+        if report_path.exists():
+            return send_file(report_path, mimetype="text/html")
+        else:
+            logger.warning(f"Report not found: {report_path}")
+            return (
+                f"<h1>Report Not Found</h1><p>No report found for quiz ID: {quiz_id}</p>",
+                404,
+            )
+    except Exception as e:
+        logger.error(f"Error viewing report: {e}", exc_info=True)
+        return f"<h1>Error</h1><p>Failed to load report: {e}</p>", 500
 
 
 def main():
     """Main entry point for the web server."""
     parser = argparse.ArgumentParser(
-        description='Run the Quizzer web interface',
+        description="Run the Quizzer web interface",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
+        epilog="""
 Examples:
   Start server on default port (5000):
     python web_quiz.py
@@ -2546,191 +2920,191 @@ Examples:
 
   Make server accessible from other devices:
     python web_quiz.py --host 0.0.0.0 --port 8080
-        '''
+        """,
     )
 
     parser.add_argument(
-        '--host',
-        default='127.0.0.1',
-        help='host to bind to (default: 127.0.0.1, use 0.0.0.0 for all interfaces)'
+        "--host",
+        default="127.0.0.1",
+        help="host to bind to (default: 127.0.0.1, use 0.0.0.0 for all interfaces)",
     )
 
     parser.add_argument(
-        '--port',
-        type=int,
-        default=5000,
-        help='port to run server on (default: 5000)'
+        "--port", type=int, default=5000, help="port to run server on (default: 5000)"
+    )
+
+    parser.add_argument("--debug", action="store_true", help="run in debug mode")
+
+    parser.add_argument(
+        "--test-mode",
+        action="store_true",
+        help="enable test mode (show sample quizzes, hidden by default in production)",
     )
 
     parser.add_argument(
-        '--debug',
-        action='store_true',
-        help='run in debug mode'
+        "--no-https",
+        action="store_true",
+        help="disable HTTPS (use HTTP only, not recommended for production)",
     )
-    
+
     parser.add_argument(
-        '--test-mode',
-        action='store_true',
-        help='enable test mode (show sample quizzes, hidden by default in production)'
+        "--cert",
+        default="certs/cert.pem",
+        help="path to SSL certificate file (default: certs/cert.pem)",
     )
-    
+
     parser.add_argument(
-        '--no-https',
-        action='store_true',
-        help='disable HTTPS (use HTTP only, not recommended for production)'
+        "--key",
+        default="certs/key.pem",
+        help="path to SSL private key file (default: certs/key.pem)",
     )
-    
+
     parser.add_argument(
-        '--cert',
-        default='certs/cert.pem',
-        help='path to SSL certificate file (default: certs/cert.pem)'
+        "--log-level",
+        default="ALL",
+        choices=["ALL", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="log level for both file and console (default: ALL)",
     )
-    
+
     parser.add_argument(
-        '--key',
-        default='certs/key.pem',
-        help='path to SSL private key file (default: certs/key.pem)'
-    )
-    
-    parser.add_argument(
-        '--log-level',
-        default='ALL',
-        choices=['ALL', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        help='log level for both file and console (default: ALL)'
-    )
-    
-    parser.add_argument(
-        '--log-file-level',
+        "--log-file-level",
         default=None,
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        help='log level for file only (overrides --log-level for file)'
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="log level for file only (overrides --log-level for file)",
     )
-    
+
     parser.add_argument(
-        '--log-console-level',
+        "--log-console-level",
         default=None,
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        help='log level for console only (overrides --log-level for console)'
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="log level for console only (overrides --log-level for console)",
     )
 
     args = parser.parse_args()
-    
+
     # Set test mode in app config
-    app.config['TEST_MODE'] = args.test_mode
-    
+    app.config["TEST_MODE"] = args.test_mode
+
     # Configure logging based on arguments
     log_level_map = {
-        'ALL': logging.DEBUG,
-        'DEBUG': logging.DEBUG,
-        'INFO': logging.INFO,
-        'WARNING': logging.WARNING,
-        'ERROR': logging.ERROR,
-        'CRITICAL': logging.CRITICAL
+        "ALL": logging.DEBUG,
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
     }
-    
+
     # Determine log levels
     base_level = log_level_map[args.log_level]
-    file_level = log_level_map[args.log_file_level] if args.log_file_level else base_level
-    console_level = log_level_map[args.log_console_level] if args.log_console_level else base_level
-    
+    file_level = (
+        log_level_map[args.log_file_level] if args.log_file_level else base_level
+    )
+    console_level = (
+        log_level_map[args.log_console_level] if args.log_console_level else base_level
+    )
+
     # Reconfigure logger with specified levels
     global logger
     logger = setup_logging(file_level=file_level, console_level=console_level)
-    
+
     # Log the configuration
     level_names = {v: k for k, v in log_level_map.items()}
-    logger.info(f'Logging configured - File: {level_names.get(file_level, "DEBUG")}, Console: {level_names.get(console_level, "DEBUG")}')
-    
+    logger.info(
+        f'Logging configured - File: {level_names.get(file_level, "DEBUG")}, Console: {level_names.get(console_level, "DEBUG")}'
+    )
+
     # Setup SSL context
     ssl_context = None
-    protocol = 'http'
-    
+    protocol = "http"
+
     if not args.no_https:
         # Generate or use existing certificates
         cert_path = args.cert
         key_path = args.key
-        
+
         # Try to use provided certificates or generate new ones
         if not (Path(cert_path).exists() and Path(key_path).exists()):
             print("🔒 Generating self-signed SSL certificates...")
-            cert_path, key_path = generate_self_signed_cert('certs')
-        
+            cert_path, key_path = generate_self_signed_cert("certs")
+
         if cert_path and key_path:
             try:
                 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
                 ssl_context.load_cert_chain(cert_path, key_path)
-                protocol = 'https'
+                protocol = "https"
                 print("✅ HTTPS enabled with SSL certificates")
-                logger.info('HTTPS enabled')
+                logger.info("HTTPS enabled")
             except Exception as e:
                 print(f"⚠️  Failed to load SSL certificates: {e}")
                 print("   Falling back to HTTP")
-                logger.warning(f'Failed to enable HTTPS: {e}')
+                logger.warning(f"Failed to enable HTTPS: {e}")
                 ssl_context = None
-                protocol = 'http'
+                protocol = "http"
         else:
             print("⚠️  Could not generate SSL certificates, using HTTP")
-            logger.warning('Running without HTTPS')
+            logger.warning("Running without HTTPS")
     else:
         print("⚠️  HTTPS disabled by --no-https flag (not recommended for production)")
-        logger.warning('HTTPS explicitly disabled')
+        logger.warning("HTTPS explicitly disabled")
 
     print(f"\n{'='*60}")
     print("🎯 Quizzer Web Interface")
     print(f"{'='*60}")
     print(f"\n🌐 Server starting at: {protocol}://{args.host}:{args.port}")
-    
+
     if args.test_mode:
         print("⚠️  TEST MODE: Sample quizzes are visible")
     else:
         print("✅ PRODUCTION MODE: Sample quizzes hidden")
-    
+
     # Show logging configuration
     level_names_display = {
-        logging.DEBUG: 'ALL (DEBUG)',
-        logging.INFO: 'INFO',
-        logging.WARNING: 'WARNING',
-        logging.ERROR: 'ERROR',
-        logging.CRITICAL: 'CRITICAL'
+        logging.DEBUG: "ALL (DEBUG)",
+        logging.INFO: "INFO",
+        logging.WARNING: "WARNING",
+        logging.ERROR: "ERROR",
+        logging.CRITICAL: "CRITICAL",
     }
-    print(f"📝 Logging: File={level_names_display.get(file_level, 'DEBUG')}, Console={level_names_display.get(console_level, 'DEBUG')}")
-    
-    if protocol == 'https':
+    print(
+        f"📝 Logging: File={level_names_display.get(file_level, 'DEBUG')}, Console={level_names_display.get(console_level, 'DEBUG')}"
+    )
+
+    if protocol == "https":
         print("\n🔒 HTTPS enabled (secure connection)")
-        if 'localhost' in args.host or '127.0.0.1' in args.host:
+        if "localhost" in args.host or "127.0.0.1" in args.host:
             print("   ⚠️  Self-signed certificate - your browser may show a warning")
             print("   📝 Click 'Advanced' and 'Proceed to localhost' to continue")
     else:
         print("\n⚠️  HTTP only (not secure - use HTTPS for production)")
-    
-    if args.host == '127.0.0.1':
+
+    if args.host == "127.0.0.1":
         print("   📍 Local access only")
     else:
         print("   📍 Accessible from network")
-    
+
     print("\n📝 To stop the server, press Ctrl+C")
-    print(f"📋 Logs saved to: logs/web_quiz.log")
-    print(f"\n💡 Tip: Use --log-level to control logging verbosity (ALL/INFO/WARNING/ERROR)")
+    print("📋 Logs saved to: logs/web_quiz.log")
+    print(
+        "\n💡 Tip: Use --log-level to control logging verbosity (ALL/INFO/WARNING/ERROR)"
+    )
     print(f"{'='*60}\n")
 
-    logger.info(f'Starting Quizzer web server on {args.host}:{args.port}')
-    logger.info(f'Protocol: {protocol.upper()}')
-    logger.info(f'Debug mode: {args.debug}')
+    logger.info(f"Starting Quizzer web server on {args.host}:{args.port}")
+    logger.info(f"Protocol: {protocol.upper()}")
+    logger.info(f"Debug mode: {args.debug}")
 
     try:
         app.run(
-            host=args.host,
-            port=args.port,
-            debug=args.debug,
-            ssl_context=ssl_context
+            host=args.host, port=args.port, debug=args.debug, ssl_context=ssl_context
         )
     except KeyboardInterrupt:
         print("\n\n👋 Server stopped. Goodbye!")
-        logger.info('Server stopped by user')
+        logger.info("Server stopped by user")
     except Exception as e:
         print(f"\n❌ Error: {e}")
-        logger.critical(f'Server error: {e}', exc_info=True)
+        logger.critical(f"Server error: {e}", exc_info=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

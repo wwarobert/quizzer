@@ -1,6 +1,7 @@
 """
 Quick test to verify the two-column layout is present in the HTML template
 """
+
 import sys
 from pathlib import Path
 
@@ -12,10 +13,10 @@ from web_quiz import HTML_TEMPLATE
 
 def test_two_column_layout():
     """Verify the HTML contains the two-column sidebar + dashboard layout"""
-    
+
     print("🔍 Checking HTML template for two-column layout...")
     print("=" * 70)
-    
+
     # Check for sidebar structure
     checks = [
         ("Sidebar element", '<div class="sidebar"'),
@@ -27,7 +28,6 @@ def test_two_column_layout():
         ("Hamburger menu container", '<div class="hamburger-container"'),
         ("Expandable menu", '<div class="expandable-menu">'),
         ("Quiz menu content", 'id="quizMenuContent"'),
-        
         # Check for dashboard components
         ("Breadcrumb navigation", '<nav class="breadcrumb">'),
         ("Dashboard stats", '<div class="dashboard-stats">'),
@@ -38,22 +38,20 @@ def test_two_column_layout():
         ("Pass rate stat", 'id="passRate"'),
         ("Recent activity timeline", '<div class="timeline">'),
         ("Recent runs list", 'id="recentRunsList"'),
-        
         # Check for CSS layout (Version 5.0 - 300px sidebar)
-        ("Sidebar CSS position", 'position: fixed;'),
-        ("Sidebar width", 'width: 300px;'),
-        ("Main content margin", 'margin-left: 300px;'),
-        
+        ("Sidebar CSS position", "position: fixed;"),
+        ("Sidebar width", "width: 300px;"),
+        ("Main content margin", "margin-left: 300px;"),
         # Check for JavaScript functions
-        ("Toggle sidebar function", 'function toggleSidebar()'),
-        ("Toggle quiz menu function", 'function toggleQuizMenu()'),
-        ("Show view function", 'function showView(viewName)'),
-        ("Update dashboard function", 'function updateDashboard()'),
+        ("Toggle sidebar function", "function toggleSidebar()"),
+        ("Toggle quiz menu function", "function toggleQuizMenu()"),
+        ("Show view function", "function showView(viewName)"),
+        ("Update dashboard function", "function updateDashboard()"),
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for check_name, check_string in checks:
         if check_string in HTML_TEMPLATE:
             print(f"✓ {check_name:<30} FOUND")
@@ -61,10 +59,10 @@ def test_two_column_layout():
         else:
             print(f"✗ {check_name:<30} MISSING")
             failed += 1
-    
+
     print("=" * 70)
     print(f"\nResults: {passed} passed, {failed} failed")
-    
+
     if failed == 0:
         print("\n✅ SUCCESS! Two-column layout IS present in the HTML template!")
         print("   - Left column: Sidebar (300px, navy gradient)")
@@ -74,12 +72,12 @@ def test_two_column_layout():
         print("   2. Or open OPEN_QUIZZER_HERE.html in your workspace")
     else:
         print("\n❌ FAILED! Some two-column layout elements are missing!")
-    
+
     # Use assert instead of return for pytest
     assert failed == 0, f"{failed} layout elements are missing from the HTML template"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         test_two_column_layout()
         print("\n✅ Test passed!")

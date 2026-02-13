@@ -14,24 +14,40 @@ Licensed under the Apache License, Version 2.0
 """
 
 import argparse
-import sys
 import json
-import random
 import os
+import random
+import sys
 import time
-from pathlib import Path
 from datetime import datetime
-from typing import List, Dict
+from pathlib import Path
+from typing import Dict, List
 
-from quizzer import answers_match, format_answer_display, Quiz, QuizResult, is_test_data
+from quizzer import Quiz, QuizResult, answers_match, format_answer_display, is_test_data
+from quizzer.constants import (
+    COLOR_DANGER,
+    COLOR_SUCCESS,
+    COLOR_WARNING,
+    DATA_DIR_NAME,
+    DEFAULT_PASS_THRESHOLD,
+    QUIZ_FILE_EXTENSION,
+    QUIZZES_DIR_NAME,
+    REPORT_EXCELLENT_THRESHOLD,
+    REPORT_WARNING_THRESHOLD,
+    REPORTS_DIR_NAME,
+)
 
 
-def select_quiz_folder(base_dir: str = "data/quizzes") -> Path:
+def select_quiz_folder(base_dir: str = f"{DATA_DIR_NAME}/{QUIZZES_DIR_NAME}") -> Path:
     """
     Interactively select a quiz folder if multiple exist.
 
+    Why this function exists:
+    When users have multiple quiz categories (e.g., Python, Azure, AWS),
+    this provides a user-friendly way to choose without typing paths.
+
     Args:
-        base_dir: Base directory containing quiz folders
+        base_dir: Base directory containing quiz folders (default: data/quizzes)
 
     Returns:
         Path to selected folder
@@ -55,7 +71,7 @@ def select_quiz_folder(base_dir: str = "data/quizzes") -> Path:
     # Multiple folders - ask user to select
     print("\nAvailable quiz folders:")
     for i, folder in enumerate(subdirs, 1):
-        quiz_count = len(list(folder.glob("*.json")))
+        quiz_count = len(list(folder.glob(f"*{QUIZ_FILE_EXTENSION}")))
         print(f"  {i}. {folder.name} ({quiz_count} quizzes)")
 
     while True:
@@ -106,6 +122,28 @@ def select_random_quiz(quiz_dir: str = "data/quizzes") -> Path:
     return selected
 
 
+def _get_score_color(score_percentage: float) -> str:
+    """
+    Determine color code based on score percentage.
+
+    Why this function exists:
+    Centralizes color logic to avoid repeating thresholds and colors
+    across the codebase. Makes it easy to adjust color scheme.
+
+    Args:
+        score_percentage: Score as a percentage (0-100)
+
+    Returns:
+        Hex color code for the score level
+    """
+    if score_percentage >= REPORT_EXCELLENT_THRESHOLD:
+        return COLOR_SUCCESS
+    elif score_percentage >= REPORT_WARNING_THRESHOLD:
+        return COLOR_WARNING
+    else:
+        return COLOR_DANGER
+
+
 def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
     """
     Generate an HTML report for quiz results.
@@ -117,9 +155,13 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
     Returns:
         HTML string with formatted report
     """
+    # Color coding based on pass/fail status
     pass_status = "PASS" if result.passed else "FAIL"
-    status_color = "#28a745" if result.passed else "#dc3545"
-    coverage_color = "#28a745" if result.score_percentage >= 80 else "#ffc107" if result.score_percentage >= 60 else "#dc3545"
+    status_color = COLOR_SUCCESS if result.passed else COLOR_DANGER
+
+    # Color coding based on score percentage for visual feedback
+    # Green >= 80%, Yellow 60-79%, Red < 60%
+    coverage_color = _get_score_color(result.score_percentage)
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -460,7 +502,11 @@ def generate_html_report(result: QuizResult, quiz: Quiz) -> str:
     return html
 
 
-def save_html_report(result: QuizResult, quiz: Quiz, output_dir: str = "data/reports") -> Path:
+def save_html_report(
+    result: QuizResult,
+    quiz: Quiz,
+    output_dir: str = f"{DATA_DIR_NAME}/{REPORTS_DIR_NAME}",
+) -> Path:
     """
     Save quiz results as HTML report.
 
@@ -481,7 +527,7 @@ def save_html_report(result: QuizResult, quiz: Quiz, output_dir: str = "data/rep
 
     html_content = generate_html_report(result, quiz)
 
-    with open(filepath, 'w', encoding='utf-8') as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         f.write(html_content)
 
     return filepath
@@ -489,7 +535,7 @@ def save_html_report(result: QuizResult, quiz: Quiz, output_dir: str = "data/rep
 
 def clear_screen():
     """Clear the console screen."""
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 def print_header():
@@ -526,7 +572,7 @@ def get_user_answer() -> str:
         sys.exit(0)
 
 
-def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
+def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> QuizResult:
     """
     Run the quiz interactively and collect results.
 
@@ -542,7 +588,7 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
     print(f"Quiz ID: {quiz.quiz_id}")
     print(f"Questions: {len(quiz.questions)}")
     print(f"Pass threshold: {pass_threshold}%")
-    print(f"\nInstructions:")
+    print("\nInstructions:")
     print("  - For multiple answers, separate with commas (e.g., 'a, b, c')")
     print("  - Answers are case-insensitive")
     print("  - Whitespace is ignored")
@@ -575,15 +621,23 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
             print("✓ CORRECT!")
         else:
             print("✗ INCORRECT")
-            failures.append({
-                'question_id': str(question.id),
-                'question': question.question,
-                'user_answer': format_answer_display(user_answer) if user_answer else "(no answer)",
-                'correct_answer': question.original_answer
-            })
+            failures.append(
+                {
+                    "question_id": str(question.id),
+                    "question": question.question,
+                    "user_answer": (
+                        format_answer_display(user_answer)
+                        if user_answer
+                        else "(no answer)"
+                    ),
+                    "correct_answer": question.original_answer,
+                }
+            )
 
         # Show detailed answer
-        print(f"\nYour answer: {format_answer_display(user_answer) if user_answer else '(no answer)'}")
+        print(
+            f"\nYour answer: {format_answer_display(user_answer) if user_answer else '(no answer)'}"
+        )
         print(f"Correct answer: {question.original_answer}")
         print("-" * 60)
 
@@ -609,7 +663,7 @@ def run_quiz(quiz: Quiz, pass_threshold: float = 80.0) -> QuizResult:
         score_percentage=score_percentage,
         passed=passed,
         failures=failures,
-        time_spent=time_spent
+        time_spent=time_spent,
     )
 
     return result
@@ -636,7 +690,9 @@ def display_results(result: QuizResult):
     print(f"Correct Answers:     {result.correct_answers}")
     print(f"Incorrect Answers:   {incorrect_count}")
     print(f"Time Spent:          {time_str}")
-    print(f"\nScore:               {result.correct_answers}/{result.total_questions} ({result.score_percentage:.1f}%)")
+    print(
+        f"\nScore:               {result.correct_answers}/{result.total_questions} ({result.score_percentage:.1f}%)"
+    )
 
     if result.passed:
         print("Result:              ✓ PASS")
@@ -646,7 +702,9 @@ def display_results(result: QuizResult):
     print("\n" + "=" * 60)
 
 
-def get_quiz_folders(base_dir: str = "data/quizzes", test_mode: bool = False) -> List[Path]:
+def get_quiz_folders(
+    base_dir: str = f"{DATA_DIR_NAME}/{QUIZZES_DIR_NAME}", test_mode: bool = False
+) -> List[Path]:
     """
     Get list of subdirectories containing quiz files.
 
@@ -656,12 +714,12 @@ def get_quiz_folders(base_dir: str = "data/quizzes", test_mode: bool = False) ->
 
     Returns:
         List of Path objects for subdirectories containing quiz files
-        
+
     Examples:
         >>> # Production mode - hide test data
         >>> folders = get_quiz_folders(test_mode=False)
         >>> assert not any(is_test_data(f) for f in folders)
-        
+
         >>> # Test mode - show all
         >>> folders = get_quiz_folders(test_mode=True)
         >>> assert len(folders) >= 0
@@ -675,17 +733,16 @@ def get_quiz_folders(base_dir: str = "data/quizzes", test_mode: bool = False) ->
     for item in base_path.iterdir():
         if not item.is_dir():
             continue
-            
+
         # Skip test data folders in production mode
         if not test_mode and is_test_data(item):
             continue
-            
+
         # Check if directory contains any JSON files (quiz files have timestamp pattern)
         json_files = list(item.glob("*.json"))
         # Filter out non-quiz files (like metadata)
         quiz_files = [
-            f for f in json_files
-            if f.stem not in ['last_import', 'README', 'metadata']
+            f for f in json_files if f.stem not in ["last_import", "README", "metadata"]
         ]
         if quiz_files:
             folders.append(item)
@@ -694,9 +751,13 @@ def get_quiz_folders(base_dir: str = "data/quizzes", test_mode: bool = False) ->
     return sorted(folders, key=lambda p: p.name.lower())
 
 
-def select_quiz_folder(folders: List[Path]) -> Path:
+def select_folder_from_list(folders: List[Path]) -> Path:
     """
     Display folder selection menu and get user choice.
+    
+    Why this exists separately from select_quiz_folder:
+    This function handles the UI for choosing from a pre-filtered list,
+    while select_quiz_folder finds folders from a directory path.
 
     Args:
         folders: List of folder paths to choose from
@@ -721,11 +782,12 @@ def select_quiz_folder(folders: List[Path]) -> Path:
         # Count quiz files in folder (all JSON files except metadata)
         json_files = list(folder.glob("*.json"))
         quiz_files = [
-            f for f in json_files
-            if f.stem not in ['last_import', 'README', 'metadata']
+            f for f in json_files if f.stem not in ["last_import", "README", "metadata"]
         ]
         quiz_count = len(quiz_files)
-        print(f"  {idx}. {folder.name} ({quiz_count} quiz{'zes' if quiz_count != 1 else ''})")
+        print(
+            f"  {idx}. {folder.name} ({quiz_count} quiz{'zes' if quiz_count != 1 else ''})"
+        )
 
     print("\n  0. Exit\n")
 
@@ -741,7 +803,9 @@ def select_quiz_folder(folders: List[Path]) -> Path:
         if 0 <= choice_idx < len(folders):
             return folders[choice_idx]
         else:
-            print(f"\nError: Invalid selection. Please choose 1-{len(folders)} or 0 to exit.")
+            print(
+                f"\nError: Invalid selection. Please choose 1-{len(folders)} or 0 to exit."
+            )
             sys.exit(1)
 
     except ValueError:
@@ -768,8 +832,7 @@ def get_random_quiz_from_folder(folder: Path) -> Path:
     # Get all JSON files, excluding known metadata files
     json_files = list(folder.glob("*.json"))
     quiz_files = [
-        f for f in json_files
-        if f.stem not in ['last_import', 'README', 'metadata']
+        f for f in json_files if f.stem not in ["last_import", "README", "metadata"]
     ]
 
     if not quiz_files:
@@ -796,10 +859,10 @@ def find_latest_quiz(base_dir: str = "data/quizzes") -> Path:
 
     if metadata_file.exists():
         # Use metadata from last import
-        with open(metadata_file, 'r', encoding='utf-8') as f:
+        with open(metadata_file, "r", encoding="utf-8") as f:
             metadata = json.load(f)
 
-        quiz_files = metadata.get('quiz_files', [])
+        quiz_files = metadata.get("quiz_files", [])
         if not quiz_files:
             raise FileNotFoundError("No quiz files found in last import metadata")
 
@@ -820,8 +883,8 @@ def find_latest_quiz(base_dir: str = "data/quizzes") -> Path:
 def main():
     """Main entry point for the quiz runner script."""
     parser = argparse.ArgumentParser(
-        prog='run_quiz.py',
-        description='Interactive quiz runner with automatic grading and reporting',
+        prog="run_quiz.py",
+        description="Interactive quiz runner with automatic grading and reporting",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -844,47 +907,46 @@ Notes:
   - Answers are case-insensitive and whitespace-tolerant
 
 For more information, see README.md
-        """
+        """,
     )
 
     parser.add_argument(
-        'quiz_file',
-        nargs='?',
-        metavar='FILE',
-        help='path to quiz JSON file (if omitted, interactive folder selection is shown)'
+        "quiz_file",
+        nargs="?",
+        metavar="FILE",
+        help="path to quiz JSON file (if omitted, interactive folder selection is shown)",
     )
 
     parser.add_argument(
-        '-t', '--pass-threshold',
+        "-t",
+        "--pass-threshold",
         type=float,
         default=80.0,
-        metavar='PERCENT',
-        help='minimum score percentage required to pass (default: 80.0)'
+        metavar="PERCENT",
+        help="minimum score percentage required to pass (default: 80.0)",
     )
 
     parser.add_argument(
-        '-r', '--report-output',
-        metavar='DIR',
-        help='directory to save additional text report (HTML report always generated)'
+        "-r",
+        "--report-output",
+        metavar="DIR",
+        help="directory to save additional text report (HTML report always generated)",
     )
 
     parser.add_argument(
-        '-q', '--quiet',
-        action='store_true',
-        help='minimal output mode without decorative elements'
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="minimal output mode without decorative elements",
     )
 
     parser.add_argument(
-        '--test-mode',
-        action='store_true',
-        help='enable test mode (show sample quizzes, hidden by default in production)'
+        "--test-mode",
+        action="store_true",
+        help="enable test mode (show sample quizzes, hidden by default in production)",
     )
 
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s 1.0.0'
-    )
+    parser.add_argument("--version", action="version", version="%(prog)s 1.0.0")
 
     args = parser.parse_args()
 
@@ -896,11 +958,11 @@ For more information, see README.md
             # Show folder selection menu
             test_mode: bool = args.test_mode
             folders = get_quiz_folders(test_mode=test_mode)
-            
+
             if not args.quiet and test_mode:
                 print("\n⚠️  TEST MODE: Sample quizzes are visible\n", file=sys.stderr)
-            
-            selected_folder = select_quiz_folder(folders)
+
+            selected_folder = select_folder_from_list(folders)
             quiz_file = get_random_quiz_from_folder(selected_folder)
 
             if not args.quiet:
@@ -925,7 +987,9 @@ For more information, see README.md
         if not args.quiet:
             display_results(result)
         else:
-            print(f"Score: {result.score_percentage:.1f}% - {'PASS' if result.passed else 'FAIL'}")
+            print(
+                f"Score: {result.score_percentage:.1f}% - {'PASS' if result.passed else 'FAIL'}"
+            )
 
         # Always save HTML report
         html_path = save_html_report(result, quiz)

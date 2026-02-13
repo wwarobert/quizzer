@@ -5,9 +5,9 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-import pytest
 import sys
 from pathlib import Path
+
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent

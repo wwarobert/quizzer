@@ -2,8 +2,10 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-226%20passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-241%20passing-success.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen.svg)](tests/)
+[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Linting](https://img.shields.io/badge/linting-ruff-orange.svg)](https://github.com/astral-sh/ruff)
 
 A quiz platform that generates randomized quizzes from CSV files with both command-line and web browser interfaces.
 
@@ -633,6 +635,35 @@ Q5: Who wrote Romeo and Juliet?
 
 ## Development
 
+### Code Quality
+
+This project follows **Clean Code Principles** with:
+- ✅ **Centralized constants** - No magic numbers or strings
+- ✅ **Type hints** - Complete type safety throughout
+- ✅ **Short, focused functions** - Single responsibility principle
+- ✅ **Automated formatting** - Black, isort for consistency
+- ✅ **Comprehensive linting** - Ruff for code quality
+- ✅ **241 passing tests** - High test coverage
+- ✅ **Clear documentation** - "Why" not "what" comments
+
+See [REFACTORING.md](REFACTORING.md) for detailed explanation of refactoring changes.
+
+**Run Quality Checks:**
+```bash
+# Format code
+black .
+isort . --profile black
+
+# Lint code
+ruff check . --fix
+
+# Run tests
+pytest tests/ -v
+
+# Type check (if mypy installed)
+mypy .
+```
+
 ### Project Structure
 
 ```
@@ -641,10 +672,11 @@ quizzer/
 ├── run_quiz.py             # Main script: CLI quiz runner
 ├── web_quiz.py             # Main script: Web interface server (Flask)
 ├── quizzer/                # Helper package
-│   ├── __init__.py
+│   ├── __init__.py         # Public API exports
+│   ├── constants.py        # Centralized configuration (NEW!)
 │   ├── normalizer.py       # Answer normalization logic
 │   └── quiz_data.py        # Data models (Quiz, Question, QuizResult)
-├── tests/                  # Test suite (57 tests)
+├── tests/                  # Test suite (241 tests)
 │   └── (test files)
 ├── data/
 │   ├── input/              # CSV source files go here
@@ -666,6 +698,7 @@ quizzer/
 │   │   ├── pr-comment.yml  # PR test result comments
 │   │   └── README.md
 │   └── copilot-instructions.md  # AI agent guidelines
+├── REFACTORING.md          # Clean code principles documentation
 ├── requirements.txt
 ├── LICENSE
 └── README.md

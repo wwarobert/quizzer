@@ -8,9 +8,9 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-from typing import List, Dict, Any
-from dataclasses import dataclass, asdict
 import json
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, List
 
 
 @dataclass
@@ -24,6 +24,7 @@ class Question:
         answer: Normalized answer for comparison (lowercase, sorted)
         original_answer: Original answer text for display purposes
     """
+
     id: int
     question: str
     answer: List[str]
@@ -34,7 +35,7 @@ class Question:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Question':
+    def from_dict(cls, data: Dict[str, Any]) -> "Question":
         """Create Question from dictionary."""
         return cls(**data)
 
@@ -50,6 +51,7 @@ class Quiz:
         questions: List of Question objects (max 50)
         source_file: Original CSV filename (optional)
     """
+
     quiz_id: str
     created_at: str
     questions: List[Question]
@@ -58,21 +60,21 @@ class Quiz:
     def to_dict(self) -> Dict[str, Any]:
         """Convert quiz to dictionary format."""
         return {
-            'quiz_id': self.quiz_id,
-            'created_at': self.created_at,
-            'source_file': self.source_file,
-            'questions': [q.to_dict() for q in self.questions]
+            "quiz_id": self.quiz_id,
+            "created_at": self.created_at,
+            "source_file": self.source_file,
+            "questions": [q.to_dict() for q in self.questions],
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Quiz':
+    def from_dict(cls, data: Dict[str, Any]) -> "Quiz":
         """Create Quiz from dictionary."""
-        questions = [Question.from_dict(q) for q in data['questions']]
+        questions = [Question.from_dict(q) for q in data["questions"]]
         return cls(
-            quiz_id=data['quiz_id'],
-            created_at=data['created_at'],
+            quiz_id=data["quiz_id"],
+            created_at=data["created_at"],
             questions=questions,
-            source_file=data.get('source_file', '')
+            source_file=data.get("source_file", ""),
         )
 
     def save(self, filepath: str) -> None:
@@ -82,11 +84,11 @@ class Quiz:
         Args:
             filepath: Path where the quiz JSON should be saved
         """
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
 
     @classmethod
-    def load(cls, filepath: str) -> 'Quiz':
+    def load(cls, filepath: str) -> "Quiz":
         """
         Load quiz from JSON file.
 
@@ -96,7 +98,7 @@ class Quiz:
         Returns:
             Quiz object loaded from file
         """
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
         return cls.from_dict(data)
 
@@ -116,6 +118,7 @@ class QuizResult:
         failures: List of failed questions with user answers
         time_spent: Time spent on quiz in seconds
     """
+
     quiz_id: str
     completed_at: str
     total_questions: int
@@ -147,23 +150,25 @@ class QuizResult:
             f"Score: {self.score_percentage:.1f}%",
             f"Time Spent: {time_str}",
             f"Result: {'PASS' if self.passed else 'FAIL'}",
-            ""
+            "",
         ]
 
         if self.failures:
             lines.append(f"Failures ({len(self.failures)}):")
             lines.append("=" * 60)
             for failure in self.failures:
-                lines.extend([
-                    f"Q{failure['question_id']}: {failure['question']}",
-                    f"  Your answer: {failure['user_answer']}",
-                    f"  Correct answer: {failure['correct_answer']}",
-                    "-" * 60
-                ])
+                lines.extend(
+                    [
+                        f"Q{failure['question_id']}: {failure['question']}",
+                        f"  Your answer: {failure['user_answer']}",
+                        f"  Correct answer: {failure['correct_answer']}",
+                        "-" * 60,
+                    ]
+                )
         else:
             lines.append("Perfect score! All answers correct.")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def save_report(self, filepath: str) -> None:
         """
@@ -172,5 +177,5 @@ class QuizResult:
         Args:
             filepath: Path where the report should be saved
         """
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(self.generate_report())

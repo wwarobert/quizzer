@@ -12,17 +12,16 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
+import argparse
 import csv
 import json
-import math
 import random
-import argparse
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import List, Tuple
 
-from quizzer import normalize_answer, format_answer_display, Question, Quiz
+from quizzer import Question, Quiz, format_answer_display, normalize_answer
 
 
 def check_existing_quizzes(output_dir: Path) -> List[Path]:
@@ -58,10 +57,14 @@ def prompt_delete_existing_quizzes(quiz_files: List[Path]) -> bool:
         print(f"  - {quiz_file.name}")
 
     while True:
-        response = input("\nDo you want to DELETE these quizzes before importing? (yes/no): ").strip().lower()
-        if response in ['yes', 'y']:
+        response = (
+            input("\nDo you want to DELETE these quizzes before importing? (yes/no): ")
+            .strip()
+            .lower()
+        )
+        if response in ["yes", "y"]:
             return True
-        elif response in ['no', 'n']:
+        elif response in ["no", "n"]:
             return False
         else:
             print("Please answer 'yes' or 'no'")
@@ -110,12 +113,12 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
     questions = []
 
     # Try multiple encodings in order of preference
-    encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']
+    encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252", "iso-8859-1"]
     last_error = None
 
     for encoding in encodings:
         try:
-            with open(filepath, 'r', encoding=encoding, newline='') as f:
+            with open(filepath, "r", encoding=encoding, newline="") as f:
                 reader = csv.reader(f)
                 questions = []  # Reset for each encoding attempt
 
@@ -134,14 +137,15 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
 
                     # Skip potential header row
                     if i == 1 and (
-                        'question' in question.lower() or
-                        'answer' in answer.lower()
+                        "question" in question.lower() or "answer" in answer.lower()
                     ):
                         continue
 
                     # Skip empty rows
                     if not question or not answer:
-                        print(f"Warning: Skipping row {i} with empty question or answer")
+                        print(
+                            f"Warning: Skipping row {i} with empty question or answer"
+                        )
                         continue
 
                     questions.append((question, answer))
@@ -156,21 +160,19 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
     else:
         # All encodings failed
         raise UnicodeDecodeError(
-            'multiple',
-            b'',
+            "multiple",
+            b"",
             0,
             1,
             f"Failed to decode file with any of the attempted encodings: {encodings}. "
-            f"Last error: {last_error}"
+            f"Last error: {last_error}",
         )
 
     return questions
 
 
 def create_quiz(
-    questions: List[Tuple[str, str]],
-    quiz_id: str,
-    source_file: str = ""
+    questions: List[Tuple[str, str]], quiz_id: str, source_file: str = ""
 ) -> Quiz:
     """
     Create a Quiz object from a list of question-answer pairs.
@@ -195,7 +197,7 @@ def create_quiz(
             id=idx,
             question=q_text,
             answer=normalize_answer(a_text),
-            original_answer=format_answer_display(a_text)
+            original_answer=format_answer_display(a_text),
         )
         quiz_questions.append(question)
 
@@ -204,7 +206,7 @@ def create_quiz(
         quiz_id=quiz_id,
         created_at=datetime.now().isoformat(),
         questions=quiz_questions,
-        source_file=source_file
+        source_file=source_file,
     )
 
     return quiz
@@ -230,8 +232,8 @@ def generate_quiz_id(prefix: str = "quiz", sequence: int = None) -> str:
 def main():
     """Main entry point for the import script."""
     parser = argparse.ArgumentParser(
-        prog='import_quiz.py',
-        description='Convert CSV question files into randomized quiz JSON files',
+        prog="import_quiz.py",
+        description="Convert CSV question files into randomized quiz JSON files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -254,62 +256,61 @@ CSV Format:
   - Multiple answers separated by commas: "red, blue, yellow"
 
 For more information, see README.md
-        """
+        """,
     )
 
     parser.add_argument(
-        'csv_file',
-        metavar='FILE',
-        help='path to CSV file with questions (columns: Question, Answer)'
+        "csv_file",
+        metavar="FILE",
+        help="path to CSV file with questions (columns: Question, Answer)",
     )
 
     parser.add_argument(
-        '-o', '--output',
-        default='data/quizzes/',
-        metavar='DIR',
-        help='output directory for quiz JSON files (default: data/quizzes/)'
+        "-o",
+        "--output",
+        default="data/quizzes/",
+        metavar="DIR",
+        help="output directory for quiz JSON files (default: data/quizzes/)",
     )
 
     parser.add_argument(
-        '-n', '--number',
+        "-n",
+        "--number",
         type=int,
         default=None,
-        metavar='N',
-        help='number of quizzes to generate (default: auto-calculate from questions)'
+        metavar="N",
+        help="number of quizzes to generate (default: auto-calculate from questions)",
     )
 
     parser.add_argument(
-        '-m', '--max-questions',
+        "-m",
+        "--max-questions",
         type=int,
         default=50,
-        metavar='N',
-        help='maximum questions per quiz (default: 50)'
+        metavar="N",
+        help="maximum questions per quiz (default: 50)",
     )
 
     parser.add_argument(
-        '--prefix',
-        default='quiz',
-        metavar='TEXT',
-        help='prefix for quiz IDs (default: quiz)'
+        "--prefix",
+        default="quiz",
+        metavar="TEXT",
+        help="prefix for quiz IDs (default: quiz)",
     )
 
     parser.add_argument(
-        '--allow-duplicates',
-        action='store_true',
-        help='allow duplicate questions across quizzes (enables random selection mode)'
+        "--allow-duplicates",
+        action="store_true",
+        help="allow duplicate questions across quizzes (enables random selection mode)",
     )
 
     parser.add_argument(
-        '--force',
-        action='store_true',
-        help='automatically delete existing quizzes without prompting (useful for CI/CD)'
+        "--force",
+        action="store_true",
+        help="automatically delete existing quizzes without prompting (useful for CI/CD)",
     )
 
-    parser.add_argument(
-        '--version',
-        action='version',
-        version='%(prog)s 1.0.0'
-    )
+    parser.add_argument("--version", action="version", version="%(prog)s 1.0.0")
 
     args = parser.parse_args()
 
@@ -359,7 +360,9 @@ For more information, see README.md
             remainder = len(questions) % num_quizzes
 
             # First 'remainder' quizzes get base_size + 1, rest get base_size
-            quiz_sizes = [base_size + 1] * remainder + [base_size] * (num_quizzes - remainder)
+            quiz_sizes = [base_size + 1] * remainder + [base_size] * (
+                num_quizzes - remainder
+            )
 
         print(f"Generating {num_quizzes} quiz(zes) from {len(questions)} questions")
         print(f"  Quiz sizes: {', '.join(str(s) for s in quiz_sizes)}")
@@ -374,7 +377,9 @@ For more information, see README.md
         if existing_quizzes:
             if args.force:
                 # Non-interactive mode: automatically delete
-                print(f"\n--force flag detected, automatically deleting {len(existing_quizzes)} existing quiz(zes)")
+                print(
+                    f"\n--force flag detected, automatically deleting {len(existing_quizzes)} existing quiz(zes)"
+                )
                 delete_quiz_files(existing_quizzes)
             else:
                 # Interactive mode: prompt user
@@ -399,18 +404,16 @@ For more information, see README.md
                 # Old behavior: random selection with possible duplicates
                 quiz_questions = shuffled_questions.copy()
                 random.shuffle(quiz_questions)
-                quiz_questions = quiz_questions[:quiz_sizes[i]]
+                quiz_questions = quiz_questions[: quiz_sizes[i]]
             else:
                 # New behavior: split questions evenly (no duplicates)
                 quiz_size = quiz_sizes[i]
-                quiz_questions = shuffled_questions[question_index:question_index + quiz_size]
+                quiz_questions = shuffled_questions[
+                    question_index : question_index + quiz_size
+                ]
                 question_index += quiz_size
 
-            quiz = create_quiz(
-                quiz_questions,
-                quiz_id,
-                source_file=source_filename
-            )
+            quiz = create_quiz(quiz_questions, quiz_id, source_file=source_filename)
 
             output_file = output_dir / f"{quiz_id}.json"
             quiz.save(str(output_file))
@@ -429,10 +432,10 @@ For more information, see README.md
             "output_dir": str(output_dir.absolute()),
             "quiz_files": created_files,
             "num_quizzes": num_quizzes,
-            "total_questions": len(questions)
+            "total_questions": len(questions),
         }
         metadata_file = base_output_dir / "last_import.json"
-        with open(metadata_file, 'w', encoding='utf-8') as f:
+        with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
 
         print(f"\n✓ Successfully generated {num_quizzes} quiz(zes)")

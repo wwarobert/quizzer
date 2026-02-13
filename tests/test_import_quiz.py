@@ -5,14 +5,15 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-import pytest
-import tempfile
 import csv
-from pathlib import Path
-import sys
 import importlib.util
-from unittest.mock import patch
 import shutil
+import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 # Import the import_quiz module
 spec = importlib.util.spec_from_file_location("import_quiz", "import_quiz.py")
@@ -25,7 +26,9 @@ class TestReadCSVQuestions:
 
     def test_read_valid_csv(self):
         """Test reading a valid CSV file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["What is 2+2?", "4"])
             writer.writerow(["Capital of France?", "Paris"])
@@ -41,7 +44,9 @@ class TestReadCSVQuestions:
 
     def test_skip_header_row(self):
         """Test that header row is skipped."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["What is 2+2?", "4"])
@@ -56,7 +61,9 @@ class TestReadCSVQuestions:
 
     def test_skip_empty_rows(self):
         """Test that empty rows are skipped."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["What is 2+2?", "4"])
             writer.writerow(["", ""])
@@ -71,7 +78,9 @@ class TestReadCSVQuestions:
 
     def test_extra_columns_ignored(self):
         """Test that extra columns beyond first 2 are ignored."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer", "Extra1", "Extra2"])
             writer.writerow(["What is 2+2?", "4", "ignored1", "ignored2"])
@@ -89,7 +98,9 @@ class TestReadCSVQuestions:
 
     def test_insufficient_columns(self):
         """Test error when CSV has fewer than 2 columns."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["OnlyOneColumn"])
             temp_path = f.name
@@ -114,7 +125,7 @@ class TestCreateQuiz:
         questions = [
             ("What is 2+2?", "4"),
             ("Capital?", "Paris"),
-            ("Color?", "red, blue")
+            ("Color?", "red, blue"),
         ]
         quiz = import_quiz.create_quiz(questions, "test_001", "test.csv")
 
@@ -141,10 +152,7 @@ class TestCreateQuiz:
 
     def test_normalized_answers(self):
         """Test that answers are normalized."""
-        questions = [
-            ("Primary colors?", "Red, Blue, Yellow"),
-            ("Number?", "42")
-        ]
+        questions = [("Primary colors?", "Red, Blue, Yellow"), ("Number?", "42")]
         quiz = import_quiz.create_quiz(questions, "test_005")
 
         # Check first question has normalized answer
@@ -203,7 +211,9 @@ class TestIntegration:
     def test_full_import_workflow(self):
         """Test complete CSV to Quiz workflow."""
         # Create temporary CSV
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])  # Header
             writer.writerow(["What is 2+2?", "4"])
@@ -232,6 +242,7 @@ class TestIntegration:
 
             # Load and verify
             from quizzer.quiz_data import Quiz
+
             loaded_quiz = Quiz.load(str(output_path))
             assert loaded_quiz.quiz_id == quiz_id
             assert len(loaded_quiz.questions) == 3
@@ -240,6 +251,7 @@ class TestIntegration:
             # Cleanup
             Path(csv_path).unlink(missing_ok=True)
             import shutil
+
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 
@@ -248,11 +260,11 @@ class TestEncoding:
 
     def test_utf8_bom(self):
         """Test reading CSV with UTF-8 BOM."""
-        with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False) as f:
             # Write UTF-8 BOM followed by CSV content
-            f.write(b'\xef\xbb\xbf')
-            f.write("Question,Answer\n".encode('utf-8'))
-            f.write("Test question?,Test answer\n".encode('utf-8'))
+            f.write(b"\xef\xbb\xbf")
+            f.write("Question,Answer\n".encode("utf-8"))
+            f.write("Test question?,Test answer\n".encode("utf-8"))
             temp_path = f.name
 
         try:
@@ -264,8 +276,9 @@ class TestEncoding:
 
     def test_latin1_encoding(self):
         """Test reading CSV with Latin-1 encoding."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False,
-                                         newline='', encoding='latin-1') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline="", encoding="latin-1"
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["What is café?", "A coffee shop"])
@@ -280,8 +293,9 @@ class TestEncoding:
 
     def test_special_characters(self):
         """Test reading CSV with special characters."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False,
-                                         newline='', encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline="", encoding="utf-8"
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["What's O'Brien's role?", "Character in 1984"])
@@ -334,7 +348,9 @@ class TestCSVEdgeCases:
 
     def test_csv_with_quoted_commas(self):
         """Test CSV with commas inside quoted fields."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f, quoting=csv.QUOTE_ALL)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["What are primary colors?", "red, blue, yellow"])
@@ -350,7 +366,9 @@ class TestCSVEdgeCases:
 
     def test_csv_with_newlines_in_fields(self):
         """Test CSV with newlines inside fields."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["What is\na multiline\nquestion?", "Multiline answer"])
@@ -366,7 +384,9 @@ class TestCSVEdgeCases:
 
     def test_csv_with_only_whitespace_rows(self):
         """Test CSV with rows containing only whitespace."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["What is 2+2?", "4"])
             writer.writerow(["   ", "   "])
@@ -382,7 +402,9 @@ class TestCSVEdgeCases:
 
     def test_csv_with_leading_trailing_whitespace(self):
         """Test CSV with leading/trailing whitespace in fields."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["  What is 2+2?  ", "  4  "])
@@ -400,7 +422,9 @@ class TestCSVEdgeCases:
 
     def test_csv_case_insensitive_header_detection(self):
         """Test header detection is case-insensitive."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["QUESTION", "ANSWER"])  # All caps
             writer.writerow(["What is 2+2?", "4"])
@@ -474,17 +498,14 @@ class TestExistingQuizManagement:
         temp_dir = tempfile.mkdtemp()
         try:
             output_dir = Path(temp_dir)
-            quiz_files = [
-                output_dir / "quiz_001.json",
-                output_dir / "quiz_002.json"
-            ]
+            quiz_files = [output_dir / "quiz_001.json", output_dir / "quiz_002.json"]
 
             # Create the files
             for qf in quiz_files:
                 qf.write_text("{}")
 
             # Mock user input to respond 'yes'
-            with patch('builtins.input', return_value='yes'):
+            with patch("builtins.input", return_value="yes"):
                 result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
 
             assert result is True
@@ -501,7 +522,7 @@ class TestExistingQuizManagement:
             quiz_files[0].write_text("{}")
 
             # Mock user input to respond 'no'
-            with patch('builtins.input', return_value='no'):
+            with patch("builtins.input", return_value="no"):
                 result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
 
             assert result is False
@@ -518,17 +539,17 @@ class TestExistingQuizManagement:
             quiz_files[0].write_text("{}")
 
             # Test 'y'
-            with patch('builtins.input', return_value='y'):
+            with patch("builtins.input", return_value="y"):
                 result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
                 assert result is True
 
             # Test 'n'
-            with patch('builtins.input', return_value='n'):
+            with patch("builtins.input", return_value="n"):
                 result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
                 assert result is False
 
             # Test 'YES' (uppercase)
-            with patch('builtins.input', return_value='YES'):
+            with patch("builtins.input", return_value="YES"):
                 result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
                 assert result is True
 
@@ -544,7 +565,7 @@ class TestExistingQuizManagement:
             quiz_files[0].write_text("{}")
 
             # Mock user input: first invalid, then valid
-            with patch('builtins.input', side_effect=['maybe', 'sure', 'yes']):
+            with patch("builtins.input", side_effect=["maybe", "sure", "yes"]):
                 result = import_quiz.prompt_delete_existing_quizzes(quiz_files)
                 assert result is True
 
@@ -561,7 +582,7 @@ class TestExistingQuizManagement:
             quiz_files = [
                 output_dir / "quiz_001.json",
                 output_dir / "quiz_002.json",
-                output_dir / "quiz_003.json"
+                output_dir / "quiz_003.json",
             ]
             for qf in quiz_files:
                 qf.write_text("{}")
@@ -588,7 +609,7 @@ class TestExistingQuizManagement:
             quiz_files = [
                 output_dir / "quiz_001.json",
                 output_dir / "quiz_002.json",
-                output_dir / "quiz_003.json"
+                output_dir / "quiz_003.json",
             ]
             quiz_files[0].write_text("{}")
             quiz_files[2].write_text("{}")
@@ -611,7 +632,9 @@ class TestMainFunction:
     def test_main_with_valid_csv(self):
         """Test main function with valid CSV input."""
         # Create a test CSV
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             for i in range(10):
@@ -622,9 +645,16 @@ class TestMainFunction:
 
         try:
             # Mock sys.argv to simulate command line args
-            test_args = ['import_quiz.py', csv_path, '--output', temp_dir, '--number', '1']
+            test_args = [
+                "import_quiz.py",
+                csv_path,
+                "--output",
+                temp_dir,
+                "--number",
+                "1",
+            ]
 
-            with patch.object(sys, 'argv', test_args):
+            with patch.object(sys, "argv", test_args):
                 # Import fresh to trigger main() with new args
                 import_quiz.main()
 
@@ -639,12 +669,15 @@ class TestMainFunction:
         finally:
             Path(csv_path).unlink(missing_ok=True)
             import shutil
+
             shutil.rmtree(temp_dir, ignore_errors=True)
 
     def test_main_with_max_questions(self):
         """Test main function with max-questions parameter."""
         # Create a test CSV with 100 questions
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             for i in range(100):
@@ -655,10 +688,16 @@ class TestMainFunction:
 
         try:
             # Don't specify --number, let it auto-calculate based on max-questions
-            test_args = ['import_quiz.py', csv_path, '--output', temp_dir,
-                         '--max-questions', '25']
+            test_args = [
+                "import_quiz.py",
+                csv_path,
+                "--output",
+                temp_dir,
+                "--max-questions",
+                "25",
+            ]
 
-            with patch.object(sys, 'argv', test_args):
+            with patch.object(sys, "argv", test_args):
                 import_quiz.main()
 
             # Should create 4 quizzes (100 questions / 25 per quiz)
@@ -671,17 +710,23 @@ class TestMainFunction:
 
             # Verify question distribution
             from quizzer.quiz_data import Quiz
-            total_questions = sum(len(Quiz.load(str(qf)).questions) for qf in quiz_files)
+
+            total_questions = sum(
+                len(Quiz.load(str(qf)).questions) for qf in quiz_files
+            )
             assert total_questions == 100  # All questions should be distributed
 
         finally:
             Path(csv_path).unlink(missing_ok=True)
             import shutil
+
             shutil.rmtree(temp_dir, ignore_errors=True)
 
     def test_main_with_custom_prefix(self):
         """Test main function with custom prefix."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["Test?", "Test"])
@@ -690,10 +735,16 @@ class TestMainFunction:
         temp_dir = tempfile.mkdtemp()
 
         try:
-            test_args = ['import_quiz.py', csv_path, '--output', temp_dir,
-                         '--prefix', 'midterm']
+            test_args = [
+                "import_quiz.py",
+                csv_path,
+                "--output",
+                temp_dir,
+                "--prefix",
+                "midterm",
+            ]
 
-            with patch.object(sys, 'argv', test_args):
+            with patch.object(sys, "argv", test_args):
                 import_quiz.main()
 
             csv_basename = Path(csv_path).stem
@@ -706,20 +757,23 @@ class TestMainFunction:
         finally:
             Path(csv_path).unlink(missing_ok=True)
             import shutil
+
             shutil.rmtree(temp_dir, ignore_errors=True)
 
     def test_main_error_handling_missing_file(self, capsys):
         """Test main function error handling for missing file."""
-        test_args = ['import_quiz.py', 'nonexistent.csv']
+        test_args = ["import_quiz.py", "nonexistent.csv"]
 
-        with patch.object(sys, 'argv', test_args):
+        with patch.object(sys, "argv", test_args):
             with pytest.raises(SystemExit) as exc_info:
                 import_quiz.main()
             assert exc_info.value.code == 1
 
     def test_main_metadata_file_creation(self):
         """Test that main creates last_import.json metadata file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["Test?", "Test"])
@@ -728,9 +782,9 @@ class TestMainFunction:
         temp_dir = tempfile.mkdtemp()
 
         try:
-            test_args = ['import_quiz.py', csv_path, '--output', temp_dir]
+            test_args = ["import_quiz.py", csv_path, "--output", temp_dir]
 
-            with patch.object(sys, 'argv', test_args):
+            with patch.object(sys, "argv", test_args):
                 import_quiz.main()
 
             # Check metadata file exists
@@ -739,20 +793,25 @@ class TestMainFunction:
 
             # Verify metadata content
             import json
-            with open(metadata_file, 'r') as f:
+
+            with open(metadata_file, "r") as f:
                 metadata = json.load(f)
-                assert 'last_import' in metadata
-                assert 'source_csv' in metadata
-                assert 'num_quizzes' in metadata
-                assert metadata['source_csv'] == csv_path
+                assert "last_import" in metadata
+                assert "source_csv" in metadata
+                assert "num_quizzes" in metadata
+                assert metadata["source_csv"] == csv_path
 
         finally:
             Path(csv_path).unlink(missing_ok=True)
             import shutil
+
             shutil.rmtree(temp_dir, ignore_errors=True)
+
     def test_main_with_existing_quizzes_delete_yes(self):
         """Test main function prompts to delete existing quizzes and user chooses yes."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["New question?", "New answer"])
@@ -774,10 +833,10 @@ class TestMainFunction:
             assert old_quiz_2.exists()
 
             # Run import with user choosing to delete
-            test_args = ['import_quiz.py', csv_path, '--output', temp_dir]
+            test_args = ["import_quiz.py", csv_path, "--output", temp_dir]
 
-            with patch.object(sys, 'argv', test_args):
-                with patch('builtins.input', return_value='yes'):
+            with patch.object(sys, "argv", test_args):
+                with patch("builtins.input", return_value="yes"):
                     import_quiz.main()
 
             # Old quizzes should be deleted
@@ -794,7 +853,9 @@ class TestMainFunction:
 
     def test_main_with_existing_quizzes_delete_no(self):
         """Test main function prompts to delete existing quizzes and user chooses no."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["New question?", "New answer"])
@@ -816,10 +877,10 @@ class TestMainFunction:
             assert old_quiz_2.exists()
 
             # Run import with user choosing to keep
-            test_args = ['import_quiz.py', csv_path, '--output', temp_dir]
+            test_args = ["import_quiz.py", csv_path, "--output", temp_dir]
 
-            with patch.object(sys, 'argv', test_args):
-                with patch('builtins.input', return_value='no'):
+            with patch.object(sys, "argv", test_args):
+                with patch("builtins.input", return_value="no"):
                     import_quiz.main()
 
             # Old quizzes should still exist
@@ -836,7 +897,9 @@ class TestMainFunction:
 
     def test_main_with_force_flag(self):
         """Test main function with --force flag automatically deletes quizzes."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["New question?", "New answer"])
@@ -858,9 +921,9 @@ class TestMainFunction:
             assert old_quiz_2.exists()
 
             # Run import with --force flag (should not prompt)
-            test_args = ['import_quiz.py', csv_path, '--output', temp_dir, '--force']
+            test_args = ["import_quiz.py", csv_path, "--output", temp_dir, "--force"]
 
-            with patch.object(sys, 'argv', test_args):
+            with patch.object(sys, "argv", test_args):
                 # No need to mock input() - it should not be called
                 import_quiz.main()
 
@@ -878,7 +941,9 @@ class TestMainFunction:
 
     def test_main_force_flag_without_existing_quizzes(self):
         """Test that --force flag works when there are no existing quizzes."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
             writer = csv.writer(f)
             writer.writerow(["Question", "Answer"])
             writer.writerow(["Test question?", "Test answer"])
@@ -887,9 +952,9 @@ class TestMainFunction:
         temp_dir = tempfile.mkdtemp()
 
         try:
-            test_args = ['import_quiz.py', csv_path, '--output', temp_dir, '--force']
+            test_args = ["import_quiz.py", csv_path, "--output", temp_dir, "--force"]
 
-            with patch.object(sys, 'argv', test_args):
+            with patch.object(sys, "argv", test_args):
                 import_quiz.main()
 
             # Should create quiz successfully

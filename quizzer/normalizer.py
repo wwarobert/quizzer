@@ -46,7 +46,7 @@ def normalize_answer(answer: str) -> List[str]:
         return []
 
     # Split by comma and normalize each part
-    parts = [part.strip().lower() for part in answer.split(',')]
+    parts = [part.strip().lower() for part in answer.split(",")]
 
     # Filter out empty strings and sort
     normalized = sorted([part for part in parts if part])
@@ -104,5 +104,5 @@ def format_answer_display(answer: str) -> str:
         return ""
 
     # Split by comma, strip each part, rejoin with consistent formatting
-    parts = [part.strip() for part in answer.split(',') if part.strip()]
-    return ', '.join(parts)
+    parts = [part.strip() for part in answer.split(",") if part.strip()]
+    return ", ".join(parts)

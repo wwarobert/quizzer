@@ -4,6 +4,7 @@ Quizzer Package - Quiz generation and validation utilities.
 This package provides helper modules for the Quizzer CLI tool:
 - normalizer: Answer normalization and validation
 - quiz_data: Data models for quizzes, questions, and results
+- constants: Application-wide configuration values
 
 Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
@@ -15,27 +16,60 @@ from typing import Union
 __version__ = "1.0.0"
 __author__ = "Quizzer Project"
 
-from .normalizer import normalize_answer, answers_match, format_answer_display
+from .constants import (
+    CSV_FILE_EXTENSION,
+    DEFAULT_MAX_QUESTIONS,
+    DEFAULT_PASS_THRESHOLD,
+    METADATA_FILENAME,
+    QUIZ_FILE_EXTENSION,
+    TEST_DATA_PATTERNS,
+    ScoreTier,
+)
+from .normalizer import answers_match, format_answer_display, normalize_answer
 from .quiz_data import Question, Quiz, QuizResult
 
-# Test data identification patterns
-TEST_DATA_PATTERNS = ['sample', 'test', 'demo', 'example']
+# Define public API
+__all__ = [
+    # Data models
+    "Question",
+    "Quiz",
+    "QuizResult",
+    # Functions
+    "normalize_answer",
+    "answers_match",
+    "format_answer_display",
+    "is_test_data",
+    # Constants
+    "DEFAULT_PASS_THRESHOLD",
+    "QUIZ_FILE_EXTENSION",
+    "CSV_FILE_EXTENSION",
+    "METADATA_FILENAME",
+    "DEFAULT_MAX_QUESTIONS",
+    "TEST_DATA_PATTERNS",
+    "ScoreTier",
+    # Metadata
+    "__version__",
+    "__author__",
+]
+
+# Backward compatibility - keep TEST_DATA_PATTERNS at module level
+TEST_DATA_PATTERNS = TEST_DATA_PATTERNS
 
 
 def is_test_data(path: Union[str, Path]) -> bool:
     """
     Check if path contains test/sample data markers.
-    
+
     This function identifies test, sample, or demo data by checking if the
     immediate folder name (not the full path) contains any of the predefined
     test data patterns (case-insensitive).
-    
+
     Args:
         path: File or folder path to check (str or Path object)
-        
+
     Returns:
         True if the immediate folder name matches test data patterns, False otherwise
-        
+
     Examples:
         >>> is_test_data(Path('data/quizzes/sample_questions'))
         True
@@ -53,12 +87,12 @@ def is_test_data(path: Union[str, Path]) -> bool:
 
 
 __all__ = [
-    'normalize_answer',
-    'answers_match',
-    'format_answer_display',
-    'Question',
-    'Quiz',
-    'QuizResult',
-    'is_test_data',
-    'TEST_DATA_PATTERNS'
+    "normalize_answer",
+    "answers_match",
+    "format_answer_display",
+    "Question",
+    "Quiz",
+    "QuizResult",
+    "is_test_data",
+    "TEST_DATA_PATTERNS",
 ]

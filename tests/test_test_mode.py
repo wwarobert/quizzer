@@ -5,22 +5,23 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-import pytest
-import tempfile
-import json
-from pathlib import Path
-from quizzer import is_test_data, TEST_DATA_PATTERNS
-import sys
-
 # Import run_quiz module
 import importlib.util
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+from quizzer import TEST_DATA_PATTERNS, is_test_data
+
 spec = importlib.util.spec_from_file_location("run_quiz", "run_quiz.py")
 run_quiz = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(run_quiz)
 
 # Import web_quiz module
 sys.path.insert(0, str(Path(__file__).parent.parent))
-import web_quiz
+import web_quiz  # noqa: E402 - Must modify sys.path before importing
 
 
 class TestIsTestData:
@@ -71,10 +72,10 @@ class TestIsTestData:
 
     def test_test_data_patterns_constant(self):
         """Test that TEST_DATA_PATTERNS contains expected patterns."""
-        assert 'sample' in TEST_DATA_PATTERNS
-        assert 'test' in TEST_DATA_PATTERNS
-        assert 'demo' in TEST_DATA_PATTERNS
-        assert 'example' in TEST_DATA_PATTERNS
+        assert "sample" in TEST_DATA_PATTERNS
+        assert "test" in TEST_DATA_PATTERNS
+        assert "demo" in TEST_DATA_PATTERNS
+        assert "example" in TEST_DATA_PATTERNS
 
 
 class TestGetQuizFoldersTestMode:
@@ -89,32 +90,76 @@ class TestGetQuizFoldersTestMode:
         # Create production folders with quiz files
         prod1 = base_dir / "az-104"
         prod1.mkdir()
-        (prod1 / "quiz_001.json").write_text(json.dumps({
-            "quiz_id": "az-104_001",
-            "questions": [{"id": 1, "question": "Q1", "answer": ["a"], "original_answer": "a"}]
-        }))
+        (prod1 / "quiz_001.json").write_text(
+            json.dumps(
+                {
+                    "quiz_id": "az-104_001",
+                    "questions": [
+                        {
+                            "id": 1,
+                            "question": "Q1",
+                            "answer": ["a"],
+                            "original_answer": "a",
+                        }
+                    ],
+                }
+            )
+        )
 
         prod2 = base_dir / "biology"
         prod2.mkdir()
-        (prod2 / "quiz_002.json").write_text(json.dumps({
-            "quiz_id": "bio_001",
-            "questions": [{"id": 1, "question": "Q2", "answer": ["b"], "original_answer": "b"}]
-        }))
+        (prod2 / "quiz_002.json").write_text(
+            json.dumps(
+                {
+                    "quiz_id": "bio_001",
+                    "questions": [
+                        {
+                            "id": 1,
+                            "question": "Q2",
+                            "answer": ["b"],
+                            "original_answer": "b",
+                        }
+                    ],
+                }
+            )
+        )
 
         # Create sample/test folders with quiz files
         sample = base_dir / "sample_questions"
         sample.mkdir()
-        (sample / "quiz_sample.json").write_text(json.dumps({
-            "quiz_id": "sample_001",
-            "questions": [{"id": 1, "question": "Q3", "answer": ["c"], "original_answer": "c"}]
-        }))
+        (sample / "quiz_sample.json").write_text(
+            json.dumps(
+                {
+                    "quiz_id": "sample_001",
+                    "questions": [
+                        {
+                            "id": 1,
+                            "question": "Q3",
+                            "answer": ["c"],
+                            "original_answer": "c",
+                        }
+                    ],
+                }
+            )
+        )
 
         test = base_dir / "test_data"
         test.mkdir()
-        (test / "quiz_test.json").write_text(json.dumps({
-            "quiz_id": "test_001",
-            "questions": [{"id": 1, "question": "Q4", "answer": ["d"], "original_answer": "d"}]
-        }))
+        (test / "quiz_test.json").write_text(
+            json.dumps(
+                {
+                    "quiz_id": "test_001",
+                    "questions": [
+                        {
+                            "id": 1,
+                            "question": "Q4",
+                            "answer": ["d"],
+                            "original_answer": "d",
+                        }
+                    ],
+                }
+            )
+        )
 
         # Create empty folder (should be ignored)
         empty = base_dir / "empty"
@@ -159,7 +204,7 @@ class TestWebQuizTestMode:
     @pytest.fixture
     def client(self):
         """Create a test client for the Flask app."""
-        web_quiz.app.config['TESTING'] = True
+        web_quiz.app.config["TESTING"] = True
         with web_quiz.app.test_client() as client:
             yield client
 
@@ -173,44 +218,71 @@ class TestWebQuizTestMode:
         prod_dir = quizzes_dir / "az-104"
         prod_dir.mkdir()
         prod_quiz = prod_dir / "quiz_prod.json"
-        prod_quiz.write_text(json.dumps({
-            "quiz_id": "az-104_001",
-            "created_at": "2026-02-13T10:00:00",
-            "source_file": "az-104.csv",
-            "questions": [{"id": 1, "question": "Q1", "answer": ["a"], "original_answer": "a"}]
-        }))
+        prod_quiz.write_text(
+            json.dumps(
+                {
+                    "quiz_id": "az-104_001",
+                    "created_at": "2026-02-13T10:00:00",
+                    "source_file": "az-104.csv",
+                    "questions": [
+                        {
+                            "id": 1,
+                            "question": "Q1",
+                            "answer": ["a"],
+                            "original_answer": "a",
+                        }
+                    ],
+                }
+            )
+        )
 
         # Sample quiz
         sample_dir = quizzes_dir / "sample_questions"
         sample_dir.mkdir()
         sample_quiz = sample_dir / "quiz_sample.json"
-        sample_quiz.write_text(json.dumps({
-            "quiz_id": "sample_001",
-            "created_at": "2026-02-13T09:00:00",
-            "source_file": "sample.csv",
-            "questions": [{"id": 1, "question": "Q2", "answer": ["b"], "original_answer": "b"}]
-        }))
+        sample_quiz.write_text(
+            json.dumps(
+                {
+                    "quiz_id": "sample_001",
+                    "created_at": "2026-02-13T09:00:00",
+                    "source_file": "sample.csv",
+                    "questions": [
+                        {
+                            "id": 1,
+                            "question": "Q2",
+                            "answer": ["b"],
+                            "original_answer": "b",
+                        }
+                    ],
+                }
+            )
+        )
 
         # Monkeypatch the Path in web_quiz module
-        monkeypatch.setattr("web_quiz.Path", lambda x: quizzes_dir if x == 'data/quizzes' else Path(x))
+        monkeypatch.setattr(
+            "web_quiz.Path", lambda x: quizzes_dir if x == "data/quizzes" else Path(x)
+        )
         return quizzes_dir
 
     def test_production_mode_excludes_samples(self, client, quiz_files):
         """Test that production mode excludes sample quizzes via API."""
-        web_quiz.app.config['TEST_MODE'] = False
-        response = client.get('/api/quizzes')
+        web_quiz.app.config["TEST_MODE"] = False
+        response = client.get("/api/quizzes")
         data = response.get_json()
 
         # Should only have production quiz
-        quiz_ids = [q['quiz_id'] for q in data]
-        assert 'az-104_001' in quiz_ids or len([q for q in data if 'az-104' in q.get('path', '')]) > 0
-        assert 'sample_001' not in quiz_ids
-        assert not any('sample' in q.get('path', '').lower() for q in data)
+        quiz_ids = [q["quiz_id"] for q in data]
+        assert (
+            "az-104_001" in quiz_ids
+            or len([q for q in data if "az-104" in q.get("path", "")]) > 0
+        )
+        assert "sample_001" not in quiz_ids
+        assert not any("sample" in q.get("path", "").lower() for q in data)
 
     def test_test_mode_includes_samples(self, client, quiz_files):
         """Test that test mode includes sample quizzes via API."""
-        web_quiz.app.config['TEST_MODE'] = True
-        response = client.get('/api/quizzes')
+        web_quiz.app.config["TEST_MODE"] = True
+        response = client.get("/api/quizzes")
         data = response.get_json()
 
         # Should have both production and sample quizzes
@@ -232,8 +304,8 @@ class TestIntegration:
     def test_web_server_respects_test_mode_flag(self):
         """Test that web server properly handles test mode configuration."""
         # Test that config is set correctly
-        web_quiz.app.config['TEST_MODE'] = False
-        assert web_quiz.app.config['TEST_MODE'] is False
+        web_quiz.app.config["TEST_MODE"] = False
+        assert web_quiz.app.config["TEST_MODE"] is False
 
-        web_quiz.app.config['TEST_MODE'] = True
-        assert web_quiz.app.config['TEST_MODE'] is True
+        web_quiz.app.config["TEST_MODE"] = True
+        assert web_quiz.app.config["TEST_MODE"] is True

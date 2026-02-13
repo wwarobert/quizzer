@@ -5,15 +5,17 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-import pytest
-import tempfile
+import importlib.util
 import json
 import shutil
-from pathlib import Path
-from unittest.mock import patch, MagicMock
-from quizzer.quiz_data import Question, Quiz, QuizResult
-import importlib.util
 import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+from quizzer.quiz_data import Question, Quiz, QuizResult
 
 # Import the run_quiz module
 spec = importlib.util.spec_from_file_location("run_quiz", "run_quiz.py")
@@ -28,14 +30,14 @@ class TestRunQuiz:
         """Test quiz with all correct answers."""
         questions = [
             Question(1, "What is 2+2?", ["4"], "4"),
-            Question(2, "Capital?", ["paris"], "Paris")
+            Question(2, "Capital?", ["paris"], "Paris"),
         ]
         quiz = Quiz("test_001", "2026-02-06T10:00:00", questions)
 
         # Mock user inputs: start prompt, answer1, continue, answer2
         inputs = ["", "4", "", "paris"]  # Empty strings for "Press Enter" prompts
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             result = run_quiz.run_quiz(quiz, 80.0)
             assert result.total_questions == 2
             assert result.correct_answers == 2
@@ -48,14 +50,14 @@ class TestRunQuiz:
         questions = [
             Question(1, "What is 2+2?", ["4"], "4"),
             Question(2, "Capital?", ["paris"], "Paris"),
-            Question(3, "Color?", ["blue"], "blue")
+            Question(3, "Color?", ["blue"], "blue"),
         ]
         quiz = Quiz("test_002", "2026-02-06T11:00:00", questions)
 
         # Mock user inputs: start, answer1, continue, answer2, continue, answer3
         inputs = ["", "4", "", "london", "", "blue"]
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             result = run_quiz.run_quiz(quiz, 80.0)
             assert result.total_questions == 3
             assert result.correct_answers == 2
@@ -71,9 +73,17 @@ class TestRunQuiz:
 
         # 8 correct out of 10 = 80%
         # Need: start + (answer + continue) * 10 questions, minus last continue
-        inputs = [""] + [item for i in range(1, 11) for item in ([f"a{i}" if i <= 8 else "wrong", ""] if i < 10 else [f"a{i}" if i <= 8 else "wrong"])]
+        inputs = [""] + [
+            item
+            for i in range(1, 11)
+            for item in (
+                [f"a{i}" if i <= 8 else "wrong", ""]
+                if i < 10
+                else [f"a{i}" if i <= 8 else "wrong"]
+            )
+        ]
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             result = run_quiz.run_quiz(quiz, 80.0)
             assert result.score_percentage == 80.0
             assert result.passed is True  # Exactly 80%
@@ -108,7 +118,7 @@ class TestDisplayResults:
             correct_answers=9,
             score_percentage=90.0,
             passed=True,
-            failures=[]
+            failures=[],
         )
         run_quiz.display_results(result)
         captured = capsys.readouterr()
@@ -124,7 +134,7 @@ class TestDisplayResults:
                 "question_id": "5",
                 "question": "What is 2+2?",
                 "user_answer": "5",
-                "correct_answer": "4"
+                "correct_answer": "4",
             }
         ]
         result = QuizResult(
@@ -134,7 +144,7 @@ class TestDisplayResults:
             correct_answers=7,
             score_percentage=70.0,
             passed=False,
-            failures=failures
+            failures=failures,
         )
         run_quiz.display_results(result)
         captured = capsys.readouterr()
@@ -153,12 +163,14 @@ class TestIntegration:
         questions = [
             Question(1, "What is 2+2?", ["4"], "4"),
             Question(2, "Capital of France?", ["paris"], "Paris"),
-            Question(3, "Primary colors?", ["blue", "red", "yellow"], "red, blue, yellow")
+            Question(
+                3, "Primary colors?", ["blue", "red", "yellow"], "red, blue, yellow"
+            ),
         ]
         quiz = Quiz("integration_001", "2026-02-06T15:00:00", questions, "test.csv")
 
         # Save quiz to temp file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_quiz_path = f.name
 
         try:
@@ -173,20 +185,22 @@ class TestIntegration:
             # Need: start + (answer + continue) for each question, minus last continue
             inputs = ["", "4", "", "paris", "", "red, blue, yellow"]
 
-            with patch('builtins.input', side_effect=inputs):
+            with patch("builtins.input", side_effect=inputs):
                 result = run_quiz.run_quiz(loaded_quiz, 80.0)
                 assert result.correct_answers == 3
                 assert result.passed is True
 
                 # Save result report
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".txt", delete=False
+                ) as f:
                     report_path = f.name
 
                 try:
                     result.save_report(report_path)
                     assert Path(report_path).exists()
 
-                    with open(report_path, 'r') as f:
+                    with open(report_path, "r") as f:
                         content = f.read()
                         assert "integration_001" in content
                         assert "100.0%" in content
@@ -204,14 +218,14 @@ class TestRunQuizEdgeCases:
         """Test quiz handling empty/skipped answers."""
         questions = [
             Question(1, "What is 2+2?", ["4"], "4"),
-            Question(2, "Capital?", ["paris"], "Paris")
+            Question(2, "Capital?", ["paris"], "Paris"),
         ]
         quiz = Quiz("test_empty", "2026-02-06T10:00:00", questions)
 
         # Mock user inputs: start, empty answer (skip Q1), continue, answer Q2
         inputs = ["", "", "", "paris"]
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             result = run_quiz.run_quiz(quiz, 80.0)
             assert result.total_questions == 2
             assert result.correct_answers == 1
@@ -222,13 +236,13 @@ class TestRunQuizEdgeCases:
         """Test case-insensitive answer matching."""
         questions = [
             Question(1, "Capital?", ["paris"], "Paris"),
-            Question(2, "Color?", ["blue"], "blue")
+            Question(2, "Color?", ["blue"], "blue"),
         ]
         quiz = Quiz("test_case", "2026-02-06T10:00:00", questions)
 
         inputs = ["", "PARIS", "", "BLUE"]
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             result = run_quiz.run_quiz(quiz, 80.0)
             assert result.correct_answers == 2
 
@@ -242,20 +256,18 @@ class TestRunQuizEdgeCases:
         # Answer in different order
         inputs = ["", "yellow, blue, red"]
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             result = run_quiz.run_quiz(quiz, 80.0)
             assert result.correct_answers == 1
 
     def test_run_quiz_whitespace_tolerance(self):
         """Test whitespace tolerance in answers."""
-        questions = [
-            Question(1, "Number?", ["42"], "42")
-        ]
+        questions = [Question(1, "Number?", ["42"], "42")]
         quiz = Quiz("test_whitespace", "2026-02-06T10:00:00", questions)
 
         inputs = ["", "  42  "]
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             result = run_quiz.run_quiz(quiz, 80.0)
             assert result.correct_answers == 1
 
@@ -266,7 +278,7 @@ class TestRunQuizEdgeCases:
 
         inputs = ["", "a"]
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             result = run_quiz.run_quiz(quiz, 80.0)
             assert result.time_spent >= 0  # Should have some time recorded
 
@@ -284,14 +296,14 @@ class TestRunQuizEdgeCases:
             if i < len(answers):
                 inputs.append("")  # continue prompt
 
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             # With 60% threshold, should pass (70% > 60%)
             result = run_quiz.run_quiz(quiz, 60.0)
             assert result.score_percentage == 70.0
             assert result.passed is True
 
         # Test with higher threshold separately with new input mock
-        with patch('builtins.input', side_effect=inputs):
+        with patch("builtins.input", side_effect=inputs):
             # With 75% threshold, should fail (70% < 75%)
             result2 = run_quiz.run_quiz(quiz, 75.0)
             assert result2.score_percentage == 70.0
@@ -311,11 +323,14 @@ class TestHTMLReport:
             score_percentage=90.0,
             passed=True,
             failures=[],
-            time_spent=120.5
+            time_spent=120.5,
         )
-        quiz = Quiz("html_test_001", "2026-02-06T09:00:00",
-                   [Question(i, f"Q{i}?", [f"a{i}"], f"A{i}") for i in range(1, 11)],
-                   "test.csv")
+        quiz = Quiz(
+            "html_test_001",
+            "2026-02-06T09:00:00",
+            [Question(i, f"Q{i}?", [f"a{i}"], f"A{i}") for i in range(1, 11)],
+            "test.csv",
+        )
 
         html = run_quiz.generate_html_report(result, quiz)
 
@@ -332,7 +347,7 @@ class TestHTMLReport:
                 "question_id": "5",
                 "question": "What is 2+2?",
                 "user_answer": "5",
-                "correct_answer": "4"
+                "correct_answer": "4",
             }
         ]
         result = QuizResult(
@@ -343,10 +358,13 @@ class TestHTMLReport:
             score_percentage=60.0,
             passed=False,
             failures=failures,
-            time_spent=180.0
+            time_spent=180.0,
         )
-        quiz = Quiz("html_test_002", "2026-02-06T09:00:00",
-                   [Question(i, f"Q{i}?", [f"a{i}"], f"A{i}") for i in range(1, 11)])
+        quiz = Quiz(
+            "html_test_002",
+            "2026-02-06T09:00:00",
+            [Question(i, f"Q{i}?", [f"a{i}"], f"A{i}") for i in range(1, 11)],
+        )
 
         html = run_quiz.generate_html_report(result, quiz)
 
@@ -366,10 +384,13 @@ class TestHTMLReport:
             score_percentage=100.0,
             passed=True,
             failures=[],
-            time_spent=300.0
+            time_spent=300.0,
         )
-        quiz = Quiz("html_test_003", "2026-02-06T09:00:00",
-                   [Question(i, f"Q{i}?", [f"a{i}"], f"A{i}") for i in range(1, 51)])
+        quiz = Quiz(
+            "html_test_003",
+            "2026-02-06T09:00:00",
+            [Question(i, f"Q{i}?", [f"a{i}"], f"A{i}") for i in range(1, 51)],
+        )
 
         html = run_quiz.generate_html_report(result, quiz)
 
@@ -387,10 +408,13 @@ class TestHTMLReport:
             score_percentage=80.0,
             passed=True,
             failures=[],
-            time_spent=150.0
+            time_spent=150.0,
         )
-        quiz = Quiz("save_test_001", "2026-02-06T09:00:00",
-                   [Question(i, f"Q{i}?", [f"a{i}"], f"A{i}") for i in range(1, 11)])
+        quiz = Quiz(
+            "save_test_001",
+            "2026-02-06T09:00:00",
+            [Question(i, f"Q{i}?", [f"a{i}"], f"A{i}") for i in range(1, 11)],
+        )
 
         temp_dir = tempfile.mkdtemp()
 
@@ -401,7 +425,7 @@ class TestHTMLReport:
             assert filepath.suffix == ".html"
             assert "save_test_001" in filepath.name
 
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
                 assert "html" in content.lower()
                 assert "80.0%" in content
@@ -418,17 +442,17 @@ class TestHTMLReport:
             score_percentage=80.0,
             passed=True,
             failures=[],
-            time_spent=100.0
+            time_spent=100.0,
         )
-        quiz = Quiz("overwrite_test", "2026-02-06T09:00:00",
-                   [Question(1, "Q?", ["a"], "A")])
+        quiz = Quiz(
+            "overwrite_test", "2026-02-06T09:00:00", [Question(1, "Q?", ["a"], "A")]
+        )
 
         temp_dir = tempfile.mkdtemp()
 
         try:
             # Save report first time
             filepath1 = run_quiz.save_html_report(result, quiz, temp_dir)
-            mtime1 = filepath1.stat().st_mtime
 
             # Save again with different score
             result.score_percentage = 90.0
@@ -438,7 +462,7 @@ class TestHTMLReport:
             assert filepath1 == filepath2
 
             # Content should be updated
-            with open(filepath2, 'r') as f:
+            with open(filepath2, "r") as f:
                 content = f.read()
                 assert "90.0%" in content
         finally:
@@ -548,8 +572,8 @@ class TestQuizFolderSelection:
                 "last_import": "2026-02-06T10:00:00",
                 "quiz_files": [
                     str(Path(temp_dir) / "quiz_001.json"),
-                    str(Path(temp_dir) / "quiz_002.json")
-                ]
+                    str(Path(temp_dir) / "quiz_002.json"),
+                ],
             }
             metadata_path = Path(temp_dir) / "last_import.json"
             metadata_path.write_text(json.dumps(metadata))
@@ -603,25 +627,25 @@ class TestUserInputHelpers:
 
     def test_get_user_answer_normal(self):
         """Test getting normal user answer."""
-        with patch('builtins.input', return_value="Paris"):
+        with patch("builtins.input", return_value="Paris"):
             answer = run_quiz.get_user_answer()
             assert answer == "Paris"
 
     def test_get_user_answer_with_whitespace(self):
         """Test that whitespace is stripped."""
-        with patch('builtins.input', return_value="  Paris  "):
+        with patch("builtins.input", return_value="  Paris  "):
             answer = run_quiz.get_user_answer()
             assert answer == "Paris"
 
     def test_get_user_answer_keyboard_interrupt(self):
         """Test handling of Ctrl+C during input."""
-        with patch('builtins.input', side_effect=KeyboardInterrupt):
+        with patch("builtins.input", side_effect=KeyboardInterrupt):
             with pytest.raises(SystemExit):
                 run_quiz.get_user_answer()
 
     def test_get_user_answer_eof(self):
         """Test handling of EOF during input."""
-        with patch('builtins.input', side_effect=EOFError):
+        with patch("builtins.input", side_effect=EOFError):
             with pytest.raises(SystemExit):
                 run_quiz.get_user_answer()
 
@@ -648,11 +672,17 @@ class TestMainFunction:
         try:
             quiz.save(str(quiz_file))
 
-            test_args = ['run_quiz.py', str(quiz_file), '--pass-threshold', '80', '--quiet']
+            test_args = [
+                "run_quiz.py",
+                str(quiz_file),
+                "--pass-threshold",
+                "80",
+                "--quiet",
+            ]
             inputs = ["", "test"]
 
-            with patch.object(sys, 'argv', test_args):
-                with patch('builtins.input', side_effect=inputs):
+            with patch.object(sys, "argv", test_args):
+                with patch("builtins.input", side_effect=inputs):
                     with pytest.raises(SystemExit) as exc_info:
                         run_quiz.main()
                     # Should exit with 0 (pass)
@@ -662,10 +692,7 @@ class TestMainFunction:
 
     def test_main_with_failing_score(self):
         """Test main exits with code 1 for failing score."""
-        questions = [
-            Question(1, "Q1?", ["a"], "A"),
-            Question(2, "Q2?", ["b"], "B")
-        ]
+        questions = [Question(1, "Q1?", ["a"], "A"), Question(2, "Q2?", ["b"], "B")]
         quiz = Quiz("main_test_002", "2026-02-06T10:00:00", questions)
 
         temp_dir = tempfile.mkdtemp()
@@ -674,11 +701,11 @@ class TestMainFunction:
         try:
             quiz.save(str(quiz_file))
 
-            test_args = ['run_quiz.py', str(quiz_file), '--quiet']
+            test_args = ["run_quiz.py", str(quiz_file), "--quiet"]
             inputs = ["", "a", "wrong"]  # 1 correct, 1 wrong = 50%
 
-            with patch.object(sys, 'argv', test_args):
-                with patch('builtins.input', side_effect=inputs):
+            with patch.object(sys, "argv", test_args):
+                with patch("builtins.input", side_effect=inputs):
                     with pytest.raises(SystemExit) as exc_info:
                         run_quiz.main()
                     # Should exit with 1 (fail)
@@ -688,9 +715,9 @@ class TestMainFunction:
 
     def test_main_missing_file_error(self):
         """Test main with non-existent file."""
-        test_args = ['run_quiz.py', 'nonexistent.json']
+        test_args = ["run_quiz.py", "nonexistent.json"]
 
-        with patch.object(sys, 'argv', test_args):
+        with patch.object(sys, "argv", test_args):
             with pytest.raises(SystemExit) as exc_info:
                 run_quiz.main()
             assert exc_info.value.code == 1
@@ -708,7 +735,7 @@ class TestMainFunction:
             quiz.save(str(quiz_file))
             report_dir.mkdir()
 
-            test_args = ['run_quiz.py', str(quiz_file), '--quiet']
+            test_args = ["run_quiz.py", str(quiz_file), "--quiet"]
             inputs = ["", "test"]
 
             # Patch save_html_report to save to our temp directory
@@ -717,9 +744,11 @@ class TestMainFunction:
             def mock_save(result, quiz, output_dir="data/reports"):
                 return original_save(result, quiz, str(report_dir))
 
-            with patch.object(sys, 'argv', test_args):
-                with patch('builtins.input', side_effect=inputs):
-                    with patch.object(run_quiz, 'save_html_report', side_effect=mock_save):
+            with patch.object(sys, "argv", test_args):
+                with patch("builtins.input", side_effect=inputs):
+                    with patch.object(
+                        run_quiz, "save_html_report", side_effect=mock_save
+                    ):
                         try:
                             run_quiz.main()
                         except SystemExit:
@@ -743,14 +772,21 @@ class TestMainFunction:
         try:
             quiz.save(str(quiz_file))
 
-            test_args = ['run_quiz.py', str(quiz_file),
-                        '--report-output', str(report_dir), '--quiet']
+            test_args = [
+                "run_quiz.py",
+                str(quiz_file),
+                "--report-output",
+                str(report_dir),
+                "--quiet",
+            ]
             inputs = ["", "test"]
 
-            with patch.object(sys, 'argv', test_args):
-                with patch('builtins.input', side_effect=inputs):
+            with patch.object(sys, "argv", test_args):
+                with patch("builtins.input", side_effect=inputs):
                     # Mock HTML report to avoid file creation issues
-                    with patch.object(run_quiz, 'save_html_report', return_value=Path("dummy.html")):
+                    with patch.object(
+                        run_quiz, "save_html_report", return_value=Path("dummy.html")
+                    ):
                         try:
                             run_quiz.main()
                         except SystemExit:
