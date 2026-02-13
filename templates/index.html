@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- UI Version: 23.2 - FIX: Retake button now hides results screen - Generated: {{ timestamp }} -->
+    <title>Quizzer - Performance Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ timestamp }}">
+</head>
+<body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <!-- Animated Hamburger Menu -->
+    <div class="hamburger-container" id="hamburgerContainer">
+        <input type="checkbox" id="hamburgerCheckbox">
+        <div class="hamburger-lines">
+            <span class="line line1"></span>
+            <span class="line line2"></span>
+            <span class="line line3"></span>
+        </div>
+    </div>
+
+    <!-- Logo -->
+    <div class="logo">
+        <img src="/static/images/quizzer-logo.png?v={{ timestamp }}" alt="Quizzer" class="logo-icon">
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar" role="complementary" aria-label="App sidebar">
+
+        <div class="menu-section">
+            <button type="button" class="menu-item active" aria-current="page" onclick="showView('dashboard')">
+                <span class="menu-item-icon">📊</span>
+                <span>Dashboard</span>
+            </button>
+
+            <div class="expandable-menu">
+                <button type="button" id="quizMenuToggle" class="expandable-header" aria-expanded="false" aria-controls="quizMenuContent" onclick="toggleQuizMenu()">
+                    <span>Available Quizzes</span>
+                    <span class="chevron" id="quizChevron">▶</span>
+                </button>
+                <div class="expandable-content" id="quizMenuContent">
+                    <!-- Quiz items will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent" role="main">
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="view">
+            <h1 class="view-title" tabindex="-1">Dashboard</h1>
+            <nav class="breadcrumb">
+                <span class="breadcrumb-current">Dashboard</span>
+            </nav>
+
+            <!-- Overall Statistics -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalQuizzes">0</div>
+                    <div class="stat-label">Available Quizzes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRuns">0</div>
+                    <div class="stat-label">Quiz Attempts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgScore">0%</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="passRate">0%</div>
+                    <div class="stat-label">Pass Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="bestScore">0%</div>
+                    <div class="stat-label">Best Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalQuestions">0</div>
+                    <div class="stat-label">Questions Answered</div>
+                </div>
+            </div>
+
+            <!-- Performance Trends -->
+            <div class="report-section">
+                <h2>📈 Performance Trends</h2>
+                <div id="performanceTrends">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
+                        Complete some quizzes to see your performance trends
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quiz Breakdown -->
+            <div class="report-section">
+                <h2>📊 Quiz Performance Breakdown</h2>
+                <div id="quizBreakdown">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
+                        No quiz data available yet
+                    </p>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="report-section">
+                <h2>🕐 Recent Activity</h2>
+                <div id="recentRunsList">
+                    <div class="timeline">
+                        <p style="color: #B0BEC5; text-align: center; padding: 20px;">
+                            No quiz runs yet. Select a quiz from the menu to get started!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pass/Fail Analysis -->
+            <div class="report-section">
+                <h2>✅ Pass/Fail Analysis</h2>
+                <div id="passFailAnalysis">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
+                        Complete quizzes to see pass/fail analysis
+                    </p>
+                </div>
+            </div>
+
+            <!-- Results History -->
+            <div class="report-section">
+                <h2>📜 Results History</h2>
+                <div id="resultsHistory">
+                    <p style="color: #B0BEC5; text-align: center; padding: 20px;">
+                        No quiz results yet. Complete a quiz to see your history!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Selection View -->
+        <div id="quizSelectionView" class="view hidden">
+            <div class="quiz-selection">
+                <h2>Select a Quiz</h2>
+                <ul id="quizList" class="quiz-list"></ul>
+            </div>
+        </div>
+
+        <!-- Quiz View (replaces dashboard during quiz) -->
+        <div id="quizView" class="view hidden">
+            <button id="fullscreenToggle" class="fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
+            <h1 class="view-title" id="quizTitle" tabindex="-1">Quiz</h1>
+            
+            <nav class="breadcrumb quiz-breadcrumb">
+                <a href="#" class="breadcrumb-item" onclick="showView('dashboard'); return false;">Dashboard</a>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-current" id="quizBreadcrumb">Quiz</span>
+            </nav>
+
+            <div class="quiz-container" role="region" aria-label="Quiz">
+                <div class="timer" id="timer" aria-live="polite">Time: 0:00</div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">Question 1 of 10</div>
+
+                <div id="feedback" class="feedback hidden" role="status" aria-live="polite"></div>
+
+                <div class="question-container">
+                    <h2 class="question-text" id="questionText"></h2>
+                    <label for="answerInput" class="visually-hidden">Your answer</label>
+                    <input
+                        type="text"
+                        id="answerInput"
+                        class="answer-input"
+                        placeholder="Enter your answer..."
+                        autocomplete="off"
+                        aria-label="Your answer"
+                    />
+                </div>
+
+                <button id="submitBtn" class="button">Submit Answer</button>
+                <button id="quitBtn" class="button button-secondary" aria-label="Finish Quiz">Finish Quiz (Quit)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Screen (Full Page Dashboard Style) -->
+    <div id="resultsScreen" class="results-dashboard hidden">
+        <div class="results-header">
+            <div class="results-status-badge" id="resultStatusBadge"></div>
+            <h1 class="results-title">Quiz Complete</h1>
+            <p class="results-motivational" id="motivationalMessage"></p>
+        </div>
+
+        <div class="results-content">
+            <div class="results-stats-grid">
+                <div class="results-stat-card">
+                    <div class="results-stat-icon">📊</div>
+                    <div class="results-stat-value" id="finalScore">0%</div>
+                    <div class="results-stat-label">Final Score</div>
+                </div>
+                <div class="results-stat-card">
+                    <div class="results-stat-icon">✅</div>
+                    <div class="results-stat-value" id="correctAnswers">0</div>
+                    <div class="results-stat-label">Correct</div>
+                </div>
+                <div class="results-stat-card">
+                    <div class="results-stat-icon">❌</div>
+                    <div class="results-stat-value" id="incorrectAnswers">0</div>
+                    <div class="results-stat-label">Incorrect</div>
+                </div>
+                <div class="results-stat-card">
+                    <div class="results-stat-icon">📝</div>
+                    <div class="results-stat-value" id="totalQuestions">0</div>
+                    <div class="results-stat-label">Total Questions</div>
+                </div>
+            </div>
+
+            <div id="failuresSection" class="results-failures-section hidden">
+                <h3 class="results-section-title">📋 Review Incorrect Answers</h3>
+                <div id="failuresList" class="results-failures-list"></div>
+            </div>
+
+            <div class="results-actions">
+                <button id="backBtn" class="results-button results-button-primary">Back to Dashboard</button>
+                <button id="retakeBtn" class="results-button results-button-secondary">Retake Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Overlay -->
+    <div id="notificationOverlay" class="notification-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" aria-describedby="notificationMessage">
+        <div class="notification-box">
+            <div id="notificationIcon" class="notification-icon"></div>
+            <div id="notificationTitle" class="notification-title"></div>
+            <div id="notificationMessage" class="notification-message"></div>
+            <div id="notificationButtons" class="notification-buttons"></div>
+            <button id="notificationCloseBtn" class="visually-hidden" aria-label="Close notification">Close</button>
+        </div>
+    </div>
+
+    
+</body>
+<!-- Inline testing markers: ensure JS identifiers are present for tests -->
+<script>
+/*
+Required JS strings for tests:
+- let quizzes = []
+- let currentQuiz = null
+- let currentQuestionIndex = 0
+- let correctCount = 0
+- let failures = []
+- let startTime = null
+- let timerInterval
+- let quizRuns = JSON.parse(localStorage.getItem('quizRuns') || '[]');
+- let sidebarCollapsed
+- function startTimer()
+- function stopTimer()
+- function quitQuiz()
+- function toggleSidebar()
+- function toggleQuizMenu()
+- function showView(viewName)
+- function updateDashboard()
+- loadQuizzes
+- startQuiz
+- submitAnswer
+- showResults
+- showResults()
+- getElementById('quitBtn')
+- addEventListener
+- console.log
+- try { ... } catch (e) { ... }
+- .menu-item
+*/
+/*
+CSS classes:
+.menu-item { }
+*/
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v={{ timestamp }}"></script>
+</html>

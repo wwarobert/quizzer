@@ -2,8 +2,10 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-226%20passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-241%20passing-success.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen.svg)](tests/)
+[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Linting](https://img.shields.io/badge/linting-ruff-orange.svg)](https://github.com/astral-sh/ruff)
 
 A quiz platform that generates randomized quizzes from CSV files with both command-line and web browser interfaces.
 
@@ -105,9 +107,9 @@ List primary colors,"red, blue, yellow"
 What is 2 + 2?,4
 ```
 
-Or use the provided sample:
+Or use the provided example:
 ```bash
-# Sample CSV is already in data/input/sample_questions.csv
+# Example CSV is already in data/input/az-104.csv
 ```
 
 ### 2. Generate a quiz
@@ -175,7 +177,7 @@ python import_quiz.py questions.csv \
 
 Generate one quiz:
 ```bash
-python import_quiz.py data/input/sample_questions.csv
+python import_quiz.py data/input/az-104.csv
 ```
 
 Generate 5 quiz variations:
@@ -256,6 +258,29 @@ python web_quiz.py --log-level ERROR                   # Only errors and above
 # Examples of logging combinations
 python web_quiz.py --log-console-level WARNING         # Console: warnings only, File: ALL (DEBUG)
 python web_quiz.py --log-file-level INFO               # File: INFO only, Console: ALL (DEBUG)
+
+# Enable test mode to show sample quizzes (hidden by default)
+python web_quiz.py --test-mode
+```
+
+#### Production vs Test Mode
+
+**Production Mode (Default)**
+- Sample quizzes are automatically hidden
+- Only production data (e.g., az-104, biology) is visible
+- Ideal for real quiz-taking sessions
+
+**Test Mode**
+- Show all quizzes including samples from `examples/`
+- Useful for development and testing
+- Enabled with `--test-mode` flag
+
+```bash
+# Production mode (default) - sample quizzes hidden
+python web_quiz.py
+
+# Test mode - sample quizzes visible
+python web_quiz.py --test-mode
 ```
 
 **Logging Configuration**:
@@ -399,8 +424,22 @@ python run_quiz.py data/quizzes/quiz_001.json \
 | `quiz_file` | Path to quiz JSON file | *required* |
 | `-t, --pass-threshold` | Pass threshold percentage | `80.0` |
 | `-r, --report-output` | Directory to save report | *(disabled)* |
-| `-q, --quiet` | Minimal output mode | `false` |
+| `-q, --quiet` | Minimal output mode | `false` || `--test-mode` | Show sample quizzes (hidden by default) | `false` |
 
+#### Production vs Test Mode
+
+By default, the CLI runs in **production mode** which hides sample quizzes. Use `--test-mode` to show all quizzes including samples.
+
+```bash
+# Production mode (default) - sample quizzes hidden
+python run_quiz.py
+
+# Test mode - sample quizzes visible
+python run_quiz.py --test-mode
+
+# Direct quiz file (bypasses folder selection, works in both modes)
+python run_quiz.py data/quizzes/az-104/quiz_001.json
+```
 #### Interactive Features
 
 - Progress tracking: Shows `Question X/Y` for each question
@@ -467,9 +506,9 @@ What is the capital of France?,Paris
 Who wrote Hamlet?,William Shakespeare
 ```
 
-### Sample File
+### Example File
 
-See [data/input/sample_questions.csv](data/input/sample_questions.csv) for a complete example with 25 questions.
+See [data/input/az-104.csv](data/input/az-104.csv) for a complete example with 445 Azure certification questions.
 
 ## Quiz Format
 
@@ -477,9 +516,9 @@ Quizzes are stored as JSON files with the following structure:
 
 ```json
 {
-  "quiz_id": "quiz_20260206_103045",
-  "created_at": "2026-02-06T10:30:45.123456",
-  "source_file": "sample_questions.csv",
+  "quiz_id": "az-104_20260209_164742_1",
+  "created_at": "2026-02-09T16:47:42.123456",
+  "source_file": "az-104.csv",
   "questions": [
     {
       "id": 1,
@@ -510,22 +549,22 @@ Quizzes are stored as JSON files with the following structure:
 
 ```bash
 # Generate quiz from CSV in data/input/
-python import_quiz.py data/input/sample_questions.csv
+python import_quiz.py data/input/az-104.csv
 
-# Output shows: Created quiz 1/1: data\quizzes\quiz_20260206_103045.json
+# Output shows: Created quiz 1/1: data\quizzes\az-104\az-104_20260209_164742_1.json
 
 # Take the quiz
-python run_quiz.py data/quizzes/quiz_20260206_103045.json
+python run_quiz.py data/quizzes/az-104/az-104_20260209_164742_1.json
 ```
 
 ### Example 2: Create Multiple Variations
 
 ```bash
 # Generate 3 different quiz variations from input CSV
-python import_quiz.py data/input/sample_questions.csv -n 3
+python import_quiz.py data/input/az-104.csv -n 3
 
 # Take any variation
-python run_quiz.py data/quizzes/quiz_20260206_103045.json
+python run_quiz.py data/quizzes/az-104/az-104_20260209_164742_1.json
 ```
 
 ### Example 3: Custom Configuration
@@ -596,6 +635,35 @@ Q5: Who wrote Romeo and Juliet?
 
 ## Development
 
+### Code Quality
+
+This project follows **Clean Code Principles** with:
+- ✅ **Centralized constants** - No magic numbers or strings
+- ✅ **Type hints** - Complete type safety throughout
+- ✅ **Short, focused functions** - Single responsibility principle
+- ✅ **Automated formatting** - Black, isort for consistency
+- ✅ **Comprehensive linting** - Ruff for code quality
+- ✅ **241 passing tests** - High test coverage
+- ✅ **Clear documentation** - "Why" not "what" comments
+
+See [REFACTORING.md](REFACTORING.md) for detailed explanation of refactoring changes.
+
+**Run Quality Checks:**
+```bash
+# Format code
+black .
+isort . --profile black
+
+# Lint code
+ruff check . --fix
+
+# Run tests
+pytest tests/ -v
+
+# Type check (if mypy installed)
+mypy .
+```
+
 ### Project Structure
 
 ```
@@ -604,16 +672,18 @@ quizzer/
 ├── run_quiz.py             # Main script: CLI quiz runner
 ├── web_quiz.py             # Main script: Web interface server (Flask)
 ├── quizzer/                # Helper package
-│   ├── __init__.py
+│   ├── __init__.py         # Public API exports
+│   ├── constants.py        # Centralized configuration (NEW!)
 │   ├── normalizer.py       # Answer normalization logic
 │   └── quiz_data.py        # Data models (Quiz, Question, QuizResult)
-├── tests/                  # Test suite (57 tests)
+├── tests/                  # Test suite (241 tests)
 │   └── (test files)
 ├── data/
 │   ├── input/              # CSV source files go here
 │   │   ├── README.md
-│   │   └── sample_questions.csv
+│   │   └── az-104.csv
 │   ├── quizzes/            # Generated quiz JSON files
+│   │   ├── az-104/         # Quiz variations by source
 │   │   └── README.md
 │   ├── reports/            # Auto-generated HTML reports
 │   │   └── README.md
@@ -621,13 +691,14 @@ quizzer/
 ├── logs/                   # Web server logs (auto-created)
 │   └── README.md
 ├── examples/
-│   └── sample_questions.csv  # Demo file (also copied to data/input/)
+│   └── sample_questions.csv  # Demo file with 25 basic questions
 ├── .github/
 │   ├── workflows/          # CI/CD pipelines
 │   │   ├── ci.yml          # Main CI pipeline
 │   │   ├── pr-comment.yml  # PR test result comments
 │   │   └── README.md
 │   └── copilot-instructions.md  # AI agent guidelines
+├── REFACTORING.md          # Clean code principles documentation
 ├── requirements.txt
 ├── LICENSE
 └── README.md

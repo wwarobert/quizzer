@@ -5,11 +5,13 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-import pytest
 import json
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
+
+import pytest
+
 from quizzer.quiz_data import Question, Quiz, QuizResult
 
 
@@ -22,7 +24,7 @@ class TestQuestion:
             id=1,
             question="What is the capital of France?",
             answer=["paris"],
-            original_answer="Paris"
+            original_answer="Paris",
         )
         assert q.id == 1
         assert q.question == "What is the capital of France?"
@@ -32,10 +34,7 @@ class TestQuestion:
     def test_to_dict(self):
         """Test converting Question to dictionary."""
         q = Question(
-            id=1,
-            question="Test question?",
-            answer=["test"],
-            original_answer="Test"
+            id=1, question="Test question?", answer=["test"], original_answer="Test"
         )
         d = q.to_dict()
         assert d["id"] == 1
@@ -49,7 +48,7 @@ class TestQuestion:
             "id": 2,
             "question": "Test?",
             "answer": ["blue", "red"],
-            "original_answer": "red, blue"
+            "original_answer": "red, blue",
         }
         q = Question.from_dict(data)
         assert q.id == 2
@@ -63,15 +62,12 @@ class TestQuiz:
 
     def test_create_quiz(self):
         """Test creating a Quiz object."""
-        questions = [
-            Question(1, "Q1?", ["a"], "A"),
-            Question(2, "Q2?", ["b"], "B")
-        ]
+        questions = [Question(1, "Q1?", ["a"], "A"), Question(2, "Q2?", ["b"], "B")]
         quiz = Quiz(
             quiz_id="test_001",
             created_at="2026-02-06T10:00:00",
             questions=questions,
-            source_file="test.csv"
+            source_file="test.csv",
         )
         assert quiz.quiz_id == "test_001"
         assert quiz.created_at == "2026-02-06T10:00:00"
@@ -97,7 +93,7 @@ class TestQuiz:
             "source_file": "sample.csv",
             "questions": [
                 {"id": 1, "question": "Q?", "answer": ["a"], "original_answer": "A"}
-            ]
+            ],
         }
         quiz = Quiz.from_dict(data)
         assert quiz.quiz_id == "quiz_002"
@@ -108,12 +104,12 @@ class TestQuiz:
         """Test saving and loading quiz from JSON file."""
         questions = [
             Question(1, "What is 2+2?", ["4"], "4"),
-            Question(2, "Capital of France?", ["paris"], "Paris")
+            Question(2, "Capital of France?", ["paris"], "Paris"),
         ]
         quiz = Quiz("quiz_003", "2026-02-06T12:00:00", questions, "test.csv")
 
         # Save to temporary file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_path = f.name
 
         try:
@@ -121,7 +117,7 @@ class TestQuiz:
 
             # Verify file exists and is valid JSON
             assert Path(temp_path).exists()
-            with open(temp_path, 'r') as f:
+            with open(temp_path, "r") as f:
                 data = json.load(f)
                 assert data["quiz_id"] == "quiz_003"
 
@@ -147,7 +143,7 @@ class TestQuizResult:
             correct_answers=9,
             score_percentage=90.0,
             passed=True,
-            failures=[]
+            failures=[],
         )
         assert result.quiz_id == "quiz_001"
         assert result.total_questions == 10
@@ -163,7 +159,7 @@ class TestQuizResult:
                 "question_id": "5",
                 "question": "What is 2+2?",
                 "user_answer": "5",
-                "correct_answer": "4"
+                "correct_answer": "4",
             }
         ]
         result = QuizResult(
@@ -173,7 +169,7 @@ class TestQuizResult:
             correct_answers=7,
             score_percentage=70.0,
             passed=False,
-            failures=failures
+            failures=failures,
         )
         assert result.passed is False
         assert len(result.failures) == 1
@@ -188,7 +184,7 @@ class TestQuizResult:
             correct_answers=50,
             score_percentage=100.0,
             passed=True,
-            failures=[]
+            failures=[],
         )
         report = result.generate_report()
         assert "quiz_003" in report
@@ -204,14 +200,14 @@ class TestQuizResult:
                 "question_id": "5",
                 "question": "What is the capital of France?",
                 "user_answer": "London",
-                "correct_answer": "Paris"
+                "correct_answer": "Paris",
             },
             {
                 "question_id": "10",
                 "question": "What is 2+2?",
                 "user_answer": "5",
-                "correct_answer": "4"
-            }
+                "correct_answer": "4",
+            },
         ]
         result = QuizResult(
             quiz_id="quiz_004",
@@ -220,7 +216,7 @@ class TestQuizResult:
             correct_answers=40,
             score_percentage=80.0,
             passed=True,
-            failures=failures
+            failures=failures,
         )
         report = result.generate_report()
         assert "quiz_004" in report
@@ -240,17 +236,17 @@ class TestQuizResult:
             correct_answers=20,
             score_percentage=80.0,
             passed=True,
-            failures=[]
+            failures=[],
         )
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             temp_path = f.name
 
         try:
             result.save_report(temp_path)
             assert Path(temp_path).exists()
 
-            with open(temp_path, 'r') as f:
+            with open(temp_path, "r") as f:
                 content = f.read()
                 assert "quiz_005" in content
                 assert "80.0%" in content
@@ -266,7 +262,7 @@ class TestQuizResult:
             correct_answers=8,
             score_percentage=80.0,
             passed=True,
-            failures=[]
+            failures=[],
         )
         d = result.to_dict()
         assert d["quiz_id"] == "quiz_006"
@@ -359,7 +355,7 @@ class TestQuizEdgeCases:
             "created_at": "2026-02-06T10:00:00",
             "questions": [
                 {"id": 1, "question": "Q?", "answer": ["a"], "original_answer": "A"}
-            ]
+            ],
             # No source_file key
         }
         quiz = Quiz.from_dict(data)
@@ -376,7 +372,7 @@ class TestQuizEdgeCases:
             quiz.save(str(filepath))
 
             # Verify it's valid JSON
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 assert data["quiz_id"] == "json_test"
                 assert len(data["questions"]) == 1
@@ -390,7 +386,7 @@ class TestQuizEdgeCases:
 
     def test_quiz_load_handles_invalid_json(self):
         """Test that Quiz.load raises error for invalid JSON."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("not valid json {{{")
             temp_path = f.name
 
@@ -439,7 +435,7 @@ class TestQuizResultEdgeCases:
             correct_answers=0,
             score_percentage=0.0,
             passed=False,
-            failures=[]
+            failures=[],
         )
         assert result.total_questions == 0
         report = result.generate_report()
@@ -454,7 +450,7 @@ class TestQuizResultEdgeCases:
             correct_answers=8,
             score_percentage=80.0,
             passed=True,
-            failures=[]
+            failures=[],
             # time_spent not provided, should default to 0.0
         )
         assert result.time_spent == 0.0
@@ -469,7 +465,7 @@ class TestQuizResultEdgeCases:
             score_percentage=90.0,
             passed=True,
             failures=[],
-            time_spent=3725.5  # 1 hour, 2 minutes, 5.5 seconds
+            time_spent=3725.5,  # 1 hour, 2 minutes, 5.5 seconds
         )
         report = result.generate_report()
         assert "62m" in report  # 3725 / 60 = 62 minutes
@@ -483,7 +479,7 @@ class TestQuizResultEdgeCases:
             correct_answers=2,
             score_percentage=66.66666666666667,
             passed=False,
-            failures=[]
+            failures=[],
         )
         report = result.generate_report()
         assert "66.7%" in report  # Should be formatted to 1 decimal
@@ -495,7 +491,7 @@ class TestQuizResultEdgeCases:
                 "question_id": str(i),
                 "question": f"Question {i}?",
                 "user_answer": "wrong",
-                "correct_answer": "correct"
+                "correct_answer": "correct",
             }
             for i in range(1, 26)  # 25 failures
         ]
@@ -506,7 +502,7 @@ class TestQuizResultEdgeCases:
             correct_answers=25,
             score_percentage=50.0,
             passed=False,
-            failures=failures
+            failures=failures,
         )
         report = result.generate_report()
         assert "Failures (25)" in report
@@ -523,7 +519,7 @@ class TestQuizResultEdgeCases:
             score_percentage=100.0,
             passed=True,
             failures=[],
-            time_spent=45.0
+            time_spent=45.0,
         )
         report = result.generate_report()
         assert "45s" in report
@@ -540,7 +536,7 @@ class TestQuizResultEdgeCases:
             score_percentage=80.0,
             passed=True,
             failures=[],
-            time_spent=125.0  # 2m 5s
+            time_spent=125.0,  # 2m 5s
         )
         report = result.generate_report()
         assert "2m 5s" in report
@@ -552,7 +548,7 @@ class TestQuizResultEdgeCases:
                 "question_id": "1",
                 "question": "What is café?",
                 "user_answer": "coffee",
-                "correct_answer": "café"
+                "correct_answer": "café",
             }
         ]
         result = QuizResult(
@@ -562,7 +558,7 @@ class TestQuizResultEdgeCases:
             correct_answers=0,
             score_percentage=0.0,
             passed=False,
-            failures=failures
+            failures=failures,
         )
         report = result.generate_report()
         assert "café" in report
@@ -577,7 +573,7 @@ class TestQuizResultEdgeCases:
             correct_answers=10,
             score_percentage=100.0,
             passed=True,
-            failures=[]
+            failures=[],
         )
         assert result.quiz_id == long_id
         report = result.generate_report()
@@ -592,17 +588,17 @@ class TestQuizResultEdgeCases:
             correct_answers=8,
             score_percentage=80.0,
             passed=True,
-            failures=[]
+            failures=[],
         )
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("Old content")
             temp_path = f.name
 
         try:
             result.save_report(temp_path)
 
-            with open(temp_path, 'r') as f:
+            with open(temp_path, "r") as f:
                 content = f.read()
                 assert "Old content" not in content
                 assert "overwrite" in content

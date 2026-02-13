@@ -5,8 +5,8 @@ Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
 """
 
-import pytest
-from quizzer.normalizer import normalize_answer, answers_match, format_answer_display
+
+from quizzer.normalizer import answers_match, format_answer_display, normalize_answer
 
 
 class TestNormalizeAnswer:
@@ -167,7 +167,10 @@ class TestNormalizeAnswerEdgeCases:
     def test_answers_with_hyphens(self):
         """Test normalization with hyphens."""
         assert normalize_answer("forty-two") == ["forty-two"]
-        assert normalize_answer("well-known, up-to-date") == ["up-to-date", "well-known"]
+        assert normalize_answer("well-known, up-to-date") == [
+            "up-to-date",
+            "well-known",
+        ]
 
     def test_answers_with_parentheses(self):
         """Test normalization with parentheses."""

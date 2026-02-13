@@ -17,9 +17,9 @@ List primary colors,"red, blue, yellow"
 What is 2 + 2?,4
 ```
 
-## Sample File
+## Example File
 
-A sample file is provided: [sample_questions.csv](sample_questions.csv)
+An example file is provided: [az-104.csv](az-104.csv) - Microsoft Azure Administrator certification practice questions
 
 ## Usage
 

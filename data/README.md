@@ -8,8 +8,9 @@ This directory stores quiz-related data files with clear separation between inpu
 data/
 ├── input/              # ← Place your CSV question files here
 │   ├── README.md
-│   └── sample_questions.csv
+│   └── az-104.csv
 ├── quizzes/            # ← Generated quiz JSON files stored here
+│   ├── az-104/         # Quiz variations by source
 │   └── README.md
 └── README.md (this file)
 ```
