@@ -70,8 +70,7 @@ def generate_self_signed_cert(
             .not_valid_before(datetime.utcnow())
             .not_valid_after(
                 # Certificate valid for configured days - balance security with convenience
-                datetime.utcnow()
-                + timedelta(days=CERT_VALIDITY_DAYS)
+                datetime.utcnow() + timedelta(days=CERT_VALIDITY_DAYS)
             )
             .add_extension(
                 x509.SubjectAlternativeName(

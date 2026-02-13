@@ -16,41 +16,11 @@ from typing import Union
 __version__ = "1.0.0"
 __author__ = "Quizzer Project"
 
-from .constants import (
-    CSV_FILE_EXTENSION,
-    DEFAULT_MAX_QUESTIONS,
-    DEFAULT_PASS_THRESHOLD,
-    METADATA_FILENAME,
-    QUIZ_FILE_EXTENSION,
-    TEST_DATA_PATTERNS,
-    ScoreTier,
-)
+from .constants import TEST_DATA_PATTERNS
 from .normalizer import answers_match, format_answer_display, normalize_answer
 from .quiz_data import Question, Quiz, QuizResult
 
-# Define public API
-__all__ = [
-    # Data models
-    "Question",
-    "Quiz",
-    "QuizResult",
-    # Functions
-    "normalize_answer",
-    "answers_match",
-    "format_answer_display",
-    "is_test_data",
-    # Constants
-    "DEFAULT_PASS_THRESHOLD",
-    "QUIZ_FILE_EXTENSION",
-    "CSV_FILE_EXTENSION",
-    "METADATA_FILENAME",
-    "DEFAULT_MAX_QUESTIONS",
-    "TEST_DATA_PATTERNS",
-    "ScoreTier",
-    # Metadata
-    "__version__",
-    "__author__",
-]
+# Note: Final __all__ definition is at the end of the file after is_test_data()
 
 # Backward compatibility - keep TEST_DATA_PATTERNS at module level
 TEST_DATA_PATTERNS = TEST_DATA_PATTERNS
