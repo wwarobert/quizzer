@@ -15,6 +15,13 @@ from flask import jsonify, render_template, request, send_file
 import run_quiz
 from quizzer import Quiz, QuizResult, is_test_data, normalize_answer
 from quizzer.constants import DATA_DIR_NAME, QUIZZES_DIR_NAME, REPORTS_DIR_NAME
+from quizzer.exceptions import (
+    InvalidQuizPathError,
+    QuizNotFoundError,
+    ValidationError,
+    get_http_status,
+)
+from quizzer.security import validate_quiz_path, validate_report_path
 
 logger = logging.getLogger("quizzer")
 
@@ -129,15 +136,23 @@ def register_routes(app):
 
         try:
             logger.debug(f"Loading quiz: {quiz_path}")
-            quiz = Quiz.load(quiz_path)
+            
+            # Validate and sanitize path (prevents path traversal attacks)
+            validated_path = validate_quiz_path(quiz_path, QUIZZES_DIR)
+            
+            quiz = Quiz.load(validated_path)
             logger.info(f"Quiz loaded successfully: {quiz.quiz_id}")
             return jsonify(quiz.to_dict())
+        except InvalidQuizPathError as e:
+            logger.warning(f"Invalid quiz path: {quiz_path} - {e}")
+            return jsonify({"error": "Invalid quiz path"}), 400
         except FileNotFoundError:
             logger.error(f"Quiz file not found: {quiz_path}")
             return jsonify({"error": "Quiz not found"}), 404
         except Exception as e:
             logger.error(f"Error loading quiz {quiz_path}: {e}", exc_info=True)
-            return jsonify({"error": str(e)}), 500
+            # Don't expose internal error details to client
+            return jsonify({"error": "Failed to load quiz"}), 500
 
     @app.route("/api/check-answer", methods=["POST"])
     def check_answer():
@@ -211,7 +226,10 @@ def register_routes(app):
     def view_report(quiz_id: str):
         """Serve HTML report for a completed quiz."""
         try:
-            report_path = REPORTS_DIR / f"{quiz_id}_report.html"
+            # Validate quiz_id to prevent path traversal in file name
+            validated_id = validate_report_path(quiz_id)
+            
+            report_path = REPORTS_DIR / f"{validated_id}_report.html"
             if report_path.exists():
                 return send_file(report_path, mimetype="text/html")
             else:
@@ -220,9 +238,13 @@ def register_routes(app):
                     f"<h1>Report Not Found</h1><p>No report found for quiz ID: {quiz_id}</p>",
                     404,
                 )
+        except InvalidQuizPathError as e:
+            logger.warning(f"Invalid quiz ID in report request: {quiz_id} - {e}")
+            return "<h1>Invalid Quiz ID</h1><p>The provided quiz ID is invalid.</p>", 400
         except Exception as e:
             logger.error(f"Error viewing report: {e}", exc_info=True)
-            return f"<h1>Error</h1><p>Failed to load report: {e}</p>", 500
+            # Don't expose internal error details
+            return "<h1>Error</h1><p>Failed to load report.</p>", 500
 
     # Error handlers
     @app.errorhandler(404)
