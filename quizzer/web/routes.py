@@ -15,12 +15,7 @@ from flask import jsonify, render_template, request, send_file
 import run_quiz
 from quizzer import Quiz, QuizResult, is_test_data, normalize_answer
 from quizzer.constants import DATA_DIR_NAME, QUIZZES_DIR_NAME, REPORTS_DIR_NAME
-from quizzer.exceptions import (
-    InvalidQuizPathError,
-    QuizNotFoundError,
-    ValidationError,
-    get_http_status,
-)
+from quizzer.exceptions import InvalidQuizPathError
 from quizzer.security import validate_quiz_path, validate_report_path
 
 logger = logging.getLogger("quizzer")
@@ -136,10 +131,10 @@ def register_routes(app):
 
         try:
             logger.debug(f"Loading quiz: {quiz_path}")
-            
+
             # Validate and sanitize path (prevents path traversal attacks)
             validated_path = validate_quiz_path(quiz_path, QUIZZES_DIR)
-            
+
             quiz = Quiz.load(validated_path)
             logger.info(f"Quiz loaded successfully: {quiz.quiz_id}")
             return jsonify(quiz.to_dict())
@@ -228,7 +223,7 @@ def register_routes(app):
         try:
             # Validate quiz_id to prevent path traversal in file name
             validated_id = validate_report_path(quiz_id)
-            
+
             report_path = REPORTS_DIR / f"{validated_id}_report.html"
             if report_path.exists():
                 return send_file(report_path, mimetype="text/html")

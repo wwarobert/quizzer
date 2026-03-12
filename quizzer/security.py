@@ -125,11 +125,11 @@ def validate_report_path(quiz_id: str) -> str:
         raise InvalidQuizPathError(
             "Quiz ID cannot contain path separators (/ or \\)"
         )
-    
+
     # Check for parent directory reference
     if ".." in quiz_id:
         raise InvalidQuizPathError("Quiz ID cannot contain '..'")
-    
+
     # Check for other suspicious characters
     suspicious_chars = ["<", ">", ":", '"', "|", "?", "*"]
     if any(char in quiz_id for char in suspicious_chars):
