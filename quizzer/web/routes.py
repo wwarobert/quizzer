@@ -15,6 +15,21 @@ from flask import jsonify, render_template, request, send_file
 import run_quiz
 from quizzer import Quiz, QuizResult, is_test_data, normalize_answer
 from quizzer.constants import DATA_DIR_NAME, QUIZZES_DIR_NAME, REPORTS_DIR_NAME
+from quizzer.error_messages import (
+    ANSWER_CHECK_FAILED,
+    INTERNAL_ERROR,
+    QUIZ_INVALID_PATH,
+    QUIZ_LIST_FAILED,
+    QUIZ_LOAD_FAILED,
+    QUIZ_NOT_FOUND,
+    QUIZ_NOT_PROVIDED,
+    REPORT_INVALID_ID,
+    REPORT_LOAD_FAILED,
+    REPORT_NOT_FOUND,
+    REPORT_SAVE_FAILED,
+    RESOURCE_NOT_FOUND,
+    UNEXPECTED_ERROR,
+)
 from quizzer.exceptions import InvalidQuizPathError
 from quizzer.security import validate_quiz_path, validate_report_path
 
@@ -119,7 +134,7 @@ def register_routes(app):
             return jsonify(quiz_files)
         except Exception as e:
             logger.error(f"Error fetching quizzes: {e}", exc_info=True)
-            return jsonify({"error": "Failed to fetch quizzes"}), 500
+            return jsonify({"error": QUIZ_LIST_FAILED}), 500
 
     @app.route("/api/quiz")
     def get_quiz():
@@ -127,7 +142,7 @@ def register_routes(app):
         quiz_path = request.args.get("path")
         if not quiz_path:
             logger.warning("Quiz path not provided in request")
-            return jsonify({"error": "No quiz path provided"}), 400
+            return jsonify({"error": QUIZ_NOT_PROVIDED}), 400
 
         try:
             logger.debug(f"Loading quiz: {quiz_path}")
@@ -140,14 +155,14 @@ def register_routes(app):
             return jsonify(quiz.to_dict())
         except InvalidQuizPathError as e:
             logger.warning(f"Invalid quiz path: {quiz_path} - {e}")
-            return jsonify({"error": "Invalid quiz path"}), 400
+            return jsonify({"error": QUIZ_INVALID_PATH}), 400
         except FileNotFoundError:
             logger.error(f"Quiz file not found: {quiz_path}")
-            return jsonify({"error": "Quiz not found"}), 404
+            return jsonify({"error": QUIZ_NOT_FOUND}), 404
         except Exception as e:
             logger.error(f"Error loading quiz {quiz_path}: {e}", exc_info=True)
             # Don't expose internal error details to client
-            return jsonify({"error": "Failed to load quiz"}), 500
+            return jsonify({"error": QUIZ_LOAD_FAILED}), 500
 
     @app.route("/api/check-answer", methods=["POST"])
     def check_answer():
@@ -176,7 +191,7 @@ def register_routes(app):
             )
         except Exception as e:
             logger.error(f"Error checking answer: {e}", exc_info=True)
-            return jsonify({"error": "Failed to check answer"}), 500
+            return jsonify({"error": ANSWER_CHECK_FAILED}), 500
 
     @app.route("/api/save-report", methods=["POST"])
     def save_report():
@@ -215,7 +230,8 @@ def register_routes(app):
 
         except Exception as e:
             logger.error(f"Error saving report: {e}", exc_info=True)
-            return jsonify({"success": False, "error": str(e)}), 500
+            # Don't expose internal error details to client
+            return jsonify({"success": False, "error": REPORT_SAVE_FAILED}), 500
 
     @app.route("/report/<quiz_id>")
     def view_report(quiz_id: str):
@@ -230,29 +246,29 @@ def register_routes(app):
             else:
                 logger.warning(f"Report not found: {report_path}")
                 return (
-                    f"<h1>Report Not Found</h1><p>No report found for quiz ID: {quiz_id}</p>",
+                    f"<h1>{REPORT_NOT_FOUND}</h1><p>No report found for the requested quiz.</p>",
                     404,
                 )
         except InvalidQuizPathError as e:
             logger.warning(f"Invalid quiz ID in report request: {quiz_id} - {e}")
-            return "<h1>Invalid Quiz ID</h1><p>The provided quiz ID is invalid.</p>", 400
+            return f"<h1>{REPORT_INVALID_ID}</h1><p>The provided quiz ID is invalid.</p>", 400
         except Exception as e:
             logger.error(f"Error viewing report: {e}", exc_info=True)
             # Don't expose internal error details
-            return "<h1>Error</h1><p>Failed to load report.</p>", 500
+            return f"<h1>Error</h1><p>{REPORT_LOAD_FAILED}</p>", 500
 
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
         logger.warning(f"404 Not Found: {request.url}")
-        return jsonify({"error": "Resource not found"}), 404
+        return jsonify({"error": RESOURCE_NOT_FOUND}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
         logger.error(f"500 Internal Server Error: {error}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": INTERNAL_ERROR}), 500
 
     @app.errorhandler(Exception)
     def handle_exception(error):
         logger.error(f"Unhandled exception: {error}", exc_info=True)
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return jsonify({"error": UNEXPECTED_ERROR}), 500
