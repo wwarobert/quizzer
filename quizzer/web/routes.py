@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from flask import jsonify, render_template, request, send_file
+from pydantic import ValidationError
 
 import run_quiz
 from quizzer import Quiz, QuizResult, is_test_data, normalize_answer
@@ -32,6 +33,7 @@ from quizzer.error_messages import (
 )
 from quizzer.exceptions import InvalidQuizPathError
 from quizzer.security import validate_quiz_path, validate_report_path
+from quizzer.web.schemas import CheckAnswerRequest, SaveReportRequest
 
 logger = logging.getLogger("quizzer")
 
@@ -168,18 +170,22 @@ def register_routes(app):
     def check_answer():
         """Check if user's answer is correct."""
         try:
-            data = request.json
-            user_answer = data.get("user_answer", "")
-            correct_answer = data.get("correct_answer", "")
+            # Validate request payload
+            try:
+                validated_data = CheckAnswerRequest(**request.json)
+            except ValidationError as e:
+                logger.warning(f"Invalid check-answer payload: {e}")
+                return jsonify({"error": "Invalid request data"}), 400
 
             # Normalize and compare answers
-            user_normalized = normalize_answer(user_answer)
-            correct_normalized = normalize_answer(correct_answer)
+            user_normalized = normalize_answer(validated_data.user_answer)
+            correct_normalized = normalize_answer(validated_data.correct_answer)
 
             is_correct = user_normalized == correct_normalized
 
             logger.debug(
-                f'Answer check: user="{user_answer}" correct="{correct_answer}" result={is_correct}'
+                f'Answer check: user="{validated_data.user_answer}" '
+                f'correct="{validated_data.correct_answer}" result={is_correct}'
             )
 
             return jsonify(
@@ -198,28 +204,32 @@ def register_routes(app):
         """Generate and save HTML report for quiz results."""
         try:
             logger.debug("Saving quiz report")
-            data = request.json
-            result_data = data.get("result", {})
-            quiz_data = data.get("quiz", {})
+
+            # Validate request payload
+            try:
+                validated_data = SaveReportRequest(**request.json)
+            except ValidationError as e:
+                logger.warning(f"Invalid save-report payload: {e}")
+                return jsonify({"success": False, "error": "Invalid request data"}), 400
 
             # Reconstruct Quiz object
             quiz = Quiz(
-                quiz_id=quiz_data["quiz_id"],
-                created_at=quiz_data.get("created_at", ""),
-                source_file=quiz_data.get("source_file", ""),
+                quiz_id=validated_data.quiz.quiz_id,
+                created_at=validated_data.quiz.created_at,
+                source_file=validated_data.quiz.source_file,
                 questions=[],
             )
 
             # Reconstruct QuizResult object
             result = QuizResult(
-                quiz_id=result_data["quiz_id"],
-                total_questions=result_data["total_questions"],
-                correct_answers=result_data["correct_count"],
-                failures=result_data["failures"],
-                score_percentage=result_data["score_percentage"],
-                passed=result_data["passed"],
+                quiz_id=validated_data.result.quiz_id,
+                total_questions=validated_data.result.total_questions,
+                correct_answers=validated_data.result.correct_count,
+                failures=validated_data.result.failures,
+                score_percentage=validated_data.result.score_percentage,
+                passed=validated_data.result.passed,
                 completed_at=datetime.now().isoformat(),
-                time_spent=result_data.get("time_spent", 0),
+                time_spent=validated_data.result.time_spent,
             )
 
             # Generate and save HTML report
