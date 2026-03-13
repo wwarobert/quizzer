@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class CheckAnswerRequest(BaseModel):
     """Request model for /api/check-answer endpoint.
-    
+
     Validates that both user_answer and correct_answer are provided
     as non-empty strings.
     """
@@ -87,7 +87,7 @@ class ResultDataSchema(BaseModel):
 
 class SaveReportRequest(BaseModel):
     """Request model for /api/save-report endpoint.
-    
+
     Validates the structure of quiz results before generating reports.
     """
 
