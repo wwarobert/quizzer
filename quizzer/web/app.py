@@ -8,8 +8,19 @@ Licensed under the Apache License, Version 2.0
 from pathlib import Path
 
 from flask import Flask
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from quizzer.web.routes import register_routes
+
+
+# Initialize rate limiter (configured per-app)
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+    headers_enabled=True,  # Enable rate limit headers in responses
+)
 
 
 def create_app(test_mode=False):
@@ -38,7 +49,10 @@ def create_app(test_mode=False):
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0  # Disable caching for development
     app.config["TEST_MODE"] = test_mode  # Production mode by default
 
-    # Register routes
-    register_routes(app)
+    # Initialize rate limiter with app
+    limiter.init_app(app)
+
+    # Register routes (pass limiter to avoid circular import)
+    register_routes(app, limiter)
 
     return app

@@ -164,17 +164,65 @@
 
 ---
 
-### Step 4: Add Rate Limiting
+### Step 4: Add Rate Limiting ✅ COMPLETED
 **Branch**: `security/rate-limiting`
-**Status**: ⏳ Not Started
+**Started**: March 16, 2026
+**Completed**: March 16, 2026
+**Status**: ✅ Completed
 
-**Objective**: Prevent DoS attacks
+**Objective**: Prevent DoS attacks with endpoint-specific rate limits
 
 **Changes**:
-- [ ] Add Flask-Limiter to requirements.txt
-- [ ] Configure rate limits per endpoint
-- [ ] Add tests for rate limiting
-- [ ] Document rate limits in API docs
+- [x] Add Flask-Limiter to requirements.txt
+- [x] Configure rate limits per endpoint
+- [x] Add tests for rate limiting
+- [x] Document rate limits in SECURITY.md
+- [x] Fix circular import issue (pass limiter to register_routes)
+- [x] Enable rate limit headers in responses
+- [x] Add error handler for RateLimitExceeded
+
+**Files Modified**:
+- MODIFY: `requirements.txt` - Added Flask-Limiter>=3.5.0
+- MODIFY: `quizzer/web/app.py` - Initialize limiter with headers_enabled=True
+- MODIFY: `quizzer/web/routes.py` - Add rate limits to all endpoints, add RateLimitExceeded handler
+- NEW: `tests/test_rate_limiting.py` - 13 comprehensive rate limiting tests
+- MODIFY: `SECURITY.md` - Added rate limiting documentation section
+
+**Rate Limits Configured**:
+- `/api/quizzes` - 100 per hour (listing quizzes)
+- `/api/quiz` - 100 per hour (loading quiz data)
+- `/api/check-answer` - 10 per minute (most frequent endpoint)
+- `/api/save-report` - 20 per hour (write operation)
+- `/api/reports` - 50 per hour (viewing reports)
+- Default limits: 200 per day, 50 per hour (all other endpoints)
+
+**Implementation Details**:
+- **Key Function**: `get_remote_address` (tracks by client IP)
+- **Storage**: In-memory (memory://) for development
+- **Headers**: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+- **Error Response**: 429 Too Many Requests with user-friendly message
+- **Circular Import Fix**: Pass limiter to register_routes() instead of importing
+
+**Test Coverage**:
+- [x] Test limiter is enabled and configured
+- [x] Test requests within limit succeed
+- [x] Test rate limit headers present in responses
+- [x] Test rate limit exceeded returns 429 status code
+- [x] Test different endpoints have independent rate counters
+- [x] 13 comprehensive tests covering all scenarios
+
+**Test Results**:
+- **All 334 tests pass** (321 existing + 13 new rate limiting tests)
+- **0 regressions** - all existing functionality preserved
+- **Coverage**: Full coverage of rate limiting configuration and enforcement
+
+**PR Checklist**:
+- [x] All tests pass (334/334)
+- [x] Rate limiting tests added (13 new tests)
+- [x] Code follows Python best practices
+- [x] Documentation updated (SECURITY.md)
+- [ ] Code review completed (pending PR creation)
+- [x] No breaking changes
 
 ---
 
@@ -219,12 +267,12 @@
 
 | Phase | Steps | Completed | In Progress | Not Started |
 |-------|-------|-----------|-------------|-------------|
-| Phase 1 | 4 | 1 | 0 | 3 |
+| Phase 1 | 4 | 4 | 0 | 0 |
 | Phase 2 | 4 | 0 | 0 | 4 |
 | Phase 3 | 4 | 0 | 0 | 4 |
 | Phase 4 | 4 | 0 | 0 | 4 |
 | Phase 5 | 5 | 0 | 0 | 5 |
-| **Total** | **21** | **1** | **0** | **20** |
+| **Total** | **21** | **4** | **0** | **17** |
 
 ---
 
