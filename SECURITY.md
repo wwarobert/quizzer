@@ -75,6 +75,84 @@ except Exception as e:
 
 ---
 
+## Request Payload Validation
+
+### Vulnerability
+Invalid or malicious request data can cause errors, crashes, or unexpected behavior.
+
+### Mitigation
+All incoming request data is validated using Pydantic schemas before processing:
+
+1. **Schema Validation** (`quizzer/web/schemas.py`)
+   - Required field validation
+   - Data type validation (strings, integers, floats, booleans)
+   - Length limits (max 10k characters for text fields)
+   - Range validation (no negative values where inappropriate)
+   - Cross-field validation (e.g., correct_count ≤ total_questions)
+
+2. **Validation Behavior**
+   - Returns `400 Bad Request` for invalid payloads
+   - Detailed validation errors logged server-side only
+   - Extra fields rejected (`extra='forbid'`)
+
+### Implementation
+```python
+from quizzer.web.schemas import CheckAnswerRequest
+
+try:
+    data = CheckAnswerRequest(**request.json)
+    # Validated data is safe to use
+except ValidationError as e:
+    logger.warning(f"Invalid request payload: {e}")
+    return jsonify({"error": "Invalid request data"}), 400
+```
+
+---
+
+## Rate Limiting (DoS Protection)
+
+### Vulnerability
+Without rate limiting, attackers can overwhelm the server with excessive requests, causing denial of service or resource exhaustion.
+
+### Mitigation
+Flask-Limiter is configured to limit requests per endpoint:
+
+**Rate Limits by Endpoint:**
+- `/api/quizzes` - **100 per hour** (listing quizzes)
+- `/api/quiz` - **100 per hour** (loading quiz data)
+- `/api/check-answer` - **10 per minute** (answer checking, most frequent)
+- `/api/save-report` - **20 per hour** (saving reports)
+- `/api/reports` - **50 per hour** (viewing reports)
+- **Default limits**: 200 per day, 50 per hour (all other endpoints)
+
+### Features
+1. **Per-IP Tracking**: Rate limits are tracked by client IP address
+2. **Automatic 429 Responses**: Exceeded limits return `429 Too Many Requests`
+3. **Rate Limit Headers**: Responses include:
+   - `X-RateLimit-Limit` - Total allowed requests
+   - `X-RateLimit-Remaining` - Remaining requests in window
+   - `X-RateLimit-Reset` - Time when limit resets
+4. **In-Memory Storage**: Uses memory-based storage (suitable for single-instance deployments)
+
+### Configuration
+```python
+# quizzer/web/app.py
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+    headers_enabled=True,
+)
+```
+
+### Production Scaling
+For multi-instance deployments, configure Redis storage:
+```python
+storage_uri="redis://localhost:6379"
+```
+
+---
+
 ## Custom Exception Hierarchy
 
 The application uses specific exception types for better error handling:
@@ -95,26 +173,27 @@ See `quizzer/exceptions.py` for complete list.
 - **Quiz Paths**: Validated for traversal attempts, extension, directory containment
 - **Quiz IDs**: Validated for path separators and suspicious characters
 - **File Extensions**: Only `.json` files accepted for quizzes
+- **Request Payloads**: Validated with Pydantic schemas (required fields, types, lengths, ranges)
+- **Rate Limiting**: Per-endpoint limits to prevent DoS attacks
 
 ### Future Enhancements (Planned)
-- Request payload validation with Pydantic schemas
-- Maximum length limits for all text inputs
-- Rate limiting to prevent DoS attacks
 - CSRF token validation for state-changing operations
+- Input sanitization for HTML/JavaScript injection prevention
+- File upload validation (if file upload feature added)
 
 ---
 
 ## Testing
+:
 
-The application includes comprehensive security tests in `tests/test_security.py`:
+- **tests/test_security.py**: 31 test cases for path validation
+- **tests/test_error_messages.py**: 17 tests for error sanitization
+- **tests/test_payload_validation.py**: 32 tests for request validation
+- **tests/test_rate_limiting.py**: 13 tests for DoS protection
 
-- **31 test cases** covering path validation
-- Tests for common attack vectors
-- Tests for edge cases (empty paths, special characters, etc.)
-- Integration tests for complete attack scenarios
-
-Run security tests:
+Run all security tests:
 ```bash
+python -m pytest tests/test_security.py tests/test_error_messages.py tests/test_payload_validation.py tests/test_rate_limiting
 python -m pytest tests/test_security.py -v
 ```
 
@@ -154,15 +233,25 @@ Before submitting code that handles user input:
 
 | Date | Auditor | Scope | Findings | Status |
 |------|---------|-------|----------|--------|
-| 2026-03-12 | AI Code Review | Path traversal | 2 vulnerabilities | Fixed |
+| 2026-03-12 | AI Code Review | Path traversal | 2 vulnerabilities | ✅ Fixed |
+| 2026-03-13 | AI Code Review | Error message leakage | Multiple endpoints | ✅ Fixed |
+| 2026-03-13 | AI Code Review | Missing input validation | POST endpoints | ✅ Fixed |
+| 2026-03-16 | AI Code Review | DoS vulnerability | No rate limiting | ✅ Fixed |
 
 ---
+**Phase 1: Security & Input Validation** (✅ COMPLETED)
+- ✅ Step 1: Path sanitization (Completed 2026-03-12)
+- ✅ Step 2: Error message sanitization (Completed 2026-03-13)
+- ✅ Step 3: Request payload validation with Pydantic (Completed 2026-03-13)
+- ✅ Step 4: Rate limiting implementation (Completed 2026-03-16)
 
-## Future Security Roadmap
+**Phase 2+: Advanced Security** (Planned)
+- Authentication and authorization
+- HTTPS enforcement
+- Content Security Policy headers
+- Session management and CSRF protection
 
-See `IMPLEMENTATION_TRACKING.md` for planned security enhancements:
-
-- Phase 1, Step 2: Error message sanitization (In Progress)
+See `IMPLEMENTATION_TRACKING.md` for complete roadmap.
 - Phase 1, Step 3: Request payload validation with Pydantic
 - Phase 1, Step 4: Rate limiting implementation
 - Phase 2+: Authentication, authorization, HTTPS enforcement

@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from flask import jsonify, render_template, request, send_file
+from flask_limiter.errors import RateLimitExceeded
 from pydantic import ValidationError
 
 import run_quiz
@@ -43,7 +44,7 @@ QUIZZES_DIR = BASE_DIR / DATA_DIR_NAME / QUIZZES_DIR_NAME
 REPORTS_DIR = BASE_DIR / DATA_DIR_NAME / REPORTS_DIR_NAME
 
 
-def register_routes(app):
+def register_routes(app, limiter):
     """Register all Flask routes."""
 
     @app.after_request
@@ -90,6 +91,7 @@ def register_routes(app):
         )
 
     @app.route("/api/quizzes")
+    @limiter.limit("100 per hour")
     def get_quizzes():
         """Get list of available quizzes."""
         try:
@@ -139,6 +141,7 @@ def register_routes(app):
             return jsonify({"error": QUIZ_LIST_FAILED}), 500
 
     @app.route("/api/quiz")
+    @limiter.limit("100 per hour")
     def get_quiz():
         """Get a specific quiz by path."""
         quiz_path = request.args.get("path")
@@ -167,6 +170,7 @@ def register_routes(app):
             return jsonify({"error": QUIZ_LOAD_FAILED}), 500
 
     @app.route("/api/check-answer", methods=["POST"])
+    @limiter.limit("10 per minute")
     def check_answer():
         """Check if user's answer is correct."""
         try:
@@ -200,6 +204,7 @@ def register_routes(app):
             return jsonify({"error": ANSWER_CHECK_FAILED}), 500
 
     @app.route("/api/save-report", methods=["POST"])
+    @limiter.limit("20 per hour")
     def save_report():
         """Generate and save HTML report for quiz results."""
         try:
@@ -244,6 +249,7 @@ def register_routes(app):
             return jsonify({"success": False, "error": REPORT_SAVE_FAILED}), 500
 
     @app.route("/report/<quiz_id>")
+    @limiter.limit("50 per hour")
     def view_report(quiz_id: str):
         """Serve HTML report for a completed quiz."""
         try:
@@ -268,6 +274,15 @@ def register_routes(app):
             return f"<h1>Error</h1><p>{REPORT_LOAD_FAILED}</p>", 500
 
     # Error handlers
+    @app.errorhandler(RateLimitExceeded)
+    def handle_rate_limit_exceeded(error):
+        """Handle rate limit exceeded errors."""
+        logger.warning(f"Rate limit exceeded: {request.url} - {error}")
+        return jsonify({
+            "error": "Rate limit exceeded",
+            "message": "Too many requests. Please try again later."
+        }), 429
+
     @app.errorhandler(404)
     def not_found_error(error):
         logger.warning(f"404 Not Found: {request.url}")
@@ -280,5 +295,8 @@ def register_routes(app):
 
     @app.errorhandler(Exception)
     def handle_exception(error):
+        # Don't catch RateLimitExceeded as a generic exception
+        if isinstance(error, RateLimitExceeded):
+            raise error
         logger.error(f"Unhandled exception: {error}", exc_info=True)
         return jsonify({"error": UNEXPECTED_ERROR}), 500
