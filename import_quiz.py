@@ -409,7 +409,7 @@ For more information, see README.md
                 # New behavior: split questions evenly (no duplicates)
                 quiz_size = quiz_sizes[i]
                 quiz_questions = shuffled_questions[
-                    question_index : question_index + quiz_size
+                    question_index:question_index + quiz_size
                 ]
                 question_index += quiz_size
 
@@ -420,7 +420,7 @@ For more information, see README.md
             created_files.append(str(output_file))
 
             print(
-                f"Created quiz {i+1}/{num_quizzes}: {output_file} "
+                f"Created quiz {i + 1}/{num_quizzes}: {output_file} "
                 f"({len(quiz.questions)} questions)"
             )
 

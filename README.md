@@ -664,6 +664,29 @@ pytest tests/ -v
 mypy .
 ```
 
+### Git Hooks (Recommended)
+
+Install git hooks to automatically run code quality checks before pushing:
+
+**PowerShell (Windows):**
+```powershell
+.\hooks\install-hooks.ps1
+```
+
+**Bash (Linux/Mac):**
+```bash
+chmod +x hooks/install-hooks.sh
+./hooks/install-hooks.sh
+```
+
+**What it does:**
+- Runs flake8 checks before every `git push`
+- Prevents pushing code with quality issues
+- Ensures CI/CD pipeline won't fail
+- Can be bypassed with `git push --no-verify` (not recommended)
+
+See [hooks/README.md](hooks/README.md) for details.
+
 ### Project Structure
 
 ```
