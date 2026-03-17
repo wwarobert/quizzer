@@ -1,6 +1,18 @@
 # Quizzer - Product Roadmap
 
+# Quizzer - Product Roadmap
+
 ## Current Status
+
+✅ **v1.6 - Observability & Code Quality** (March 2026)
+- ✅ Request ID tracking (X-Request-ID headers for tracing)
+- ✅ Performance metrics logging (response times in milliseconds)
+- ✅ Structured user action logging (JSON format)
+- ✅ Security hardening (path validation, payload validation, rate limiting)
+- ✅ Pre-push git hooks for mandatory flake8 checks
+- ✅ Helper function extraction for code maintainability
+- ✅ Comprehensive error handling and sanitization
+
 ✅ **v1.5 - Web Interface Complete**
 - ✅ CSV to JSON quiz conversion with encoding support
 - ✅ Interactive CLI quiz runner

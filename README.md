@@ -2,10 +2,10 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-241%20passing-success.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-334%20passing-success.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-71%25-brightgreen.svg)](tests/)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Linting](https://img.shields.io/badge/linting-ruff-orange.svg)](https://github.com/astral-sh/ruff)
+[![Linting](https://img.shields.io/badge/linting-flake8-blue.svg)](https://github.com/PyCQA/flake8)
 
 A quiz platform that generates randomized quizzes from CSV files with both command-line and web browser interfaces.
 
@@ -41,7 +41,8 @@ A quiz platform that generates randomized quizzes from CSV files with both comma
 - Charts for quiz performance and question breakdown
 - Activity timeline with recent quiz attempts
 - HTML report generation
-- Error logging with automatic rotation
+- Comprehensive logging with performance metrics
+- Request ID tracking for debugging and tracing
 
 ## Table of Contents
 
@@ -336,19 +337,30 @@ python web_quiz.py --test-mode
 - **Automatic HTML Reports**: Styled reports with pass/fail status
 - **Detailed Failure Breakdown**: See exactly which questions you missed
 - **Report History**: All reports saved to `data/reports/` directory
+- **Request ID Tracking**: Every request gets a unique UUID for tracing (via `X-Request-ID` header)
+- **Performance Metrics**: Response time logging for all endpoints in milliseconds
+- **User Action Tracking**: Structured JSON logs for quiz loads, answer checks, report generation
 - **Error Logging**: Comprehensive logging to `logs/web_quiz.log`
 - **Log Rotation**: Automatic 10MB rotation keeping 5 backup files
 
 #### Error Logging
 
-The web server automatically logs all errors and important events to help with debugging:
+The web server automatically logs all errors, user actions, and performance metrics:
 
 **Log File Location**: `logs/web_quiz.log`
 
 **Log Features**:
-- Automatic log rotation (max 10MB per file, keeps 5 backups)
-- Detailed error messages with stack traces
-- Request logging for debugging
+- **Request ID Tracking**: Every request gets a unique UUID included in all related log entries
+- **Performance Metrics**: Response times logged in milliseconds for every request
+- **User Action Logging**: Structured JSON logs for key user actions:
+  - `quizzes_listed` - When user fetches quiz list
+  - `quiz_loaded` - When quiz is loaded (includes quiz_id, num_questions)
+  - `answer_checked` - When answer is validated (includes correct/incorrect result)
+  - `report_saved` - When report is generated (includes score, pass/fail)
+  - `report_viewed` - When user views a report
+- **Automatic log rotation** (max 10MB per file, keeps 5 backups)
+- **Detailed error messages** with stack traces
+- **Request/Response logging** with method, path, status code, and duration
 - Separate DEBUG level for file (detailed) and INFO level for console
 - Timestamps and line numbers for easy debugging
 
@@ -795,7 +807,7 @@ python -m pytest tests/ --cov=quizzer --cov-report=term-missing
 python -m pytest tests/test_normalizer.py -v
 ```
 
-Test Results: 57 tests passing with 100% coverage on core modules.
+**Test Results**: 334 tests passing (13 test modules) with 71% overall coverage, 100% on core modules.
 
 See [tests/README.md](tests/README.md) for detailed testing documentation.
 
@@ -820,6 +832,12 @@ Contributions are welcome! Priority areas for enhancement:
 - [x] Dark mode support
 - [x] Comprehensive error logging
 - [x] Responsive design
+- [x] Request ID tracking for tracing
+- [x] Performance metrics logging
+- [x] Structured user action logging
+- [x] Security hardening (path validation, rate limiting)
+- [x] Pre-push git hooks for code quality
+- [x] Payload validation with Pydantic
 
 ## License
 
