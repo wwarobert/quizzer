@@ -50,6 +50,78 @@ def _get_request_id() -> str:
     return getattr(g, 'request_id', 'no-request-id')
 
 
+def _log_and_return_error(
+    message: str,
+    status_code: int,
+    error_details: str = "",
+    exc_info: bool = False
+) -> tuple:
+    """
+    Log error and return JSON error response.
+    
+    Args:
+        message: User-facing error message
+        status_code: HTTP status code
+        error_details: Additional details for logging (not exposed to client)
+        exc_info: Whether to include exception info in logs
+    
+    Returns:
+        Tuple of (jsonify response, status_code)
+    """
+    log_msg = f"[{_get_request_id()}] {message}"
+    if error_details:
+        log_msg += f" - {error_details}"
+    
+    if status_code >= 500:
+        logger.error(log_msg, exc_info=exc_info)
+    elif status_code >= 400:
+        logger.warning(log_msg)
+    
+    return jsonify({"error": message}), status_code
+
+
+def _load_quiz_metadata(quiz_file: Path) -> dict | None:
+    """
+    Load quiz metadata from JSON file.
+    
+    Args:
+        quiz_file: Path to quiz JSON file
+    
+    Returns:
+        Dict with quiz metadata or None if loading fails
+    """
+    try:
+        with open(quiz_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return {
+                "path": str(quiz_file),
+                "quiz_id": data.get("quiz_id", quiz_file.stem),
+                "num_questions": len(data.get("questions", [])),
+                "source_file": data.get("source_file", ""),
+                "created_at": data.get("created_at", ""),
+            }
+    except (json.JSONDecodeError, IOError) as e:
+        logger.warning(f"Error loading quiz file {quiz_file}: {e}")
+        return None
+
+
+def _validate_payload(schema_class, data: dict):
+    """
+    Validate request payload against Pydantic schema.
+    
+    Args:
+        schema_class: Pydantic model class
+        data: Request data to validate
+    
+    Returns:
+        Validated data instance
+    
+    Raises:
+        ValidationError: If validation fails
+    """
+    return schema_class(**data)
+
+
 def register_routes(app, limiter):
     """Register all Flask routes."""
 
@@ -127,21 +199,10 @@ def register_routes(app, limiter):
                         )
                         continue
 
-                    try:
-                        with open(quiz_file, "r", encoding="utf-8") as f:
-                            data = json.load(f)
-                            quiz_files.append(
-                                {
-                                    "path": str(quiz_file),
-                                    "quiz_id": data.get("quiz_id", quiz_file.stem),
-                                    "num_questions": len(data.get("questions", [])),
-                                    "source_file": data.get("source_file", ""),
-                                    "created_at": data.get("created_at", ""),
-                                }
-                            )
-                    except (json.JSONDecodeError, IOError) as e:
-                        logger.warning(f"Error loading quiz file {quiz_file}: {e}")
-                        continue
+                    # Load quiz metadata using helper
+                    metadata = _load_quiz_metadata(quiz_file)
+                    if metadata:
+                        quiz_files.append(metadata)
             else:
                 logger.warning(f"Quizzes directory does not exist: {quizzes_dir}")
 
@@ -150,8 +211,12 @@ def register_routes(app, limiter):
             logger.info(f"[{_get_request_id()}] Found {len(quiz_files)} quizzes (test_mode={test_mode})")
             return jsonify(quiz_files)
         except Exception as e:
-            logger.error(f"[{_get_request_id()}] Error fetching quizzes: {e}", exc_info=True)
-            return jsonify({"error": QUIZ_LIST_FAILED}), 500
+            return _log_and_return_error(
+                QUIZ_LIST_FAILED,
+                500,
+                error_details=f"Error fetching quizzes: {e}",
+                exc_info=True
+            )
 
     @app.route("/api/quiz")
     @limiter.limit("100 per hour")
@@ -172,27 +237,39 @@ def register_routes(app, limiter):
             logger.info(f"[{_get_request_id()}] Quiz loaded successfully: {quiz.quiz_id}")
             return jsonify(quiz.to_dict())
         except InvalidQuizPathError as e:
-            logger.warning(f"[{_get_request_id()}] Invalid quiz path: {quiz_path} - {e}")
-            return jsonify({"error": QUIZ_INVALID_PATH}), 400
+            return _log_and_return_error(
+                QUIZ_INVALID_PATH,
+                400,
+                error_details=f"Invalid quiz path: {quiz_path} - {e}"
+            )
         except FileNotFoundError:
-            logger.error(f"[{_get_request_id()}] Quiz file not found: {quiz_path}")
-            return jsonify({"error": QUIZ_NOT_FOUND}), 404
+            return _log_and_return_error(
+                QUIZ_NOT_FOUND,
+                404,
+                error_details=f"Quiz file not found: {quiz_path}"
+            )
         except Exception as e:
-            logger.error(f"[{_get_request_id()}] Error loading quiz {quiz_path}: {e}", exc_info=True)
-            # Don't expose internal error details to client
-            return jsonify({"error": QUIZ_LOAD_FAILED}), 500
+            return _log_and_return_error(
+                QUIZ_LOAD_FAILED,
+                500,
+                error_details=f"Error loading quiz {quiz_path}: {e}",
+                exc_info=True
+            )
 
     @app.route("/api/check-answer", methods=["POST"])
     @limiter.limit("10 per minute")
     def check_answer():
         """Check if user's answer is correct."""
         try:
-            # Validate request payload
+            # Validate request payload using helper
             try:
-                validated_data = CheckAnswerRequest(**request.json)
+                validated_data = _validate_payload(CheckAnswerRequest, request.json)
             except ValidationError as e:
-                logger.warning(f"[{_get_request_id()}] Invalid check-answer payload: {e}")
-                return jsonify({"error": "Invalid request data"}), 400
+                return _log_and_return_error(
+                    "Invalid request data",
+                    400,
+                    error_details=f"Invalid check-answer payload: {e}"
+                )
 
             # Normalize and compare answers
             user_normalized = normalize_answer(validated_data.user_answer)
@@ -213,8 +290,12 @@ def register_routes(app, limiter):
                 }
             )
         except Exception as e:
-            logger.error(f"Error checking answer: {e}", exc_info=True)
-            return jsonify({"error": ANSWER_CHECK_FAILED}), 500
+            return _log_and_return_error(
+                ANSWER_CHECK_FAILED,
+                500,
+                error_details=f"Error checking answer: {e}",
+                exc_info=True
+            )
 
     @app.route("/api/save-report", methods=["POST"])
     @limiter.limit("20 per hour")
@@ -223,9 +304,9 @@ def register_routes(app, limiter):
         try:
             logger.debug("Saving quiz report")
 
-            # Validate request payload
+            # Validate request payload using helper
             try:
-                validated_data = SaveReportRequest(**request.json)
+                validated_data = _validate_payload(SaveReportRequest, request.json)
             except ValidationError as e:
                 logger.warning(f"Invalid save-report payload: {e}")
                 return jsonify({"success": False, "error": "Invalid request data"}), 400
