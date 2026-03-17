@@ -16,7 +16,6 @@ Licensed under the Apache License, Version 2.0
 import argparse
 import logging
 import ssl
-import sys
 from pathlib import Path
 
 from quizzer.web import create_app
@@ -166,9 +165,9 @@ Examples:
         print("⚠️  HTTPS disabled by --no-https flag (not recommended for production)")
         logger.warning("HTTPS explicitly disabled")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("🎯 Quizzer Web Interface")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"\n🌐 Server starting at: {protocol}://{args.host}:{args.port}")
 
     if args.test_mode:
@@ -206,7 +205,7 @@ Examples:
     print(
         "\n💡 Tip: Use --log-level to control logging verbosity (ALL/INFO/WARNING/ERROR)"
     )
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     logger.info(f"Starting Quizzer web server on {args.host}:{args.port}")
     logger.info(f"Protocol: {protocol.upper()}")

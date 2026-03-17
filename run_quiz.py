@@ -754,7 +754,7 @@ def get_quiz_folders(
 def select_folder_from_list(folders: List[Path]) -> Path:
     """
     Display folder selection menu and get user choice.
-    
+
     Why this exists separately from select_quiz_folder:
     This function handles the UI for choosing from a pre-filtered list,
     while select_quiz_folder finds folders from a directory path.
