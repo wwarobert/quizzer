@@ -58,35 +58,35 @@ def _log_and_return_error(
 ) -> tuple:
     """
     Log error and return JSON error response.
-    
+
     Args:
         message: User-facing error message
         status_code: HTTP status code
         error_details: Additional details for logging (not exposed to client)
         exc_info: Whether to include exception info in logs
-    
+
     Returns:
         Tuple of (jsonify response, status_code)
     """
     log_msg = f"[{_get_request_id()}] {message}"
     if error_details:
         log_msg += f" - {error_details}"
-    
+
     if status_code >= 500:
         logger.error(log_msg, exc_info=exc_info)
     elif status_code >= 400:
         logger.warning(log_msg)
-    
+
     return jsonify({"error": message}), status_code
 
 
 def _load_quiz_metadata(quiz_file: Path) -> dict | None:
     """
     Load quiz metadata from JSON file.
-    
+
     Args:
         quiz_file: Path to quiz JSON file
-    
+
     Returns:
         Dict with quiz metadata or None if loading fails
     """
@@ -108,14 +108,14 @@ def _load_quiz_metadata(quiz_file: Path) -> dict | None:
 def _validate_payload(schema_class, data: dict):
     """
     Validate request payload against Pydantic schema.
-    
+
     Args:
         schema_class: Pydantic model class
         data: Request data to validate
-    
+
     Returns:
         Validated data instance
-    
+
     Raises:
         ValidationError: If validation fails
     """
