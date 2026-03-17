@@ -63,27 +63,26 @@ jobs:
           const coverageEmoji = parseInt(coverage) >= 70 ? '🟢' : parseInt(coverage) >= 50 ? '🟡' : '🔴';
           
           const comment = `## ${statusEmoji} Test Results
-
-**Python Version:** 3.13
-**Status:** ${failed === '0' ? 'All tests passed!' : `${failed} test(s) failed`}
-
-| Metric | Value |
-|--------|-------|
-| ✅ Passed | ${passed} |
-| ❌ Failed | ${failed} |
-| ${coverageEmoji} Coverage | ${coverage} |
-
-<details>
-<summary>📊 Detailed Test Output</summary>
-
-\`\`\`
-${testOutput.slice(-3000)}
-\`\`\`
-
-</details>
-
----
-*Automated test results for commit ${context.sha.substring(0, 7)}*
+          
+          Python Version: 3.13
+          Status: ${failed === '0' ? 'All tests passed!' : `${failed} test(s) failed`}
+          
+          | Metric | Value |
+          |--------|-------|
+          | ✅ Passed | ${passed} |
+          | ❌ Failed | ${failed} |
+          | ${coverageEmoji} Coverage | ${coverage} |
+          
+          <details>
+          <summary>📊 Detailed Test Output</summary>
+          
+          \`\`\`
+          ${testOutput.slice(-3000)}
+          \`\`\`
+          
+          </details>
+          
+          *Automated test results for commit ${context.sha.substring(0, 7)}*
           `;
           
           // Find existing comment
