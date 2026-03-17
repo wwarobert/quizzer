@@ -1,0 +1,29 @@
+#!/bin/sh
+# Pre-push hook to run flake8 before pushing
+# This ensures code quality checks pass before creating a PR
+
+echo "Running flake8 code quality checks..."
+
+# Run flake8 on the quizzer package
+python -m flake8 --ignore E501 quizzer/ || {
+    echo ""
+    echo "❌ Flake8 checks failed!"
+    echo "Please fix the code quality issues before pushing."
+    echo ""
+    echo "To see details, run:"
+    echo "  python -m flake8 --ignore E501 quizzer/"
+    echo ""
+    echo "To skip this check (not recommended), use: git push --no-verify"
+    exit 1
+}
+
+# Also check main scripts
+python -m flake8 --ignore E501 import_quiz.py run_quiz.py web_quiz.py || {
+    echo ""
+    echo "❌ Flake8 checks failed on main scripts!"
+    echo "Please fix the code quality issues before pushing."
+    exit 1
+}
+
+echo "✅ All flake8 checks passed!"
+exit 0
