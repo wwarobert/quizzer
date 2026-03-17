@@ -7,6 +7,7 @@ Licensed under the Apache License, Version 2.0
 
 import json
 import logging
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -48,6 +49,25 @@ REPORTS_DIR = BASE_DIR / DATA_DIR_NAME / REPORTS_DIR_NAME
 def _get_request_id() -> str:
     """Get current request ID for logging."""
     return getattr(g, 'request_id', 'no-request-id')
+
+
+def _log_user_action(action: str, **kwargs):
+    """
+    Log user action with structured format.
+
+    Args:
+        action: Action name (e.g., 'quiz_loaded', 'answer_checked')
+        **kwargs: Additional context to log
+    """
+    context = {
+        "request_id": _get_request_id(),
+        "action": action,
+        "path": request.path,
+        "method": request.method,
+        "ip": request.remote_addr,
+        **kwargs
+    }
+    logger.info(f"USER_ACTION: {json.dumps(context)}")
 
 
 def _log_and_return_error(
@@ -127,12 +147,18 @@ def register_routes(app, limiter):
 
     @app.before_request
     def generate_request_id():
-        """Generate unique request ID for tracing."""
+        """Generate unique request ID for tracing and start request timer."""
         g.request_id = str(uuid.uuid4())
+        g.request_start_time = time.time()
+        # Log incoming request
+        logger.debug(
+            f"[{g.request_id}] INCOMING: {request.method} {request.path} "
+            f"from {request.remote_addr}"
+        )
 
     @app.after_request
     def add_header(response):
-        """Add headers to prevent caching during development and include request ID."""
+        """Add headers, include request ID, and log performance metrics."""
         response.headers["Cache-Control"] = (
             "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
         )
@@ -140,6 +166,15 @@ def register_routes(app, limiter):
         response.headers["Expires"] = "-1"
         # Add request ID for tracing
         response.headers["X-Request-ID"] = getattr(g, 'request_id', 'unknown')
+
+        # Log performance metrics
+        if hasattr(g, 'request_start_time'):
+            duration_ms = (time.time() - g.request_start_time) * 1000
+            logger.info(
+                f"[{_get_request_id()}] RESPONSE: {request.method} {request.path} "
+                f"→ {response.status_code} ({duration_ms:.2f}ms)"
+            )
+
         return response
 
     @app.route("/")
@@ -209,6 +244,7 @@ def register_routes(app, limiter):
             # Sort by creation date (newest first)
             quiz_files.sort(key=lambda x: x.get("created_at", ""), reverse=True)
             logger.info(f"[{_get_request_id()}] Found {len(quiz_files)} quizzes (test_mode={test_mode})")
+            _log_user_action("quizzes_listed", count=len(quiz_files), test_mode=test_mode)
             return jsonify(quiz_files)
         except Exception as e:
             return _log_and_return_error(
@@ -235,6 +271,12 @@ def register_routes(app, limiter):
 
             quiz = Quiz.load(validated_path)
             logger.info(f"[{_get_request_id()}] Quiz loaded successfully: {quiz.quiz_id}")
+            _log_user_action(
+                "quiz_loaded",
+                quiz_id=quiz.quiz_id,
+                num_questions=len(quiz.questions),
+                path=quiz_path
+            )
             return jsonify(quiz.to_dict())
         except InvalidQuizPathError as e:
             return _log_and_return_error(
@@ -280,6 +322,13 @@ def register_routes(app, limiter):
             logger.debug(
                 f'Answer check: user="{validated_data.user_answer}" '
                 f'correct="{validated_data.correct_answer}" result={is_correct}'
+            )
+
+            _log_user_action(
+                "answer_checked",
+                correct=is_correct,
+                user_answer_length=len(validated_data.user_answer),
+                has_comma=("," in validated_data.user_answer)
             )
 
             return jsonify(
@@ -335,6 +384,16 @@ def register_routes(app, limiter):
             report_path = run_quiz.save_html_report(result, quiz)
             logger.info(f"Report saved successfully: {report_path}")
 
+            _log_user_action(
+                "report_saved",
+                quiz_id=result.quiz_id,
+                score=result.score_percentage,
+                passed=result.passed,
+                total_questions=result.total_questions,
+                correct=result.correct_answers,
+                time_spent=result.time_spent
+            )
+
             return jsonify({"success": True, "report_path": str(report_path)})
 
         except Exception as e:
@@ -352,6 +411,7 @@ def register_routes(app, limiter):
 
             report_path = REPORTS_DIR / f"{validated_id}_report.html"
             if report_path.exists():
+                _log_user_action("report_viewed", quiz_id=validated_id)
                 return send_file(report_path, mimetype="text/html")
             else:
                 logger.warning(f"Report not found: {report_path}")
