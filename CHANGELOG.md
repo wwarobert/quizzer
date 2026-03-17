@@ -2,6 +2,73 @@
 
 All notable changes to the Quizzer project will be documented in this file.
 
+## [1.6.0] - 2026-03-17
+
+### Added - Observability & Code Quality
+
+#### Request ID Tracking
+- **Unique Request IDs**: Every HTTP request gets a unique UUID for end-to-end tracing
+- **X-Request-ID Header**: Request ID returned in response headers for client-side correlation
+- **Log Correlation**: All log entries for a request include the same request ID
+- **Debugging**: Easily trace a specific user action through all related log entries
+
+#### Performance Metrics
+- **Response Time Logging**: Every request logged with duration in milliseconds
+- **Performance Monitoring**: Identify slow endpoints and optimize bottlenecks
+- **Request/Response Tracking**: Complete lifecycle logging (incoming request → processing → response)
+- **Format**: `[request-id] RESPONSE: GET /api/quiz → 200 (15.23ms)`
+
+#### Structured User Action Logging
+- **JSON Format**: User actions logged in structured JSON for easy parsing and analysis
+- **Action Types Tracked**:
+  - `quizzes_listed` - User fetches quiz list (includes count, test_mode)
+  - `quiz_loaded` - Quiz loaded (includes quiz_id, num_questions, path)
+  - `answer_checked` - Answer validated (includes correct/incorrect, answer details)
+  - `report_saved` - Report generated (includes score, pass/fail, time_spent)
+  - `report_viewed` - Report opened (includes quiz_id)
+- **Context-Rich**: Each action includes request ID, path, method, IP address, and action-specific data
+- **Analytics Ready**: Structured logs can be ingested by log analysis tools
+
+#### Code Quality & Security
+- **Pre-Push Git Hooks**: Mandatory flake8 checks before every push
+  - Automatically activates virtual environment
+  - Runs flake8 on quizzer/ package and main scripts
+  - Blocks push if code quality issues found
+  - Can be bypassed with `--no-verify` (not recommended)
+  - Installation scripts for Windows (PowerShell) and Unix (bash)
+- **Helper Function Extraction**: Reduced code duplication with reusable helpers
+  - `_log_and_return_error()` - Consistent error logging and responses
+  - `_load_quiz_metadata()` - Quiz file loading logic
+  - `_validate_payload()` - Pydantic schema validation
+  - `_log_user_action()` - Structured user action logging
+- **Security Enhancements**: 
+  - Path traversal protection with validation
+  - Request payload validation with Pydantic schemas
+  - Rate limiting on all API endpoints (10-100 requests per hour)
+  - Error message sanitization (no internal details exposed)
+
+### Changed - Code Quality
+
+#### Refactoring
+- Extracted duplicate error handling code to helpers
+- Reduced routes.py complexity with focused helper functions
+- Improved code maintainability and testability
+- Better separation of concerns (logging, validation, error handling)
+
+#### Testing
+- Updated test count: 334 tests passing (13 test modules)
+- Maintained 71% overall coverage, 100% on core modules
+- Added comprehensive tests for all new features
+- Zero regressions introduced
+
+### Documentation
+- Updated README with observability features
+- Added git hooks documentation in hooks/README.md
+- Updated badges to reflect current test count (334) and coverage (71%)
+- Added CHANGELOG entry for v1.6 changes
+
+**Impact**: Better debugging, monitoring, and code quality enforcement across the development lifecycle.
+
 ## [Unreleased]
 
 ### Added - 2026-02-12
