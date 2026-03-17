@@ -4,6 +4,13 @@
 
 echo "Running flake8 code quality checks..."
 
+# Activate virtual environment if it exists
+if [ -f ".venv/bin/activate" ]; then
+    . .venv/bin/activate
+elif [ -f ".venv/Scripts/activate" ]; then
+    . .venv/Scripts/activate
+fi
+
 # Run flake8 on the quizzer package
 python -m flake8 --ignore E501 quizzer/ || {
     echo ""

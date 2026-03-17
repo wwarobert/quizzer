@@ -4,6 +4,13 @@
 
 Write-Host "Running flake8 code quality checks..." -ForegroundColor Cyan
 
+# Activate virtual environment if it exists
+if (Test-Path ".venv\Scripts\Activate.ps1") {
+    & ".venv\Scripts\Activate.ps1"
+} elseif (Test-Path ".venv/bin/activate") {
+    . ".venv/bin/activate"
+}
+
 # Run flake8 on the quizzer package
 $result = python -m flake8 --ignore E501 quizzer/
 if ($LASTEXITCODE -ne 0) {
