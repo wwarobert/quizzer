@@ -7,10 +7,11 @@ Licensed under the Apache License, Version 2.0
 
 import json
 import logging
+import uuid
 from datetime import datetime
 from pathlib import Path
 
-from flask import jsonify, render_template, request, send_file
+from flask import g, jsonify, render_template, request, send_file
 from flask_limiter.errors import RateLimitExceeded
 from pydantic import ValidationError
 
@@ -44,17 +45,29 @@ QUIZZES_DIR = BASE_DIR / DATA_DIR_NAME / QUIZZES_DIR_NAME
 REPORTS_DIR = BASE_DIR / DATA_DIR_NAME / REPORTS_DIR_NAME
 
 
+def _get_request_id() -> str:
+    """Get current request ID for logging."""
+    return getattr(g, 'request_id', 'no-request-id')
+
+
 def register_routes(app, limiter):
     """Register all Flask routes."""
 
+    @app.before_request
+    def generate_request_id():
+        """Generate unique request ID for tracing."""
+        g.request_id = str(uuid.uuid4())
+
     @app.after_request
     def add_header(response):
-        """Add headers to prevent caching during development"""
+        """Add headers to prevent caching during development and include request ID."""
         response.headers["Cache-Control"] = (
             "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
         )
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "-1"
+        # Add request ID for tracing
+        response.headers["X-Request-ID"] = getattr(g, 'request_id', 'unknown')
         return response
 
     @app.route("/")
@@ -134,10 +147,10 @@ def register_routes(app, limiter):
 
             # Sort by creation date (newest first)
             quiz_files.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-            logger.info(f"Found {len(quiz_files)} quizzes (test_mode={test_mode})")
+            logger.info(f"[{_get_request_id()}] Found {len(quiz_files)} quizzes (test_mode={test_mode})")
             return jsonify(quiz_files)
         except Exception as e:
-            logger.error(f"Error fetching quizzes: {e}", exc_info=True)
+            logger.error(f"[{_get_request_id()}] Error fetching quizzes: {e}", exc_info=True)
             return jsonify({"error": QUIZ_LIST_FAILED}), 500
 
     @app.route("/api/quiz")
@@ -146,26 +159,26 @@ def register_routes(app, limiter):
         """Get a specific quiz by path."""
         quiz_path = request.args.get("path")
         if not quiz_path:
-            logger.warning("Quiz path not provided in request")
+            logger.warning(f"[{_get_request_id()}] Quiz path not provided in request")
             return jsonify({"error": QUIZ_NOT_PROVIDED}), 400
 
         try:
-            logger.debug(f"Loading quiz: {quiz_path}")
+            logger.debug(f"[{_get_request_id()}] Loading quiz: {quiz_path}")
 
             # Validate and sanitize path (prevents path traversal attacks)
             validated_path = validate_quiz_path(quiz_path, QUIZZES_DIR)
 
             quiz = Quiz.load(validated_path)
-            logger.info(f"Quiz loaded successfully: {quiz.quiz_id}")
+            logger.info(f"[{_get_request_id()}] Quiz loaded successfully: {quiz.quiz_id}")
             return jsonify(quiz.to_dict())
         except InvalidQuizPathError as e:
-            logger.warning(f"Invalid quiz path: {quiz_path} - {e}")
+            logger.warning(f"[{_get_request_id()}] Invalid quiz path: {quiz_path} - {e}")
             return jsonify({"error": QUIZ_INVALID_PATH}), 400
         except FileNotFoundError:
-            logger.error(f"Quiz file not found: {quiz_path}")
+            logger.error(f"[{_get_request_id()}] Quiz file not found: {quiz_path}")
             return jsonify({"error": QUIZ_NOT_FOUND}), 404
         except Exception as e:
-            logger.error(f"Error loading quiz {quiz_path}: {e}", exc_info=True)
+            logger.error(f"[{_get_request_id()}] Error loading quiz {quiz_path}: {e}", exc_info=True)
             # Don't expose internal error details to client
             return jsonify({"error": QUIZ_LOAD_FAILED}), 500
 
@@ -178,7 +191,7 @@ def register_routes(app, limiter):
             try:
                 validated_data = CheckAnswerRequest(**request.json)
             except ValidationError as e:
-                logger.warning(f"Invalid check-answer payload: {e}")
+                logger.warning(f"[{_get_request_id()}] Invalid check-answer payload: {e}")
                 return jsonify({"error": "Invalid request data"}), 400
 
             # Normalize and compare answers
@@ -277,7 +290,7 @@ def register_routes(app, limiter):
     @app.errorhandler(RateLimitExceeded)
     def handle_rate_limit_exceeded(error):
         """Handle rate limit exceeded errors."""
-        logger.warning(f"Rate limit exceeded: {request.url} - {error}")
+        logger.warning(f"[{_get_request_id()}] Rate limit exceeded: {request.url} - {error}")
         return jsonify({
             "error": "Rate limit exceeded",
             "message": "Too many requests. Please try again later."
@@ -285,12 +298,12 @@ def register_routes(app, limiter):
 
     @app.errorhandler(404)
     def not_found_error(error):
-        logger.warning(f"404 Not Found: {request.url}")
+        logger.warning(f"[{_get_request_id()}] 404 Not Found: {request.url}")
         return jsonify({"error": RESOURCE_NOT_FOUND}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
-        logger.error(f"500 Internal Server Error: {error}", exc_info=True)
+        logger.error(f"[{_get_request_id()}] 500 Internal Server Error: {error}", exc_info=True)
         return jsonify({"error": INTERNAL_ERROR}), 500
 
     @app.errorhandler(Exception)
@@ -298,5 +311,5 @@ def register_routes(app, limiter):
         # Don't catch RateLimitExceeded as a generic exception
         if isinstance(error, RateLimitExceeded):
             raise error
-        logger.error(f"Unhandled exception: {error}", exc_info=True)
+        logger.error(f"[{_get_request_id()}] Unhandled exception: {error}", exc_info=True)
         return jsonify({"error": UNEXPECTED_ERROR}), 500
