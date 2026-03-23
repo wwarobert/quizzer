@@ -212,6 +212,28 @@ print(f"parent.parent: {Path(__file__).parent.parent}")
 print(f"resolved: {Path(__file__).parent.parent.resolve()}")
 ```
 
+### Files ignored by .gitignore?
+```bash
+# Check if files are being ignored
+git check-ignore -v templates/reports/report.html
+
+# List all ignored files
+git status --ignored
+
+# Force add a file that's being ignored
+git add -f path/to/file
+
+# Verify files are tracked
+git ls-files templates/
+```
+
+**Common .gitignore mistakes:**
+- ❌ `report.html` — Ignores report.html EVERYWHERE (including templates/)
+- ✅ `/report.html` — Only ignores report.html in ROOT directory
+- ✅ `data/reports/*.html` — Only ignores HTML in specific folder
+
+**This PR lesson:** The pattern `report.html` in .gitignore was blocking `templates/reports/report.html` from being committed!
+
 ## Resources
 
 - [Pre-commit hooks](https://pre-commit.com/)
