@@ -162,7 +162,7 @@ class TestQuizServiceListQuizzes:
             quiz_file = tmp_path / f"quiz_{i}.json"
             quiz_data = {
                 "quiz_id": f"quiz_{i}",
-                "created_at": f"2026-03-{20+i}T10:00:00",
+                "created_at": f"2026-03-{20 + i}T10:00:00",
                 "questions": [{"id": 1}] * (i + 1),
                 "source_file": f"source_{i}.csv",
             }
@@ -427,7 +427,7 @@ class TestQuizServiceIntegration:
             quiz_file = tmp_path / f"quiz_{i}.json"
             quiz_data = {
                 "quiz_id": f"quiz_{i}",
-                "created_at": f"2026-03-{20+i}T10:00:00",
+                "created_at": f"2026-03-{20 + i}T10:00:00",
                 "questions": [
                     {
                         "id": 1,
