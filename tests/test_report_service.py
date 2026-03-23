@@ -11,6 +11,7 @@ import pytest
 
 from quizzer import Quiz, QuizResult
 from quizzer.services import ReportMetadata, ReportService
+from quizzer.template_utils import _get_score_color
 
 
 class TestReportMetadata:
@@ -61,48 +62,41 @@ class TestReportServiceInit:
 
 
 class TestReportServiceGetScoreColor:
-    """Tests for _get_score_color internal method."""
+    """Tests for _get_score_color function from template_utils."""
 
     def test_excellent_score_90(self):
         """Test color for 90% score (excellent)."""
-        service = ReportService(Path("/tmp"))
-        color = service._get_score_color(90.0)
+        color = _get_score_color(90.0)
         assert color == "#28a745"  # COLOR_SUCCESS (green)
 
     def test_excellent_score_80(self):
         """Test color for 80% score (excellent threshold)."""
-        service = ReportService(Path("/tmp"))
-        color = service._get_score_color(80.0)
+        color = _get_score_color(80.0)
         assert color == "#28a745"  # COLOR_SUCCESS (green)
 
     def test_warning_score_70(self):
         """Test color for 70% score (warning)."""
-        service = ReportService(Path("/tmp"))
-        color = service._get_score_color(70.0)
+        color = _get_score_color(70.0)
         assert color == "#ffc107"  # COLOR_WARNING (yellow)
 
     def test_warning_score_60(self):
         """Test color for 60% score (warning threshold)."""
-        service = ReportService(Path("/tmp"))
-        color = service._get_score_color(60.0)
+        color = _get_score_color(60.0)
         assert color == "#ffc107"  # COLOR_WARNING (yellow)
 
     def test_danger_score_50(self):
         """Test color for 50% score (danger)."""
-        service = ReportService(Path("/tmp"))
-        color = service._get_score_color(50.0)
+        color = _get_score_color(50.0)
         assert color == "#dc3545"  # COLOR_DANGER (red)
 
     def test_danger_score_0(self):
         """Test color for 0% score (danger)."""
-        service = ReportService(Path("/tmp"))
-        color = service._get_score_color(0.0)
+        color = _get_score_color(0.0)
         assert color == "#dc3545"  # COLOR_DANGER (red)
 
     def test_perfect_score_100(self):
         """Test color for 100% score (perfect)."""
-        service = ReportService(Path("/tmp"))
-        color = service._get_score_color(100.0)
+        color = _get_score_color(100.0)
         assert color == "#28a745"  # COLOR_SUCCESS (green)
 
 

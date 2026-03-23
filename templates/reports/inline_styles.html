@@ -1,0 +1,236 @@
+/**
+ * Quiz Report Styles - Inline version for standalone HTML reports
+ * This file is included directly in reports when generated outside Flask context
+ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.header .quiz-id {
+    opacity: 0.9;
+    font-size: 1.1em;
+}
+
+.status-banner {
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.summary {
+    padding: 40px;
+    background: #f8f9fa;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.stat-label {
+    color: #6c757d;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 1px;
+}
+
+.score-circle {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 20px auto;
+}
+
+.score-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 20px;
+    background: #e9ecef;
+    border-radius: 8px;
+}
+
+.metadata-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.metadata-label {
+    font-size: 0.8em;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.metadata-value {
+    font-weight: 600;
+    color: #212529;
+}
+
+.failures {
+    padding: 40px;
+}
+
+.failures h2 {
+    color: #212529;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.failure-card {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.failure-card.incorrect {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.question-number {
+    background: #6c757d;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.question-text {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin: 10px 0;
+    color: #212529;
+}
+
+.answer-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 10px;
+    margin: 10px 0;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+}
+
+.answer-label {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.answer-value {
+    font-family: 'Courier New', monospace;
+}
+
+.answer-value.incorrect {
+    color: #dc3545;
+}
+
+.answer-value.correct {
+    color: #28a745;
+}
+
+.perfect-score {
+    text-align: center;
+    padding: 60px 40px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.perfect-score h2 {
+    font-size: 3em;
+    margin-bottom: 20px;
+}
+
+.perfect-score p {
+    font-size: 1.3em;
+    opacity: 0.95;
+}
+
+.footer {
+    padding: 20px;
+    text-align: center;
+    background: #212529;
+    color: white;
+    font-size: 0.9em;
+}
+
+.footer a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+
+    .container {
+        box-shadow: none;
+    }
+}
