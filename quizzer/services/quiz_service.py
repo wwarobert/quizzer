@@ -133,9 +133,14 @@ class QuizService:
                 continue
 
             # Skip test data in production mode
-            if not include_test_data and is_test_data(quiz_file.parent):
-                logger.debug(f"Skipping test data quiz: {quiz_file}")
-                continue
+            # Check only the relative path from the base directory to avoid
+            # filtering based on the absolute path (e.g., pytest temp dirs)
+            if not include_test_data:
+                rel_path = quiz_file.relative_to(self.quizzes_dir)
+                # Check if immediate parent folder contains test data patterns
+                if rel_path.parent != Path('.') and is_test_data(rel_path.parent):
+                    logger.debug(f"Skipping test data quiz: {quiz_file}")
+                    continue
 
             # Load metadata
             metadata = self.load_metadata(quiz_file)
