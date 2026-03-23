@@ -17,8 +17,9 @@ from flask_limiter.errors import RateLimitExceeded
 from pydantic import ValidationError
 
 import run_quiz
-from quizzer import Quiz, QuizResult, is_test_data, normalize_answer
+from quizzer import Quiz, QuizResult, is_test_data
 from quizzer.constants import DATA_DIR_NAME, QUIZZES_DIR_NAME, REPORTS_DIR_NAME
+from quizzer.services import AnswerService
 from quizzer.error_messages import (
     ANSWER_CHECK_FAILED,
     INTERNAL_ERROR,
@@ -313,31 +314,25 @@ def register_routes(app, limiter):
                     error_details=f"Invalid check-answer payload: {e}"
                 )
 
-            # Normalize and compare answers
-            user_normalized = normalize_answer(validated_data.user_answer)
-            correct_normalized = normalize_answer(validated_data.correct_answer)
-
-            is_correct = user_normalized == correct_normalized
+            # Use AnswerService to check answer
+            result = AnswerService.check_answer(
+                validated_data.user_answer,
+                validated_data.correct_answer
+            )
 
             logger.debug(
-                f'Answer check: user="{validated_data.user_answer}" '
-                f'correct="{validated_data.correct_answer}" result={is_correct}'
+                f'Answer check: user="{result.user_raw}" '
+                f'correct="{result.correct_raw}" result={result.is_correct}'
             )
 
             _log_user_action(
                 "answer_checked",
-                correct=is_correct,
+                correct=result.is_correct,
                 user_answer_length=len(validated_data.user_answer),
                 has_comma=("," in validated_data.user_answer)
             )
 
-            return jsonify(
-                {
-                    "correct": is_correct,
-                    "normalized_user": user_normalized,
-                    "normalized_correct": correct_normalized,
-                }
-            )
+            return jsonify(result.to_dict())
         except Exception as e:
             return _log_and_return_error(
                 ANSWER_CHECK_FAILED,
