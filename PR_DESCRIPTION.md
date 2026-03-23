@@ -1,10 +1,7 @@
 # Pull Request: refactor(services): Add ReportService (Phase 2, Step 6)
 
 **Branch**: `refactor/report-service`
-
-**Create PR with auto-filled description**:
-
-https://github.com/wwarobert/quizzer/compare/main...refactor/report-service?expand=1&title=refactor(services):%20Add%20ReportService%20(Phase%202,%20Step%206)&body=This%20PR%20implements%20**Phase%202,%20Step%206**%20of%20the%20routes.py%20refactoring%20plan:%20**Create%20ReportService**.%0A%0AAdds%20a%20reusable%20service%20layer%20for%20HTML%20report%20generation,%20saving,%20and%20management.%0A%0A**See%20full%20description%20below%20for%20details**
+**URL**: https://github.com/wwarobert/quizzer/pull/new/refactor/report-service
 
 ---
 
