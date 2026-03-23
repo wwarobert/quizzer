@@ -239,7 +239,7 @@ certs/
 
 # Test artifacts
 junit.xml
-report.html
+/report.html
 .coverage
 coverage.xml
 

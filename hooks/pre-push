@@ -1,8 +1,10 @@
 #!/bin/sh
-# Pre-push hook to run flake8 before pushing
-# This ensures code quality checks pass before creating a PR
+# Pre-push hook to run code quality checks and tests before pushing
+# This ensures both code quality and functionality checks pass before creating a PR
 
-echo "Running flake8 code quality checks..."
+echo ""
+echo "🔍 Running pre-push validation..."
+echo ""
 
 # Activate virtual environment if it exists
 if [ -f ".venv/bin/activate" ]; then
@@ -11,7 +13,8 @@ elif [ -f ".venv/Scripts/activate" ]; then
     . .venv/Scripts/activate
 fi
 
-# Run flake8 on the quizzer package
+# Step 1: Run flake8 on the quizzer package
+echo "1️⃣  Running flake8 on quizzer package..."
 python -m flake8 --ignore E501 quizzer/ || {
     echo ""
     echo "❌ Flake8 checks failed!"
@@ -23,14 +26,34 @@ python -m flake8 --ignore E501 quizzer/ || {
     echo "To skip this check (not recommended), use: git push --no-verify"
     exit 1
 }
+echo "   ✅ Package checks passed"
 
-# Also check main scripts
+# Step 2: Check main scripts
+echo "2️⃣  Running flake8 on main scripts..."
 python -m flake8 --ignore E501 import_quiz.py run_quiz.py web_quiz.py || {
     echo ""
     echo "❌ Flake8 checks failed on main scripts!"
     echo "Please fix the code quality issues before pushing."
     exit 1
 }
+echo "   ✅ Script checks passed"
 
-echo "✅ All flake8 checks passed!"
+# Step 3: Run test suite
+echo "3️⃣  Running test suite..."
+python -m pytest tests/ -q --tb=line || {
+    echo ""
+    echo "❌ Tests failed!"
+    echo "Please fix the failing tests before pushing."
+    echo ""
+    echo "To see details, run:"
+    echo "  python -m pytest tests/ -v"
+    echo ""
+    echo "To skip this check (not recommended), use: git push --no-verify"
+    exit 1
+}
+echo "   ✅ All tests passed"
+
+echo ""
+echo "✅ All pre-push checks passed! Safe to push."
+echo ""
 exit 0
