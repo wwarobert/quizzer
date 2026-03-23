@@ -1,7 +1,7 @@
 # Pull Request: refactor(services): Add ReportService (Phase 2, Step 6)
 
 **Branch**: `refactor/report-service`
-**URL**: https://github.com/wwarobert/quizzer/pull/new/refactor/report-service
+**URL**: [Create Pull Request](https://github.com/wwarobert/quizzer/compare/main...refactor/report-service?expand=1)
 
 ---
 
