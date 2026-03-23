@@ -71,7 +71,15 @@ def render_report_template(result: QuizResult, quiz: Quiz) -> str:
         True
     """
     # Get templates directory (project_root/templates)
+    # Resolve to absolute path to ensure it works in all contexts (tests, CI, etc.)
     template_dir = Path(__file__).parent.parent / "templates"
+    template_dir = template_dir.resolve()
+
+    if not template_dir.exists():
+        raise FileNotFoundError(
+            f"Templates directory not found: {template_dir}. "
+            f"Expected structure: project_root/templates/reports/"
+        )
 
     # Create Jinja2 environment
     env = Environment(
