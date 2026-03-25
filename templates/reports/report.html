@@ -71,6 +71,12 @@
                 <span class="answer-label">Correct Answer:</span>
                 <span class="answer-value correct">{{ failure.correct_answer }}</span>
             </div>
+            {% if failure.get('explanation') %}
+            <div class="explanation">
+                <span class="explanation-label">📘 Explanation:</span>
+                <p class="explanation-text">{{ failure.explanation }}</p>
+            </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

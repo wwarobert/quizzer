@@ -30,17 +30,40 @@ class TestQuestion:
         assert q.question == "What is the capital of France?"
         assert q.answer == ["paris"]
         assert q.original_answer == "Paris"
+        # Default explanation fields should be empty strings
+        assert q.explanation == ""
+        assert q.original_explanation == ""
+
+    def test_create_question_with_explanation(self):
+        """Test creating a Question object with explanation."""
+        q = Question(
+            id=1,
+            question="What is the capital of France?",
+            answer=["paris"],
+            original_answer="Paris",
+            explanation="Paris has been the capital since 987 AD.",
+            original_explanation="Paris has been the capital since 987 AD.",
+        )
+        assert q.id == 1
+        assert q.question == "What is the capital of France?"
+        assert q.answer == ["paris"]
+        assert q.original_answer == "Paris"
+        assert q.explanation == "Paris has been the capital since 987 AD."
+        assert q.original_explanation == "Paris has been the capital since 987 AD."
 
     def test_to_dict(self):
         """Test converting Question to dictionary."""
         q = Question(
-            id=1, question="Test question?", answer=["test"], original_answer="Test"
+            id=1, question="Test question?", answer=["test"], original_answer="Test",
+            explanation="Test explanation", original_explanation="Test explanation"
         )
         d = q.to_dict()
         assert d["id"] == 1
         assert d["question"] == "Test question?"
         assert d["answer"] == ["test"]
         assert d["original_answer"] == "Test"
+        assert d["explanation"] == "Test explanation"
+        assert d["original_explanation"] == "Test explanation"
 
     def test_from_dict(self):
         """Test creating Question from dictionary."""
@@ -49,12 +72,33 @@ class TestQuestion:
             "question": "Test?",
             "answer": ["blue", "red"],
             "original_answer": "red, blue",
+            "explanation": "Color explanation",
+            "original_explanation": "Color explanation",
         }
         q = Question.from_dict(data)
         assert q.id == 2
         assert q.question == "Test?"
         assert q.answer == ["blue", "red"]
         assert q.original_answer == "red, blue"
+        assert q.explanation == "Color explanation"
+        assert q.original_explanation == "Color explanation"
+
+    def test_from_dict_backward_compatible(self):
+        """Test creating Question from dictionary without explanation fields (backward compatibility)."""
+        data = {
+            "id": 3,
+            "question": "Old question?",
+            "answer": ["yes"],
+            "original_answer": "Yes",
+        }
+        q = Question.from_dict(data)
+        assert q.id == 3
+        assert q.question == "Old question?"
+        assert q.answer == ["yes"]
+        assert q.original_answer == "Yes"
+        # Should default to empty strings
+        assert q.explanation == ""
+        assert q.original_explanation == ""
 
 
 class TestQuiz:

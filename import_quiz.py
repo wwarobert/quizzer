@@ -87,12 +87,14 @@ def delete_quiz_files(quiz_files: List[Path]) -> None:
     print("Deletion complete.\n")
 
 
-def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
+def read_csv_questions(filepath: str) -> List[Tuple[str, str, str]]:
     """
-    Read questions and answers from a CSV file.
+    Read questions, answers, and optional explanations from a CSV file.
 
-    Expected format: At least 2 columns (Question, Answer).
-    Only the first 2 columns are used; additional columns are ignored.
+    Expected format: 2 or 3 columns (Question, Answer, Explanation).
+    - 2 columns: Only question and answer (explanation will be empty string)
+    - 3 columns: Question, answer, and explanation
+    - Additional columns beyond 3 are ignored.
     If a header row is detected (first row contains "question" or "answer"),
     it will be skipped.
 
@@ -100,7 +102,7 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
         filepath: Path to the CSV file
 
     Returns:
-        List of (question, answer) tuples
+        List of (question, answer, explanation) tuples
 
     Raises:
         ValueError: If CSV doesn't have at least 2 columns
@@ -130,10 +132,10 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
                             f"Each row must have at least Question,Answer format."
                         )
 
-                    # Use only first 2 columns, ignore the rest
-                    question, answer = row[0], row[1]
-                    question = question.strip()
-                    answer = answer.strip()
+                    # Use first 2-3 columns: question, answer, optional explanation
+                    question = row[0].strip()
+                    answer = row[1].strip()
+                    explanation = row[2].strip() if len(row) >= 3 else ""
 
                     # Skip potential header row
                     if i == 1 and (
@@ -148,7 +150,7 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
                         )
                         continue
 
-                    questions.append((question, answer))
+                    questions.append((question, answer, explanation))
 
             # If we got here, encoding worked - break out of loop
             break
@@ -172,15 +174,15 @@ def read_csv_questions(filepath: str) -> List[Tuple[str, str]]:
 
 
 def create_quiz(
-    questions: List[Tuple[str, str]], quiz_id: str, source_file: str = ""
+    questions: List[Tuple[str, str, str]], quiz_id: str, source_file: str = ""
 ) -> Quiz:
     """
-    Create a Quiz object from a list of question-answer pairs.
+    Create a Quiz object from a list of question-answer-explanation tuples.
 
     Questions are used as provided (no shuffling or limiting).
 
     Args:
-        questions: List of (question, answer) tuples (already shuffled/limited)
+        questions: List of (question, answer, explanation) tuples (already shuffled/limited)
         quiz_id: Unique identifier for the quiz
         source_file: Original CSV filename
 
@@ -192,12 +194,14 @@ def create_quiz(
 
     # Create Question objects
     quiz_questions = []
-    for idx, (q_text, a_text) in enumerate(selected, 1):
+    for idx, (q_text, a_text, e_text) in enumerate(selected, 1):
         question = Question(
             id=idx,
             question=q_text,
             answer=normalize_answer(a_text),
             original_answer=format_answer_display(a_text),
+            explanation=e_text.strip() if e_text else "",
+            original_explanation=e_text.strip() if e_text else "",
         )
         quiz_questions.append(question)
 
@@ -250,10 +254,12 @@ Examples:
     python import_quiz.py questions.csv --prefix midterm
 
 CSV Format:
-  - Must have exactly 2 columns: Question, Answer
+  - Must have at least 2 columns: Question, Answer
+  - Optional 3rd column: Explanation (for answer context/reasoning)
   - Header row is optional (auto-detected)
   - Use quotes for answers containing commas
   - Multiple answers separated by commas: "red, blue, yellow"
+  - Explanations help with learning and review mode
 
 For more information, see README.md
         """,
