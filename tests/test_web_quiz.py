@@ -354,7 +354,8 @@ class TestWebQuizFrontend:
         # CSS should be loaded from external file, not inline
         assert "static/css/style.css" in html or "url_for('static'" in html
         assert '<link rel="stylesheet"' in html
-        assert '<script src=' in html  # JS also external
+        # JS should be external (may be ES6 module or regular script)
+        assert ('<script src=' in html or '<script type="module" src=' in html)
         assert ".menu-item" in html
 
 

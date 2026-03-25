@@ -1,0 +1,51 @@
+/**
+ * CSS Variables and Theme Configuration
+ * Defines color palette, spacing, and dark mode overrides
+ */
+
+:root {
+    /* Color Palette */
+    --primary-color: #455A64;
+    --primary-dark: #263238;
+    --primary-light: #B0BEC5;
+    
+    /* Backgrounds */
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F7F7F7;
+    --bg-tertiary: #B0BEC5;
+    
+    /* Text Colors */
+    --text-primary: #263238;
+    --text-secondary: #455A64;
+    
+    /* UI Elements */
+    --border-color: #B0BEC5;
+    --sidebar-bg: #263238;
+    --card-shadow: 0 2px 8px rgba(69,90,100,0.08);
+    
+    /* Spacing Scale */
+    --space-xxs: 4px;
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 40px;
+}
+
+/* Dark Mode Theme Override */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #B0BEC5;
+        --primary-dark: #455A64;
+        --primary-light: #B0BEC5;
+        --bg-primary: #263238;
+        --bg-secondary: #37474F;
+        --bg-tertiary: #455A64;
+        --text-primary: #FFFFFF;
+        --text-secondary: #B0BEC5;
+        --border-color: #455A64;
+        --sidebar-bg: #1C2529;
+        --card-shadow: 0 2px 8px rgba(176,190,197,0.1);
+    }
+}
