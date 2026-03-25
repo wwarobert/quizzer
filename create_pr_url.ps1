@@ -1,42 +1,35 @@
-# Create GitHub PR URL with pre-filled description
-# IMPORTANT: Keep description SHORT (<500 chars) due to GitHub URL limits
+# Create GitHub PR - SIMPLE MANUAL METHOD
+# URL pre-filling is unreliable - manual paste is faster and always works
 
-$title = "refactor(js): Modularize JavaScript into ES6 modules (Sprint 3)"
-
-$body = @"
-## Summary
-Split 870-line app.js into 13 ES6 modules (<150 lines each). Documented CSS refactoring plan.
-
-## Changes
-- 18 files (3 modified, 15 new)
-- Created: config/, state/, ui/, quiz/, dashboard/ modules
-- Tests: 456 passing ✅
-- No regressions
-
-See PR_SPRINT3_REFACTORING.md for full details.
-"@
-
-# Get current branch name
+# Get current branch
 $currentBranch = git branch --show-current
 
-# URL encode the title and body
-$encodedTitle = [System.Web.HttpUtility]::UrlEncode($title)
-$encodedBody = [System.Web.HttpUtility]::UrlEncode($body)
+# Generate simple PR URL (no parameters - GitHub's pre-filling is broken)
+$prUrl = "https://github.com/wwarobert/quizzer/compare/main...${currentBranch}"
 
-# Construct the full URL
-$baseUrl = "https://github.com/wwarobert/quizzer/compare/main...${currentBranch}"
-$fullUrl = "${baseUrl}?expand=1&title=${encodedTitle}&body=${encodedBody}"
+# SHORT description for manual paste
+$description = @"
+Split 870-line app.js into 13 ES6 modules (<150 lines each).
 
-# Output the URL
+**Changes:** 18 files, 456 tests passing ✅
+
+See PR_SPRINT3_REFACTORING.md for details.
+"@
+
+# Display instructions
 Write-Host ""
-Write-Host "🔗 GitHub PR URL with Pre-filled Description:" -ForegroundColor Green
+Write-Host "=== CREATE PULL REQUEST ===" -ForegroundColor Cyan
 Write-Host ""
-Write-Host $fullUrl -ForegroundColor Cyan
+Write-Host "1️⃣  Click this URL:" -ForegroundColor Yellow
+Write-Host "   $prUrl" -ForegroundColor Green
 Write-Host ""
-Write-Host "✅ Click the link above to create PR with description automatically filled!" -ForegroundColor Green
+Write-Host "2️⃣  Copy and paste this description:" -ForegroundColor Yellow
+Write-Host $description -ForegroundColor White
+Write-Host ""
+Write-Host "✅ Simple and reliable - no URL encoding issues!" -ForegroundColor Green
 Write-Host ""
 
-# Copy to clipboard
-$fullUrl | Set-Clipboard
-Write-Host "📋 URL copied to clipboard - just paste in browser!" -ForegroundColor Yellow
+# Copy URL to clipboard
+$prUrl | Set-Clipboard
+Write-Host "📋 PR URL copied to clipboard" -ForegroundColor Cyan
 Write-Host ""
