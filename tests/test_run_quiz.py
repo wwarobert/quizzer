@@ -468,6 +468,119 @@ class TestHTMLReport:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
+    def test_generate_html_report_with_explanations(self):
+        """Test HTML report includes explanations when present."""
+        failures = [
+            {
+                "question_id": "2",
+                "question": "What is 2+2?",
+                "user_answer": "5",
+                "correct_answer": "4",
+                "explanation": "Basic arithmetic: 2 + 2 = 4",
+            },
+            {
+                "question_id": "3",
+                "question": "Capital of France?",
+                "user_answer": "London",
+                "correct_answer": "Paris",
+                "explanation": "Paris has been the capital of France since 987 AD",
+            },
+        ]
+        result = QuizResult(
+            quiz_id="expl_test_001",
+            completed_at="2026-03-25T10:00:00",
+            total_questions=5,
+            correct_answers=3,
+            score_percentage=60.0,
+            passed=False,
+            failures=failures,
+            time_spent=120.0,
+        )
+        quiz = Quiz("expl_test_001", "2026-03-25T09:00:00", [])
+
+        html = run_quiz.generate_html_report(result, quiz)
+
+        # Verify explanations are in HTML
+        assert "📘 Explanation:" in html or "Explanation:" in html
+        assert "Basic arithmetic: 2 + 2 = 4" in html
+        assert "Paris has been the capital of France since 987 AD" in html
+
+    def test_generate_html_report_without_explanations(self):
+        """Test HTML report works without explanations."""
+        failures = [
+            {
+                "question_id": "1",
+                "question": "What is 5+5?",
+                "user_answer": "11",
+                "correct_answer": "10",
+                # No explanation field
+            }
+        ]
+        result = QuizResult(
+            quiz_id="expl_test_002",
+            completed_at="2026-03-25T10:00:00",
+            total_questions=2,
+            correct_answers=1,
+            score_percentage=50.0,
+            passed=False,
+            failures=failures,
+            time_spent=60.0,
+        )
+        quiz = Quiz("expl_test_002", "2026-03-25T09:00:00", [])
+
+        html = run_quiz.generate_html_report(result, quiz)
+
+        # Should generate without errors
+        assert "html" in html.lower()
+        assert "What is 5+5?" in html
+        assert "11" in html
+        assert "10" in html
+
+    def test_generate_html_report_mixed_explanations(self):
+        """Test HTML report with some failures having explanations, others not."""
+        failures = [
+            {
+                "question_id": "1",
+                "question": "Q1?",
+                "user_answer": "wrong1",
+                "correct_answer": "correct1",
+                "explanation": "Explanation for Q1",
+            },
+            {
+                "question_id": "2",
+                "question": "Q2?",
+                "user_answer": "wrong2",
+                "correct_answer": "correct2",
+                # No explanation
+            },
+            {
+                "question_id": "3",
+                "question": "Q3?",
+                "user_answer": "wrong3",
+                "correct_answer": "correct3",
+                "explanation": "",  # Empty explanation
+            },
+        ]
+        result = QuizResult(
+            quiz_id="expl_test_003",
+            completed_at="2026-03-25T10:00:00",
+            total_questions=5,
+            correct_answers=2,
+            score_percentage=40.0,
+            passed=False,
+            failures=failures,
+            time_spent=90.0,
+        )
+        quiz = Quiz("expl_test_003", "2026-03-25T09:00:00", [])
+
+        html = run_quiz.generate_html_report(result, quiz)
+
+        # Should handle mixed scenarios
+        assert "html" in html.lower()
+        assert "Explanation for Q1" in html
+        assert "Q2?" in html
+        assert "Q3?" in html
+
 
 class TestQuizFolderSelection:
     """Tests for quiz folder selection functions."""
@@ -795,5 +908,181 @@ class TestMainFunction:
             # Check that text report was created
             txt_files = list(report_dir.glob("*.txt"))
             assert len(txt_files) >= 1
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+class TestReviewMode:
+    """Tests for review mode functionality."""
+
+    def test_run_quiz_review_mode_basic(self):
+        """Test review mode with correct and incorrect answers."""
+        questions = [
+            Question(
+                1,
+                "What is 2+2?",
+                ["4"],
+                "4",
+                explanation="Basic arithmetic: 2 + 2 = 4",
+                original_explanation="Basic arithmetic: 2 + 2 = 4",
+            ),
+            Question(
+                2,
+                "Capital of France?",
+                ["paris"],
+                "Paris",
+                explanation="Paris is the capital of France",
+                original_explanation="Paris is the capital of France",
+            ),
+        ]
+        quiz = Quiz("review_test_001", "2026-03-25T10:00:00", questions)
+
+        # Inputs: start, answer1, continue, answer2
+        inputs = ["", "4", "", "wrong"]
+
+        with patch("builtins.input", side_effect=inputs):
+            result = run_quiz.run_quiz_review_mode(quiz)
+            assert result.total_questions == 2
+            assert result.correct_answers == 1
+            assert result.score_percentage == 50.0
+            assert result.passed is True  # Review mode always passes
+            assert len(result.failures) == 1
+
+    def test_run_quiz_review_mode_with_explanations(self):
+        """Test that review mode shows explanations."""
+        questions = [
+            Question(
+                1,
+                "What is the sky's color?",
+                ["blue"],
+                "Blue",
+                explanation="The sky appears blue due to Rayleigh scattering",
+                original_explanation="The sky appears blue due to Rayleigh scattering",
+            )
+        ]
+        quiz = Quiz("review_test_002", "2026-03-25T10:00:00", questions)
+
+        inputs = ["", "blue"]  # start, answer
+
+        with patch("builtins.input", side_effect=inputs):
+            result = run_quiz.run_quiz_review_mode(quiz)
+            assert result.correct_answers == 1
+            assert result.passed is True
+
+    def test_run_quiz_review_mode_without_explanations(self):
+        """Test review mode works with questions lacking explanations."""
+        questions = [
+            Question(1, "What is 5+5?", ["10"], "10"),  # No explanation
+            Question(
+                2,
+                "What is 3+3?",
+                ["6"],
+                "6",
+                explanation="",  # Empty explanation
+                original_explanation="",
+            ),
+        ]
+        quiz = Quiz("review_test_003", "2026-03-25T10:00:00", questions)
+
+        inputs = ["", "10", "", "6"]
+
+        with patch("builtins.input", side_effect=inputs):
+            result = run_quiz.run_quiz_review_mode(quiz)
+            assert result.total_questions == 2
+            assert result.correct_answers == 2
+
+    def test_run_quiz_review_mode_always_passes(self):
+        """Test that review mode always marks result as passed."""
+        questions = [
+            Question(1, "Q1?", ["a"], "A"),
+            Question(2, "Q2?", ["b"], "B"),
+        ]
+        quiz = Quiz("review_test_004", "2026-03-25T10:00:00", questions)
+
+        # Get all wrong answers
+        inputs = ["", "wrong1", "", "wrong2"]
+
+        with patch("builtins.input", side_effect=inputs):
+            result = run_quiz.run_quiz_review_mode(quiz)
+            assert result.correct_answers == 0
+            assert result.score_percentage == 0.0
+            assert result.passed is True  # Still passes in review mode
+
+    def test_review_mode_tracks_failures(self):
+        """Test that review mode still tracks incorrect answers."""
+        questions = [
+            Question(1, "Test Q", ["correct"], "Correct"),
+        ]
+        quiz = Quiz("review_test_005", "2026-03-25T10:00:00", questions)
+
+        inputs = ["", "wrong"]
+
+        with patch("builtins.input", side_effect=inputs):
+            result = run_quiz.run_quiz_review_mode(quiz)
+            assert len(result.failures) == 1
+            assert result.failures[0]["question"] == "Test Q"
+            assert result.failures[0]["user_answer"] == "wrong"
+            assert result.failures[0]["correct_answer"] == "Correct"
+
+    def test_main_with_review_flag(self):
+        """Test main() function with --review flag."""
+        questions = [
+            Question(
+                1,
+                "Test?",
+                ["test"],
+                "Test",
+                explanation="This is a test",
+                original_explanation="This is a test",
+            )
+        ]
+        quiz = Quiz("review_main_001", "2026-03-25T10:00:00", questions)
+
+        temp_dir = tempfile.mkdtemp()
+        quiz_file = Path(temp_dir) / "quiz.json"
+
+        try:
+            quiz.save(str(quiz_file))
+
+            test_args = [
+                "run_quiz.py",
+                str(quiz_file),
+                "--review",
+                "--quiet",
+            ]
+            inputs = ["", "test"]  # start, answer
+
+            with patch.object(sys, "argv", test_args):
+                with patch("builtins.input", side_effect=inputs):
+                    with pytest.raises(SystemExit) as exc_info:
+                        run_quiz.main()
+                    # Review mode always passes (exits 0)
+                    assert exc_info.value.code == 0
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_main_review_mode_with_wrong_answers(self):
+        """Test main() review mode exits 0 even with wrong answers."""
+        questions = [
+            Question(1, "Q1?", ["a"], "A"),
+            Question(2, "Q2?", ["b"], "B"),
+        ]
+        quiz = Quiz("review_main_002", "2026-03-25T10:00:00", questions)
+
+        temp_dir = tempfile.mkdtemp()
+        quiz_file = Path(temp_dir) / "quiz.json"
+
+        try:
+            quiz.save(str(quiz_file))
+
+            test_args = ["run_quiz.py", str(quiz_file), "--review", "--quiet"]
+            inputs = ["", "wrong", "", "wrong"]  # All wrong
+
+            with patch.object(sys, "argv", test_args):
+                with patch("builtins.input", side_effect=inputs):
+                    with pytest.raises(SystemExit) as exc_info:
+                        run_quiz.main()
+                    # Review mode exits 0 regardless of score
+                    assert exc_info.value.code == 0
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)

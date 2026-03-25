@@ -264,6 +264,7 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
                         else "(no answer)"
                     ),
                     "correct_answer": question.original_answer,
+                    "explanation": question.original_explanation if question.original_explanation else "",
                 }
             )
 
@@ -295,6 +296,118 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
         correct_answers=correct_count,
         score_percentage=score_percentage,
         passed=passed,
+        failures=failures,
+        time_spent=time_spent,
+    )
+
+    return result
+
+
+def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
+    """
+    Run the quiz in review mode with immediate feedback and explanations.
+
+    In review mode:
+    - Shows correct answer immediately after each question
+    - Displays explanation if available
+    - No pass/fail pressure, focus on learning
+    - Still tracks statistics for reporting
+
+    Args:
+        quiz: Quiz object to run
+
+    Returns:
+        QuizResult object with complete results
+    """
+    clear_screen()
+    print_header()
+    print(f"Quiz ID: {quiz.quiz_id}")
+    print(f"Questions: {len(quiz.questions)}")
+    print("Mode: REVIEW (Learning Mode)")
+    print("\nInstructions:")
+    print("  - For multiple answers, separate with commas (e.g., 'a, b, c')")
+    print("  - Answers are case-insensitive")
+    print("  - Whitespace is ignored")
+    print("  - You'll see the correct answer and explanation immediately")
+    print("  - Focus on learning, not scoring!")
+    print("\nPress Ctrl+C to quit at any time.\n")
+
+    input("Press Enter to start...")
+
+    start_time = time.time()
+    correct_count = 0
+    failures: List[Dict[str, str]] = []
+
+    for idx, question in enumerate(quiz.questions, 1):
+        # Clear screen and display question
+        clear_screen()
+        print("=" * 60)
+        print(f"Question {idx}/{len(quiz.questions)} (REVIEW MODE)".center(60))
+        print("=" * 60 + "\n")
+        print(f"{question.question}\n")
+
+        user_answer = get_user_answer()
+
+        # Compare answers
+        is_correct = answers_match(user_answer, question.original_answer)
+
+        # Display result with immediate feedback
+        print("\n" + "=" * 60)
+        if is_correct:
+            correct_count += 1
+            print("✓ CORRECT!")
+        else:
+            print("✗ INCORRECT")
+            failures.append(
+                {
+                    "question_id": str(question.id),
+                    "question": question.question,
+                    "user_answer": (
+                        format_answer_display(user_answer)
+                        if user_answer
+                        else "(no answer)"
+                    ),
+                    "correct_answer": question.original_answer,
+                    "explanation": question.original_explanation if question.original_explanation else "",
+                }
+            )
+
+        # Always show the correct answer in review mode
+        print()
+        print(
+            f"Your answer:    {format_answer_display(user_answer) if user_answer else '(no answer)'}"
+        )
+        print(f"Correct answer: {question.original_answer}")
+
+        # Show explanation if available
+        if question.explanation and question.explanation.strip():
+            print("\n📘 Explanation:")
+            print(f"   {question.explanation}")
+
+        # Show running score
+        print(f"\nCurrent Score: {correct_count}/{idx} ({(correct_count / idx) * 100:.1f}%)")
+        print("=" * 60)
+
+        # Wait for user to press Enter before continuing
+        if idx < len(quiz.questions):
+            input("\nPress Enter for next question...")
+
+    # Calculate time spent
+    end_time = time.time()
+    time_spent = end_time - start_time
+
+    # Calculate results (no pass/fail threshold in review mode)
+    total_questions = len(quiz.questions)
+    score_percentage = (correct_count / total_questions) * 100
+
+    # Create result object (passed=True for review mode to avoid negative messaging)
+    result = QuizResult(
+        quiz_id=quiz.quiz_id,
+        completed_at=datetime.now().isoformat(),
+        total_questions=total_questions,
+        correct_answers=correct_count,
+        score_percentage=score_percentage,
+        passed=True,  # Review mode always "passes" - it's for learning
         failures=failures,
         time_spent=time_spent,
     )
@@ -527,6 +640,9 @@ Examples:
   Run a specific quiz file:
     python run_quiz.py data/quizzes/az-104/quiz_001.json
 
+  Run in review mode (learning with immediate feedback):
+    python run_quiz.py --review
+
   Run with custom pass threshold:
     python run_quiz.py data/quizzes/az-104/quiz_001.json --pass-threshold 75
 
@@ -536,6 +652,7 @@ Examples:
 Notes:
   - HTML reports are automatically generated in data/reports/
   - Pass threshold determines if the quiz is passed (default: 80%)
+  - Review mode shows answers and explanations immediately (great for learning!)
   - Use Ctrl+C at any time to exit the quiz
   - Answers are case-insensitive and whitespace-tolerant
 
@@ -560,7 +677,13 @@ For more information, see README.md
     )
 
     parser.add_argument(
-        "-r",
+        "--review",
+        action="store_true",
+        help="review mode: show correct answers and explanations immediately after each question",
+    )
+
+    parser.add_argument(
+        "-o",
         "--report-output",
         metavar="DIR",
         help="directory to save additional text report (HTML report always generated)",
@@ -613,8 +736,11 @@ For more information, see README.md
 
         quiz = Quiz.load(str(quiz_file))
 
-        # Run quiz
-        result = run_quiz(quiz, args.pass_threshold)
+        # Run quiz in appropriate mode
+        if args.review:
+            result = run_quiz_review_mode(quiz)
+        else:
+            result = run_quiz(quiz, args.pass_threshold)
 
         # Display results
         if not args.quiet:

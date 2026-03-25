@@ -23,12 +23,16 @@ class Question:
         question: The question text
         answer: Normalized answer for comparison (lowercase, sorted)
         original_answer: Original answer text for display purposes
+        explanation: Normalized explanation text (optional)
+        original_explanation: Original explanation for display (optional)
     """
 
     id: int
     question: str
     answer: List[str]
     original_answer: str
+    explanation: str = ""
+    original_explanation: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert question to dictionary format."""
@@ -36,8 +40,16 @@ class Question:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Question":
-        """Create Question from dictionary."""
-        return cls(**data)
+        """Create Question from dictionary with backward compatibility."""
+        # Provide defaults for explanation fields if not present (backward compatibility)
+        return cls(
+            id=data["id"],
+            question=data["question"],
+            answer=data["answer"],
+            original_answer=data["original_answer"],
+            explanation=data.get("explanation", ""),
+            original_explanation=data.get("original_explanation", ""),
+        )
 
 
 @dataclass

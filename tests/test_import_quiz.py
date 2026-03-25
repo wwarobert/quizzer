@@ -37,8 +37,8 @@ class TestReadCSVQuestions:
         try:
             questions = import_quiz.read_csv_questions(temp_path)
             assert len(questions) == 2
-            assert questions[0] == ("What is 2+2?", "4")
-            assert questions[1] == ("Capital of France?", "Paris")
+            assert questions[0] == ("What is 2+2?", "4", "")
+            assert questions[1] == ("Capital of France?", "Paris", "")
         finally:
             Path(temp_path).unlink(missing_ok=True)
 
@@ -55,7 +55,7 @@ class TestReadCSVQuestions:
         try:
             questions = import_quiz.read_csv_questions(temp_path)
             assert len(questions) == 1
-            assert questions[0] == ("What is 2+2?", "4")
+            assert questions[0] == ("What is 2+2?", "4", "")
         finally:
             Path(temp_path).unlink(missing_ok=True)
 
@@ -89,10 +89,98 @@ class TestReadCSVQuestions:
 
         try:
             questions = import_quiz.read_csv_questions(temp_path)
-            # Should skip header and read 2 questions, ignoring extra columns
+            # Should skip header and read 2 questions, treating 3rd column as explanation now
             assert len(questions) == 2
-            assert questions[0] == ("What is 2+2?", "4")
-            assert questions[1] == ("Capital?", "Paris")
+            assert questions[0] == ("What is 2+2?", "4", "ignored1")
+            assert questions[1] == ("Capital?", "Paris", "ignored3")
+        finally:
+            Path(temp_path).unlink(missing_ok=True)
+
+    def test_three_column_csv_with_explanations(self):
+        """Test reading CSV with 3 columns including explanations."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
+            writer = csv.writer(f)
+            writer.writerow(["Question", "Answer", "Explanation"])
+            writer.writerow(
+                [
+                    "What is 2+2?",
+                    "4",
+                    "Basic arithmetic: two plus two equals four.",
+                ]
+            )
+            writer.writerow(
+                [
+                    "Capital of France?",
+                    "Paris",
+                    "Paris has been the capital since 987 AD.",
+                ]
+            )
+            temp_path = f.name
+
+        try:
+            questions = import_quiz.read_csv_questions(temp_path)
+            assert len(questions) == 2
+            assert questions[0] == (
+                "What is 2+2?",
+                "4",
+                "Basic arithmetic: two plus two equals four.",
+            )
+            assert questions[1] == (
+                "Capital of France?",
+                "Paris",
+                "Paris has been the capital since 987 AD.",
+            )
+        finally:
+            Path(temp_path).unlink(missing_ok=True)
+
+    def test_three_column_csv_mixed_explanations(self):
+        """Test CSV with 3 columns but some explanations empty."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
+            writer = csv.writer(f)
+            writer.writerow(["Question", "Answer", "Explanation"])
+            writer.writerow(["What is 2+2?", "4", "Two plus two."])
+            writer.writerow(["Capital?", "Paris", ""])  # Empty explanation
+            writer.writerow(["Color?", "Blue", ""])  # Empty explanation
+            temp_path = f.name
+
+        try:
+            questions = import_quiz.read_csv_questions(temp_path)
+            assert len(questions) == 3
+            assert questions[0] == ("What is 2+2?", "4", "Two plus two.")
+            assert questions[1] == ("Capital?", "Paris", "")
+            assert questions[2] == ("Color?", "Blue", "")
+        finally:
+            Path(temp_path).unlink(missing_ok=True)
+
+    def test_explanation_with_special_characters(self):
+        """Test explanations containing quotes and commas."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, newline=""
+        ) as f:
+            writer = csv.writer(f)
+            writer.writerow(["Question", "Answer", "Explanation"])
+            writer.writerow(
+                [
+                    "Primary colors?",
+                    "red, blue, yellow",
+                    'These are "primary" colors: cannot be made by mixing.',
+                ]
+            )
+            temp_path = f.name
+
+        try:
+            questions = import_quiz.read_csv_questions(temp_path)
+            assert len(questions) == 1
+            assert questions[0][0] == "Primary colors?"
+            assert questions[0][1] == "red, blue, yellow"
+            assert (
+                questions[0][2]
+                == 'These are "primary" colors: cannot be made by mixing.'
+            )
         finally:
             Path(temp_path).unlink(missing_ok=True)
 
@@ -123,9 +211,9 @@ class TestCreateQuiz:
     def test_create_quiz_basic(self):
         """Test creating a basic quiz."""
         questions = [
-            ("What is 2+2?", "4"),
-            ("Capital?", "Paris"),
-            ("Color?", "red, blue"),
+            ("What is 2+2?", "4", ""),
+            ("Capital?", "Paris", ""),
+            ("Color?", "red, blue", ""),
         ]
         quiz = import_quiz.create_quiz(questions, "test_001", "test.csv")
 
@@ -136,7 +224,7 @@ class TestCreateQuiz:
 
     def test_quiz_uses_all_provided_questions(self):
         """Test that quiz uses all provided questions."""
-        questions = [(f"Q{i}?", f"A{i}") for i in range(10)]
+        questions = [(f"Q{i}?", f"A{i}", "") for i in range(10)]
         quiz = import_quiz.create_quiz(questions, "test_002")
 
         # Should use all provided questions
@@ -144,7 +232,7 @@ class TestCreateQuiz:
 
     def test_question_order_preserved(self):
         """Test that question order is preserved as provided."""
-        questions = [(f"Q{i}?", f"A{i}") for i in range(5)]
+        questions = [(f"Q{i}?", f"A{i}", "") for i in range(5)]
         quiz = import_quiz.create_quiz(questions, "test_003")
 
         # Questions should be in the order provided (shuffling happens before create_quiz)
@@ -152,7 +240,7 @@ class TestCreateQuiz:
 
     def test_normalized_answers(self):
         """Test that answers are normalized."""
-        questions = [("Primary colors?", "Red, Blue, Yellow"), ("Number?", "42")]
+        questions = [("Primary colors?", "Red, Blue, Yellow", ""), ("Number?", "42", "")]
         quiz = import_quiz.create_quiz(questions, "test_005")
 
         # Check first question has normalized answer
@@ -166,6 +254,28 @@ class TestCreateQuiz:
             if q.question == "Number?":
                 assert q.answer == ["42"]
                 assert q.original_answer == "42"
+
+    def test_quiz_with_explanations(self):
+        """Test that quiz stores explanations correctly."""
+        questions = [
+            ("What is 2+2?", "4", "Basic arithmetic fact."),
+            ("Capital?", "Paris", "Paris is the capital of France."),
+            ("Color?", "Blue", ""),  # Empty explanation
+        ]
+        quiz = import_quiz.create_quiz(questions, "test_007", "test.csv")
+
+        assert len(quiz.questions) == 3
+        
+        # Check that explanations are stored
+        assert quiz.questions[0].explanation == "Basic arithmetic fact."
+        assert quiz.questions[0].original_explanation == "Basic arithmetic fact."
+        
+        assert quiz.questions[1].explanation == "Paris is the capital of France."
+        assert quiz.questions[1].original_explanation == "Paris is the capital of France."
+        
+        # Empty explanation should be empty string
+        assert quiz.questions[2].explanation == ""
+        assert quiz.questions[2].original_explanation == ""
 
 
 class TestGenerateQuizId:
@@ -270,7 +380,7 @@ class TestEncoding:
         try:
             questions = import_quiz.read_csv_questions(temp_path)
             assert len(questions) == 1
-            assert questions[0] == ("Test question?", "Test answer")
+            assert questions[0] == ("Test question?", "Test answer", "")
         finally:
             Path(temp_path).unlink(missing_ok=True)
 
@@ -318,7 +428,7 @@ class TestCreateQuizEdgeCases:
 
     def test_quiz_without_source_file(self):
         """Test creating quiz without source file."""
-        questions = [("Q1?", "A1"), ("Q2?", "A2")]
+        questions = [("Q1?", "A1", ""), ("Q2?", "A2", "")]
         quiz = import_quiz.create_quiz(questions, "test_001")
         assert quiz.source_file == ""
 
@@ -330,7 +440,7 @@ class TestCreateQuizEdgeCases:
 
     def test_quiz_with_single_question(self):
         """Test creating quiz with only one question."""
-        questions = [("Single question?", "Single answer")]
+        questions = [("Single question?", "Single answer", "")]
         quiz = import_quiz.create_quiz(questions, "test_003")
         assert len(quiz.questions) == 1
         assert quiz.questions[0].question == "Single question?"
@@ -338,7 +448,7 @@ class TestCreateQuizEdgeCases:
     def test_quiz_with_long_answers(self):
         """Test creating quiz with very long answers."""
         long_answer = ", ".join([f"item{i}" for i in range(100)])
-        questions = [("List items?", long_answer)]
+        questions = [("List items?", long_answer, "")]
         quiz = import_quiz.create_quiz(questions, "test_004")
         assert len(quiz.questions[0].answer) == 100  # All items normalized and sorted
 
@@ -415,8 +525,8 @@ class TestCSVEdgeCases:
             questions = import_quiz.read_csv_questions(temp_path)
             assert len(questions) == 2
             # Whitespace should be stripped
-            assert questions[0] == ("What is 2+2?", "4")
-            assert questions[1] == ("Capital?", "Paris")
+            assert questions[0] == ("What is 2+2?", "4", "")
+            assert questions[1] == ("Capital?", "Paris", "")
         finally:
             Path(temp_path).unlink(missing_ok=True)
 
