@@ -1,51 +1,50 @@
 # Create GitHub PR URL with pre-filled description
 # This solves the issue of empty PR descriptions
 
-$title = "feat(quiz): Add review mode with answer explanations (Sprint 2)"
+$title = "refactor(js): Modularize JavaScript into ES6 modules (Sprint 3)"
 
 $body = @"
 ## Summary
-Add review mode with answer explanations for educational learning. CSV import now supports optional 3rd column for explanations, new ``--review`` flag provides immediate feedback, and HTML reports display explanations.
+Split 870-line monolithic app.js into 13 focused ES6 modules for better maintainability. Created modular directory structure with separated concerns, documented CSS organization plan.
 
 ## Changes
-**11 files changed** (9 modified, 2 new) | **456 tests passing** (10 new)
+**18 files changed** (3 modified, 15 new) | **456 tests passing** (all 456 ✅)
 
-**Key Features:**
-- CSV import supports ``Question, Answer, Explanation`` format (backward compatible)
-- ``--review`` CLI flag for learning mode with immediate feedback
-- Explanations displayed in reports with blue accent styling
-- Running score tracker in review mode
-- Review mode always passes (exit code 0) - no pressure learning
+**JavaScript Modules Created:**
+- ``config/motivational.js`` - Message configuration (55 lines)
+- ``state/quiz-state.js`` - Centralized state (85 lines)
+- ``ui/notifications.js``, ``ui/sidebar.js``, ``ui/screens.js`` - UI layer
+- ``quiz/quiz-manager.js``, ``quiz/timer.js``, ``quiz/runner.js`` - Quiz logic
+- ``dashboard/dashboard.js``, ``dashboard/analytics.js`` - Analytics
+- ``app.js`` - Main orchestration with ES6 imports
 
-**Modified:**
-- ``import_quiz.py`` - 3rd column parsing
-- ``quizzer/quiz_data.py`` - Question model with explanation fields  
-- ``run_quiz.py`` - Review mode implementation
-- Report templates + CSS - Explanation display
+**CSS Organization:**
+- Documented comprehensive CSS refactoring plan
+- Created directory structure (base/, layout/, components/, pages/, utilities/)
+- Extracted ``base/variables.css`` and ``base/reset.css``
+- Strategy: Keep existing ``style.css`` intact, migrate incrementally
 
-**Tests:** 49 import + 43 quiz_data + 47 run_quiz = 456 total ✅
-
-## Usage
-``````bash
-# Import with explanations
-python import_quiz.py examples/sample_with_explanations.csv
-
-# Run review mode  
-python run_quiz.py --review
-``````
+**Benefits:**
+- Each module <150 lines (was 870 lines)
+- Clear dependencies via ES6 imports
+- No global scope pollution
+- Better testability and maintainability
 
 ## Validation
-✅ All 456 tests passing | ✅ Flake8 checks passed | ✅ Backward compatible
+✅ All 456 tests passing | ✅ Flake8 checks passed | ✅ No regressions
 
-See ``PR_SPRINT2_REVIEW_MODE.md`` for full details.
+See ``static/css/README.md`` for CSS organization plan.
 "@
+
+# Get current branch name
+$currentBranch = git branch --show-current
 
 # URL encode the title and body
 $encodedTitle = [System.Web.HttpUtility]::UrlEncode($title)
 $encodedBody = [System.Web.HttpUtility]::UrlEncode($body)
 
 # Construct the full URL
-$baseUrl = "https://github.com/wwarobert/quizzer/compare/main...feature/review-mode-explanations"
+$baseUrl = "https://github.com/wwarobert/quizzer/compare/main...${currentBranch}"
 $fullUrl = "${baseUrl}?expand=1&title=${encodedTitle}&body=${encodedBody}"
 
 # Output the URL
