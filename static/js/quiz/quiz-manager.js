@@ -3,7 +3,7 @@
  * Handles loading quizzes and displaying quiz lists
  */
 
-import { quizzes, setQuizzes, quizRuns } from '../state/quiz-state.js';
+import { quizzes, setQuizzes, quizRuns, activeQuizPath, setActiveQuizPath } from '../state/quiz-state.js';
 import { showNotification } from '../ui/notifications.js';
 
 /**
@@ -225,6 +225,7 @@ export function displayQuizMenuItems(
                     ? `Best: ${info.bestScore}` : 'Not attempted',
             ].filter(Boolean).join('\n');
 
+            div.setAttribute('data-quiz-path', info.path);
             div.onclick = () => startQuizCallback(info.path);
             div.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -250,6 +251,33 @@ export function displayQuizMenuItems(
         if (firstItems) firstItems.classList.add('expanded');
         if (firstHeader) firstHeader.classList.add('expanded');
     }
+
+    // Re-apply active state if a quiz is currently selected
+    if (activeQuizPath) {
+        _applyActiveQuizMenuItem(activeQuizPath);
+    }
+}
+
+/**
+ * Apply active CSS class to the quiz menu item matching the given path.
+ * @param {string} path - Quiz file path
+ */
+function _applyActiveQuizMenuItem(path) {
+    const menuContent = document.getElementById('quizMenuContent');
+    if (!menuContent) return;
+    menuContent.querySelectorAll('.quiz-menu-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.quizPath === path);
+    });
+}
+
+/**
+ * Mark a quiz menu item as active and store the selection in state.
+ * Call this when a quiz is started from the sidebar.
+ * @param {string} path - Quiz file path
+ */
+export function markActiveQuizMenuItem(path) {
+    setActiveQuizPath(path);
+    _applyActiveQuizMenuItem(path);
 }
 
 /**
