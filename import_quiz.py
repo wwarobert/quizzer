@@ -22,6 +22,9 @@ from pathlib import Path
 from typing import List, Tuple
 
 from quizzer import Question, Quiz, format_answer_display, normalize_answer
+from quizzer.cli import (
+    bold, cyan, dim, disable_color, divider, green, print_logo, red, yellow,
+)
 
 
 def check_existing_quizzes(output_dir: Path) -> List[Path]:
@@ -318,16 +321,27 @@ For more information, see README.md
 
     parser.add_argument("--version", action="version", version="%(prog)s 1.0.0")
 
+    parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="disable ANSI color output (also respects NO_COLOR env var)",
+    )
+
     args = parser.parse_args()
+
+    if args.no_color:
+        disable_color()
+
+    print_logo()
 
     try:
         # Read CSV questions
-        print(f"Reading questions from: {args.csv_file}")
+        print(cyan("Reading questions from: ") + bold(args.csv_file))
         questions = read_csv_questions(args.csv_file)
-        print(f"Loaded {len(questions)} questions")
+        print(green(f"✓ Loaded {len(questions)} questions"))
 
         if len(questions) == 0:
-            print("Error: No valid questions found in CSV file")
+            print(red("Error: No valid questions found in CSV file"))
             sys.exit(1)
 
         # Shuffle all questions once
@@ -341,8 +355,10 @@ For more information, see README.md
             quiz_sizes = [args.max_questions] * num_quizzes
             if len(questions) < args.max_questions:
                 print(
-                    f"Warning: CSV has {len(questions)} questions, "
-                    f"less than max {args.max_questions}"
+                    yellow(
+                        f"Warning: CSV has {len(questions)} questions, "
+                        f"less than max {args.max_questions}"
+                    )
                 )
                 quiz_sizes = [len(questions)] * num_quizzes
         else:
@@ -356,9 +372,12 @@ For more information, see README.md
                 num_quizzes = args.number
                 if num_quizzes < calculated_quizzes:
                     print(
-                        f"Warning: {len(questions)} questions need {calculated_quizzes} quizzes "
-                        f"(max {args.max_questions} each), but only generating {num_quizzes}. "
-                        f"Some questions will not be used."
+                        yellow(
+                            f"Warning: {len(questions)} questions need "
+                            f"{calculated_quizzes} quizzes "
+                            f"(max {args.max_questions} each), but only generating "
+                            f"{num_quizzes}. Some questions will not be used."
+                        )
                     )
 
             # Distribute questions evenly across quizzes
@@ -370,8 +389,8 @@ For more information, see README.md
                 num_quizzes - remainder
             )
 
-        print(f"Generating {num_quizzes} quiz(zes) from {len(questions)} questions")
-        print(f"  Quiz sizes: {', '.join(str(s) for s in quiz_sizes)}")
+        print(cyan("\nGenerating ") + bold(str(num_quizzes)) + cyan(" quiz(zes) from ") + bold(str(len(questions))) + cyan(" questions"))  # noqa: E501
+        print(dim(f"  Quiz sizes: {', '.join(str(s) for s in quiz_sizes)}"))
 
         # Create output directory with subfolder based on CSV filename
         base_output_dir = Path(args.output)
@@ -384,7 +403,9 @@ For more information, see README.md
             if args.force:
                 # Non-interactive mode: automatically delete
                 print(
-                    f"\n--force flag detected, automatically deleting {len(existing_quizzes)} existing quiz(zes)"
+                    yellow(
+                        f"\n--force: deleting {len(existing_quizzes)} existing quiz(zes)"
+                    )
                 )
                 delete_quiz_files(existing_quizzes)
             else:
@@ -401,6 +422,7 @@ For more information, see README.md
         created_files = []
         question_index = 0  # Track position in questions list
 
+        print()
         for i in range(num_quizzes):
             # Generate unique quiz ID with sequence number for multiple quizzes
             quiz_id = generate_quiz_id(args.prefix, i + 1 if num_quizzes > 1 else None)
@@ -425,10 +447,7 @@ For more information, see README.md
             quiz.save(str(output_file))
             created_files.append(str(output_file))
 
-            print(
-                f"Created quiz {i + 1}/{num_quizzes}: {output_file} "
-                f"({len(quiz.questions)} questions)"
-            )
+            print(green(f"  [{i + 1}/{num_quizzes}]") + f" {output_file} " + dim(f"({len(quiz.questions)} questions)"))
 
         # Save metadata about last import
         metadata = {
@@ -444,17 +463,23 @@ For more information, see README.md
         with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
 
-        print(f"\n✓ Successfully generated {num_quizzes} quiz(zes)")
-        print(f"  Output directory: {output_dir.absolute()}")
+        # Summary table
+        print()
+        print(divider())
+        print(green("  ✓ Done!  ") + bold(str(num_quizzes)) + " quiz(zes) created")
+        print(dim(f"  Output : {output_dir.absolute()}"))
+        print(dim(f"  Source : {args.csv_file}  ({len(questions)} questions)"))
+        print(divider())
+        print()
 
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        print(red(f"Error: {e}"))
         sys.exit(1)
     except ValueError as e:
-        print(f"Error: {e}")
+        print(red(f"Error: {e}"))
         sys.exit(1)
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(red(f"Unexpected error: {e}"))
         sys.exit(1)
 
 

@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import random
+import shutil
 import sys
 import time
 from datetime import datetime
@@ -24,6 +25,10 @@ from pathlib import Path
 from typing import Dict, List
 
 from quizzer import Quiz, QuizResult, answers_match, format_answer_display, is_test_data
+from quizzer.cli import (
+    bold, cyan, dim, disable_color, divider, green, print_logo, progress_bar,
+    red, score_bar, section, yellow, LiveTimer,
+)
 from quizzer.constants import (
     DATA_DIR_NAME,
     DEFAULT_PASS_THRESHOLD,
@@ -172,10 +177,8 @@ def clear_screen():
 
 
 def print_header():
-    """Print quiz header banner."""
-    print("\n" + "=" * 60)
-    print("QUIZ RUNNER".center(60))
-    print("=" * 60 + "\n")
+    """Print quiz header banner (logo)."""
+    print_logo()
 
 
 def print_question(question_num: int, total: int, question_text: str):
@@ -218,17 +221,18 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
     """
     clear_screen()
     print_header()
-    print(f"Quiz ID: {quiz.quiz_id}")
-    print(f"Questions: {len(quiz.questions)}")
-    print(f"Pass threshold: {pass_threshold}%")
-    print("\nInstructions:")
-    print("  - For multiple answers, separate with commas (e.g., 'a, b, c')")
-    print("  - Answers are case-insensitive")
-    print("  - Whitespace is ignored")
-    print("  - After each answer, press Enter to continue")
-    print("\nPress Ctrl+C to quit at any time.\n")
+    print(cyan("Quiz ID  : ") + bold(quiz.quiz_id))
+    print(cyan("Questions: ") + bold(str(len(quiz.questions))))
+    print(cyan("Pass     : ") + bold(f"{pass_threshold}%"))
+    print()
+    print(dim("Instructions:"))
+    print(dim("  - Separate multiple answers with commas (e.g., 'a, b, c')"))
+    print(dim("  - Answers are case-insensitive"))
+    print(dim("  - Whitespace is ignored"))
+    print(dim("  - Press Ctrl+C to quit at any time"))
+    print()
 
-    input("Press Enter to start...")
+    input(yellow("Press Enter to start..."))
 
     start_time = time.time()
     correct_count = 0
@@ -237,23 +241,38 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
     for idx, question in enumerate(quiz.questions, 1):
         # Clear screen and display question
         clear_screen()
-        print("=" * 60)
-        print(f"Question {idx}/{len(quiz.questions)}".center(60))
-        print("=" * 60 + "\n")
-        print(f"{question.question}\n")
+        bar = progress_bar(idx - 1, len(quiz.questions))
+        print(f"{bar}")
+        print()
 
+        # Question header with right-aligned live timer
+        term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
+        q_label = f"Question {idx}/{len(quiz.questions)}"
+        print(cyan(q_label) + LiveTimer.right_pad(q_label, term_cols) + LiveTimer.initial_label())  # noqa: E501
+        print(divider())
+        print(bold(question.question))
+        print()
+
+        # Live timer: absolute row 3 = always the question header after cls→bar→blank
+        timer = LiveTimer(
+            target_row=3,
+            right_col=term_cols - LiveTimer.WIDTH + 1,
+        )
+        timer.start()
         user_answer = get_user_answer()
+        q_time = timer.stop()
 
         # Compare answers
         is_correct = answers_match(user_answer, question.original_answer)
 
         # Display result
-        print("\n" + "-" * 60)
+        print()
+        print(divider())
         if is_correct:
             correct_count += 1
-            print("✓ CORRECT!")
+            print(green("  ✓  CORRECT!") + dim(f"  ({q_time:.1f}s)"))
         else:
-            print("✗ INCORRECT")
+            print(red("  ✗  INCORRECT") + dim(f"  ({q_time:.1f}s)"))
             failures.append(
                 {
                     "question_id": str(question.id),
@@ -268,16 +287,20 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
                 }
             )
 
-        # Show detailed answer
-        print(
-            f"\nYour answer: {format_answer_display(user_answer) if user_answer else '(no answer)'}"
-        )
-        print(f"Correct answer: {question.original_answer}")
-        print("-" * 60)
+        # Show answers
+        print()
+        user_disp = format_answer_display(user_answer) if user_answer else "(no answer)"
+        print(f"  Your answer   : {red(user_disp) if not is_correct else green(user_disp)}")
+        print(f"  Correct answer: {green(question.original_answer)}")
+        print(divider())
 
-        # Wait for user to press Enter before continuing
+        # Running score
+        running_pct = (correct_count / idx) * 100
+        print(dim(f"  Running: {correct_count}/{idx} ({running_pct:.1f}%)"))
+
+        # Wait for user before continuing
         if idx < len(quiz.questions):
-            input("\nPress Enter to continue to the next question...")
+            input(yellow("\nPress Enter for next question..."))
 
     # Calculate time spent
     end_time = time.time()
@@ -321,18 +344,18 @@ def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
     """
     clear_screen()
     print_header()
-    print(f"Quiz ID: {quiz.quiz_id}")
-    print(f"Questions: {len(quiz.questions)}")
-    print("Mode: REVIEW (Learning Mode)")
-    print("\nInstructions:")
-    print("  - For multiple answers, separate with commas (e.g., 'a, b, c')")
-    print("  - Answers are case-insensitive")
-    print("  - Whitespace is ignored")
-    print("  - You'll see the correct answer and explanation immediately")
-    print("  - Focus on learning, not scoring!")
-    print("\nPress Ctrl+C to quit at any time.\n")
+    print(cyan("Quiz ID  : ") + bold(quiz.quiz_id))
+    print(cyan("Questions: ") + bold(str(len(quiz.questions))))
+    print(yellow("Mode     : ") + bold("REVIEW (Learning Mode)"))
+    print()
+    print(dim("Instructions:"))
+    print(dim("  - Separate multiple answers with commas (e.g., 'a, b, c')"))
+    print(dim("  - Answers are case-insensitive"))
+    print(dim("  - Correct answer shown immediately after each question"))
+    print(dim("  - Focus on learning, not scoring!"))
+    print()
 
-    input("Press Enter to start...")
+    input(yellow("Press Enter to start..."))
 
     start_time = time.time()
     correct_count = 0
@@ -341,23 +364,38 @@ def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
     for idx, question in enumerate(quiz.questions, 1):
         # Clear screen and display question
         clear_screen()
-        print("=" * 60)
-        print(f"Question {idx}/{len(quiz.questions)} (REVIEW MODE)".center(60))
-        print("=" * 60 + "\n")
-        print(f"{question.question}\n")
+        bar = progress_bar(idx - 1, len(quiz.questions))
+        print(f"{bar}  {yellow('[REVIEW]')}")
+        print()
 
+        # Question header with right-aligned live timer
+        term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
+        q_label = f"Question {idx}/{len(quiz.questions)}"
+        print(cyan(q_label) + LiveTimer.right_pad(q_label, term_cols) + LiveTimer.initial_label())  # noqa: E501
+        print(divider())
+        print(bold(question.question))
+        print()
+
+        # Live timer: absolute row 3 = always the question header after cls→bar→blank
+        timer = LiveTimer(
+            target_row=3,
+            right_col=term_cols - LiveTimer.WIDTH + 1,
+        )
+        timer.start()
         user_answer = get_user_answer()
+        q_time = timer.stop()
 
         # Compare answers
         is_correct = answers_match(user_answer, question.original_answer)
 
         # Display result with immediate feedback
-        print("\n" + "=" * 60)
+        print()
+        print(divider())
         if is_correct:
             correct_count += 1
-            print("✓ CORRECT!")
+            print(green("  ✓  CORRECT!") + dim(f"  ({q_time:.1f}s)"))
         else:
-            print("✗ INCORRECT")
+            print(red("  ✗  INCORRECT") + dim(f"  ({q_time:.1f}s)"))
             failures.append(
                 {
                     "question_id": str(question.id),
@@ -374,23 +412,25 @@ def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
 
         # Always show the correct answer in review mode
         print()
-        print(
-            f"Your answer:    {format_answer_display(user_answer) if user_answer else '(no answer)'}"
-        )
-        print(f"Correct answer: {question.original_answer}")
+        user_disp = format_answer_display(user_answer) if user_answer else "(no answer)"
+        print(f"  Your answer   : {red(user_disp) if not is_correct else green(user_disp)}")
+        print(f"  Correct answer: {green(question.original_answer)}")
 
         # Show explanation if available
         if question.explanation and question.explanation.strip():
-            print("\n📘 Explanation:")
-            print(f"   {question.explanation}")
+            print()
+            print(cyan("  📘 Explanation:"))
+            print(f"     {question.explanation}")
 
         # Show running score
-        print(f"\nCurrent Score: {correct_count}/{idx} ({(correct_count / idx) * 100:.1f}%)")
-        print("=" * 60)
+        print()
+        print(divider())
+        running_pct = (correct_count / idx) * 100
+        print(dim(f"  Running: {correct_count}/{idx} ({running_pct:.1f}%)"))
 
         # Wait for user to press Enter before continuing
         if idx < len(quiz.questions):
-            input("\nPress Enter for next question...")
+            input(yellow("\nPress Enter for next question..."))
 
     # Calculate time spent
     end_time = time.time()
@@ -417,35 +457,31 @@ def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
 
 def display_results(result: QuizResult):
     """
-    Display quiz results to the console.
+    Display quiz results to the console with color-coded score bar.
 
     Args:
         result: QuizResult object to display
     """
     clear_screen()
-    print("\n" + "=" * 60)
-    print("QUIZ COMPLETE".center(60))
-    print("=" * 60 + "\n")
+    print(section("QUIZ COMPLETE"))
+    print()
 
     # Summary statistics
     incorrect_count = result.total_questions - result.correct_answers
     mins, secs = divmod(int(result.time_spent), 60)
     time_str = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
 
-    print(f"Total Questions:     {result.total_questions}")
-    print(f"Correct Answers:     {result.correct_answers}")
-    print(f"Incorrect Answers:   {incorrect_count}")
-    print(f"Time Spent:          {time_str}")
-    print(
-        f"\nScore:               {result.correct_answers}/{result.total_questions} ({result.score_percentage:.1f}%)"
-    )
+    print(f"  {cyan('Total questions :')} {bold(str(result.total_questions))}")
+    print(f"  {cyan('Correct         :')} {green(str(result.correct_answers))}")
+    print(f"  {cyan('Incorrect       :')} {red(str(incorrect_count)) if incorrect_count else dim('0')}")
+    print(f"  {cyan('Time spent      :')} {bold(time_str)}")
+    print()
 
-    if result.passed:
-        print("Result:              ✓ PASS")
-    else:
-        print("Result:              ✗ FAIL")
-
-    print("\n" + "=" * 60)
+    bar = score_bar(result.score_percentage)
+    fraction = f"{result.correct_answers}/{result.total_questions}"
+    print(f"  Score : {bold(fraction)}  {bar}")
+    print()
+    print(divider())
 
 
 def get_quiz_folders(
@@ -514,16 +550,19 @@ def select_folder_from_list(folders: List[Path]) -> Path:
     Raises:
         SystemExit: If user cancels or provides invalid input
     """
-    print("\n" + "=" * 60)
-    print("SELECT QUIZ FOLDER".center(60))
-    print("=" * 60 + "\n")
+    clear_screen()
+    print_logo()
+    print(section("SELECT QUIZ FOLDER"))
+    print()
 
     if not folders:
-        print("No quiz folders found in data/quizzes/")
-        print("\nPlease create quizzes first using import_quiz.py")
+        print(red("  No quiz folders found in data/quizzes/"))
+        print()
+        print(dim("  Create quizzes first using import_quiz.py"))
         sys.exit(1)
 
-    print("Available quiz folders:\n")
+    print(dim("  Available quiz folders:"))
+    print()
     for idx, folder in enumerate(folders, 1):
         # Count quiz files in folder (all JSON files except metadata)
         json_files = list(folder.glob("*.json"))
@@ -531,11 +570,14 @@ def select_folder_from_list(folders: List[Path]) -> Path:
             f for f in json_files if f.stem not in ["last_import", "README", "metadata"]
         ]
         quiz_count = len(quiz_files)
+        count_str = f"{quiz_count} quiz{'zes' if quiz_count != 1 else ''}"
         print(
-            f"  {idx}. {folder.name} ({quiz_count} quiz{'zes' if quiz_count != 1 else ''})"
+            f"  {cyan(str(idx) + '.')} {bold(folder.name)} {dim('(' + count_str + ')')}"
         )
 
-    print("\n  0. Exit\n")
+    print()
+    print(dim("  0. Exit"))
+    print()
 
     try:
         choice = input("Select folder number: ").strip()
@@ -704,7 +746,16 @@ For more information, see README.md
 
     parser.add_argument("--version", action="version", version="%(prog)s 1.0.0")
 
+    parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="disable ANSI color output (also respects NO_COLOR env var)",
+    )
+
     args = parser.parse_args()
+
+    if args.no_color:
+        disable_color()
 
     try:
         # Auto-select quiz if not provided
@@ -716,14 +767,15 @@ For more information, see README.md
             folders = get_quiz_folders(test_mode=test_mode)
 
             if not args.quiet and test_mode:
-                print("\n⚠️  TEST MODE: Sample quizzes are visible\n", file=sys.stderr)
+                print(yellow("\n⚠️  TEST MODE: Sample quizzes are visible\n"), file=sys.stderr)
 
             selected_folder = select_folder_from_list(folders)
             quiz_file = get_random_quiz_from_folder(selected_folder)
 
             if not args.quiet:
-                print(f"\nSelected folder: {selected_folder.name}")
-                print(f"Selected quiz: {quiz_file.name}\n")
+                print(cyan("\nSelected folder: ") + bold(selected_folder.name))
+                print(cyan("Selected quiz  : ") + bold(quiz_file.name))
+                print()
 
         # Validate quiz file
         if not quiz_file.exists():
@@ -732,7 +784,7 @@ For more information, see README.md
 
         # Load quiz
         if not args.quiet:
-            print(f"Loading quiz from: {quiz_file}")
+            print(f"Loading quiz from: {dim(str(quiz_file))}")
 
         quiz = Quiz.load(str(quiz_file))
 
@@ -753,7 +805,7 @@ For more information, see README.md
         # Always save HTML report
         html_path = save_html_report(result, quiz)
         if not args.quiet:
-            print(f"\n📄 HTML report saved to: {html_path}")
+            print(green("\n📄 HTML report: ") + dim(str(html_path)))
 
         # Save text report if requested
         if args.report_output:
@@ -770,13 +822,13 @@ For more information, see README.md
         sys.exit(0 if result.passed else 1)
 
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        print(red(f"Error: {e}"))
         sys.exit(1)
     except KeyError as e:
-        print(f"Error: Invalid quiz file format - missing key: {e}")
+        print(red(f"Error: Invalid quiz file format - missing key: {e}"))
         sys.exit(1)
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(red(f"Unexpected error: {e}"))
         sys.exit(1)
 
 
