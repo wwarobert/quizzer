@@ -767,7 +767,8 @@ class TestUserInputHelpers:
         run_quiz.print_header()
         captured = capsys.readouterr()
         assert "QUIZ" in captured.out.upper()
-        assert "=" in captured.out
+        # Logo uses +/- border (not = signs)
+        assert "+" in captured.out
 
 
 class TestMainFunction:
