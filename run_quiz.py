@@ -260,7 +260,7 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
         # Live per-question timer on the Question N/N header line
         q_lines = max(1, (len(question.question) + term_cols - 1) // term_cols)
         timer = LiveTimer(
-            lines_up=q_lines + 2,  # question text + divider + blank
+            lines_up=q_lines + 3,  # blank + question text + divider → header
             right_col=term_cols - LiveTimer.WIDTH + 1,
         )
         timer.start()
@@ -389,7 +389,7 @@ def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
         # Live per-question timer on the Question N/N header line
         q_lines = max(1, (len(question.question) + term_cols - 1) // term_cols)
         timer = LiveTimer(
-            lines_up=q_lines + 2,  # question text + divider + blank
+            lines_up=q_lines + 3,  # blank + question text + divider → header
             right_col=term_cols - LiveTimer.WIDTH + 1,
         )
         timer.start()
