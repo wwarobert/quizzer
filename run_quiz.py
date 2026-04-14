@@ -26,7 +26,7 @@ from typing import Dict, List
 from quizzer import Quiz, QuizResult, answers_match, format_answer_display, is_test_data
 from quizzer.cli import (
     bold, cyan, dim, disable_color, divider, green, print_logo, progress_bar,
-    red, score_bar, section, yellow,
+    red, score_bar, section, yellow, LiveTimer,
 )
 from quizzer.constants import (
     DATA_DIR_NAME,
@@ -241,19 +241,19 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
         # Clear screen and display question
         clear_screen()
         bar = progress_bar(idx - 1, len(quiz.questions))
-        elapsed = int(time.time() - start_time)
-        e_mins, e_secs = divmod(elapsed, 60)
-        elapsed_str = f"{e_mins}m {e_secs:02d}s" if e_mins else f"{e_secs}s"
-        print(f"{bar}    {dim(elapsed_str)}")
+        print(f"{bar}")
         print()
         print(cyan(f"Question {idx}/{len(quiz.questions)}"))
         print(divider())
         print(bold(question.question))
         print()
 
-        q_start = time.time()
+        # Live per-question timer — starts right before input
+        timer = LiveTimer()
+        timer.print_line()
+        timer.start()
         user_answer = get_user_answer()
-        q_time = time.time() - q_start
+        q_time = timer.stop()
 
         # Compare answers
         is_correct = answers_match(user_answer, question.original_answer)
@@ -359,19 +359,19 @@ def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
         # Clear screen and display question
         clear_screen()
         bar = progress_bar(idx - 1, len(quiz.questions))
-        elapsed = int(time.time() - start_time)
-        e_mins, e_secs = divmod(elapsed, 60)
-        elapsed_str = f"{e_mins}m {e_secs:02d}s" if e_mins else f"{e_secs}s"
-        print(f"{bar}    {dim(elapsed_str)}  {yellow('[REVIEW]')}")
+        print(f"{bar}  {yellow('[REVIEW]')}")
         print()
         print(cyan(f"Question {idx}/{len(quiz.questions)}"))
         print(divider())
         print(bold(question.question))
         print()
 
-        q_start = time.time()
+        # Live per-question timer — starts right before input
+        timer = LiveTimer()
+        timer.print_line()
+        timer.start()
         user_answer = get_user_answer()
-        q_time = time.time() - q_start
+        q_time = timer.stop()
 
         # Compare answers
         is_correct = answers_match(user_answer, question.original_answer)

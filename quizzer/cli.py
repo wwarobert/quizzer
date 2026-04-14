@@ -5,6 +5,7 @@ Shared helpers used by both run_quiz.py and import_quiz.py:
   - ASCII art logo
   - ANSI color output (with NO_COLOR / --no-color support)
   - Progress bar and score bar rendering
+  - LiveTimer: background thread that updates a timer 1 line above input
 
 Copyright 2026 Quizzer Project
 Licensed under the Apache License, Version 2.0
@@ -12,6 +13,8 @@ Licensed under the Apache License, Version 2.0
 
 import os
 import sys
+import threading
+import time
 
 # ---------------------------------------------------------------------------
 # Color support detection
@@ -264,3 +267,83 @@ def section(title: str, width: int = _DIVIDER_WIDTH) -> str:
     """Return a styled section header line."""
     line = f"  {title}  ".center(width, "-")
     return cyan(line)
+
+
+# ---------------------------------------------------------------------------
+# Live timer
+# ---------------------------------------------------------------------------
+
+class LiveTimer:
+    """
+    Background timer that updates one line above the cursor every second.
+
+    Usage pattern — print a blank timer line, then the input prompt:
+
+        timer = LiveTimer()
+        timer.start()
+        answer = input("Your answer: ")
+        elapsed = timer.stop()   # seconds as float
+
+    The timer prints to the line immediately above the current cursor
+    position using ANSI cursor-save / restore so typed characters are
+    not disturbed.
+
+    Falls back to a no-op when color / ANSI is disabled so CI pipelines
+    are unaffected.
+    """
+
+    _PLACEHOLDER = dim("  ⏱  0:00")
+    _PLACEHOLDER_PLAIN = "  ⏱  0:00"
+
+    def __init__(self) -> None:
+        self._start: float = 0.0
+        self._stop_event = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def print_line(self) -> None:
+        """Print the initial (static) timer placeholder line."""
+        if _USE_COLOR:
+            print(self._PLACEHOLDER)
+        else:
+            print(self._PLACEHOLDER_PLAIN)
+
+    def start(self) -> None:
+        """Start the background update thread."""
+        self._start = time.time()
+        self._stop_event.clear()
+        if _USE_COLOR and sys.stdout.isatty():
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+
+    def stop(self) -> float:
+        """Stop the timer and return elapsed seconds."""
+        self._stop_event.set()
+        if self._thread is not None:
+            self._thread.join(timeout=2)
+            self._thread = None
+        return time.time() - self._start
+
+    # ------------------------------------------------------------------
+    # Background thread
+    # ------------------------------------------------------------------
+
+    def _run(self) -> None:
+        """Update the timer display every second until stopped."""
+        while not self._stop_event.wait(1.0):
+            elapsed = int(time.time() - self._start)
+            m, s = divmod(elapsed, 60)
+            label = dim(f"  ⏱  {m}:{s:02d}")
+            # Save cursor → up 1 line → col 1 → erase line → write → restore
+            sys.stdout.write(
+                "\033[s"        # save cursor position
+                "\033[1A"       # move up 1 line
+                "\033[1G"       # move to column 1
+                "\033[2K"       # erase entire line
+                + label +
+                "\033[u"        # restore cursor position
+            )
+            sys.stdout.flush()
