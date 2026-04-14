@@ -195,12 +195,19 @@ function initEventListeners() {
 }
 
 // Make functions globally available for inline event handlers
-window.showView = handleShowDashboard;
-window.showQuizSelection = handleShowQuizSelection;
+window.showView = (viewName) => {
+    if (viewName === 'dashboard') {
+        handleShowDashboard();
+    } else if (viewName === 'quizSelection') {
+        handleShowQuizSelection();
+    } else {
+        showView(viewName, updateDashboard);
+    }
+};
 window.toggleQuizMenu = handleToggleQuizMenu;
 window.loadQuizzes = () => loadQuizzes(
-    () => displayQuizMenuItems(startQuizFromMenu),
-    () => displayQuizList(handleStartQuiz),
+    () => displayQuizMenuItems(startQuizFromMenu, updateDashboard),
+    () => displayQuizList(handleStartQuiz, updateDashboard),
     updateDashboard
 );
 window.startQuiz = handleStartQuiz;
