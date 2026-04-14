@@ -248,11 +248,7 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
         # Question header with right-aligned live timer
         term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
         q_label = f"Question {idx}/{len(quiz.questions)}"
-        print(
-            cyan(q_label)
-            + LiveTimer.right_pad(q_label, term_cols)
-            + LiveTimer.initial_label()
-        )
+        print(cyan(q_label) + LiveTimer.right_pad(q_label, term_cols) + LiveTimer.initial_label())  # noqa: E501
         print(divider())
         print(bold(question.question))
         print()
@@ -305,7 +301,6 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
         # Wait for user before continuing
         if idx < len(quiz.questions):
             input(yellow("\nPress Enter for next question..."))
-
 
     # Calculate time spent
     end_time = time.time()
@@ -376,11 +371,7 @@ def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
         # Question header with right-aligned live timer
         term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
         q_label = f"Question {idx}/{len(quiz.questions)}"
-        print(
-            cyan(q_label)
-            + LiveTimer.right_pad(q_label, term_cols)
-            + LiveTimer.initial_label()
-        )
+        print(cyan(q_label) + LiveTimer.right_pad(q_label, term_cols) + LiveTimer.initial_label())  # noqa: E501
         print(divider())
         print(bold(question.question))
         print()
@@ -782,8 +773,8 @@ For more information, see README.md
             quiz_file = get_random_quiz_from_folder(selected_folder)
 
             if not args.quiet:
-                print(cyan(f"\nSelected folder: ") + bold(selected_folder.name))
-                print(cyan(f"Selected quiz  : ") + bold(quiz_file.name))
+                print(cyan("\nSelected folder: ") + bold(selected_folder.name))
+                print(cyan("Selected quiz  : ") + bold(quiz_file.name))
                 print()
 
         # Validate quiz file
@@ -814,7 +805,7 @@ For more information, see README.md
         # Always save HTML report
         html_path = save_html_report(result, quiz)
         if not args.quiet:
-            print(green(f"\n📄 HTML report: ") + dim(str(html_path)))
+            print(green("\n📄 HTML report: ") + dim(str(html_path)))
 
         # Save text report if requested
         if args.report_output:

@@ -336,7 +336,7 @@ For more information, see README.md
 
     try:
         # Read CSV questions
-        print(cyan(f"Reading questions from: ") + bold(args.csv_file))
+        print(cyan("Reading questions from: ") + bold(args.csv_file))
         questions = read_csv_questions(args.csv_file)
         print(green(f"✓ Loaded {len(questions)} questions"))
 
@@ -389,11 +389,7 @@ For more information, see README.md
                 num_quizzes - remainder
             )
 
-        print(
-            cyan(f"\nGenerating ") + bold(str(num_quizzes))
-            + cyan(f" quiz(zes) from ") + bold(str(len(questions)))
-            + cyan(" questions")
-        )
+        print(cyan("\nGenerating ") + bold(str(num_quizzes)) + cyan(" quiz(zes) from ") + bold(str(len(questions))) + cyan(" questions"))  # noqa: E501
         print(dim(f"  Quiz sizes: {', '.join(str(s) for s in quiz_sizes)}"))
 
         # Create output directory with subfolder based on CSV filename
@@ -451,11 +447,7 @@ For more information, see README.md
             quiz.save(str(output_file))
             created_files.append(str(output_file))
 
-            print(
-                green(f"  [{i + 1}/{num_quizzes}]")
-                + f" {output_file} "
-                + dim(f"({len(quiz.questions)} questions)")
-            )
+            print(green(f"  [{i + 1}/{num_quizzes}]") + f" {output_file} " + dim(f"({len(quiz.questions)} questions)"))
 
         # Save metadata about last import
         metadata = {
@@ -474,10 +466,7 @@ For more information, see README.md
         # Summary table
         print()
         print(divider())
-        print(
-            green(f"  ✓ Done!  ")
-            + bold(str(num_quizzes)) + " quiz(zes) created"
-        )
+        print(green("  ✓ Done!  ") + bold(str(num_quizzes)) + " quiz(zes) created")
         print(dim(f"  Output : {output_dir.absolute()}"))
         print(dim(f"  Source : {args.csv_file}  ({len(questions)} questions)"))
         print(divider())
