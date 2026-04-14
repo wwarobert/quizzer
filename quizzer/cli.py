@@ -275,24 +275,22 @@ def section(title: str, width: int = _DIVIDER_WIDTH) -> str:
 
 class LiveTimer:
     """
-    Background timer that updates a specific position in the terminal every second.
+    Background timer that updates the right side of the question header line
+    every second using absolute cursor positioning (CUP escape sequence).
 
-    Designed to sit right-aligned on the "Question N/N" header line while the
-    user types their answer below. Uses ANSI cursor save/restore so typing is
-    not disturbed.
+    After clear_screen() the question header is always at a known fixed row,
+    so absolute positioning is more reliable than counting lines_up.
 
     Usage:
 
         term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
         q_label = f"Question {idx}/{total}"
-        # Print header line with right-aligned initial timer
         print(cyan(q_label) + LiveTimer.right_pad(q_label, term_cols) + LiveTimer.initial_label())
         print(divider())
         print(bold(question_text))
         print()
-        q_lines = max(1, (len(question_text) + term_cols - 1) // term_cols)
         timer = LiveTimer(
-            lines_up=q_lines + 2,            # question + divider + blank
+            target_row=3,                        # row where header was printed
             right_col=term_cols - LiveTimer.WIDTH + 1,
         )
         timer.start()
@@ -302,17 +300,16 @@ class LiveTimer:
     Falls back silently when not a TTY or ANSI color is disabled.
     """
 
-    # Fixed visual width of the timer label (e.g. "  ⏱  0:00")
+    # Visual width of the timer label "  > 0:00" (pure ASCII, no wide chars)
     WIDTH: int = 9
 
-    def __init__(self, lines_up: int = 1, right_col: int = 1) -> None:
+    def __init__(self, target_row: int = 3, right_col: int = 72) -> None:
         """
         Args:
-            lines_up:  Lines to move up from the input cursor to reach the
-                       question header line where the timer lives.
-            right_col: 1-indexed terminal column where the timer label starts.
+            target_row: Absolute terminal row (1-based) where the header line was printed.
+            right_col:  Absolute terminal column (1-based) where the timer label starts.
         """
-        self._lines_up = lines_up
+        self._target_row = target_row
         self._right_col = right_col
         self._start: float = 0.0
         self._stop_event = threading.Event()
@@ -324,8 +321,8 @@ class LiveTimer:
 
     @classmethod
     def initial_label(cls) -> str:
-        """Return the initial (static) timer label string, ready to print."""
-        plain = f"  ⏱ {0:2d}:{0:02d}"   # consistent WIDTH chars
+        """Return the initial (static) timer placeholder, ready to print inline."""
+        plain = "  >  0:00"   # 9 chars, no wide Unicode
         return dim(plain) if _USE_COLOR else plain
 
     @classmethod
@@ -359,18 +356,17 @@ class LiveTimer:
     # ------------------------------------------------------------------
 
     def _run(self) -> None:
-        """Update the timer in-place every second until stopped."""
+        """Update the timer at its absolute screen position every second."""
         while not self._stop_event.wait(1.0):
             elapsed = int(time.time() - self._start)
             m, s = divmod(elapsed, 60)
-            # Always WIDTH chars: "  ⏱ _0:00" (space-padded minutes)
-            plain = f"  ⏱ {m:2d}:{s:02d}"
+            # Always WIDTH chars: "  > _0:00" (space-padded minutes)
+            plain = f"  > {m:2d}:{s:02d}"
             label = dim(plain) if _USE_COLOR else plain
             sys.stdout.write(
-                "\033[s"                        # save cursor (at input line)
-                f"\033[{self._lines_up}A"       # move up to Question N/N line
-                f"\033[{self._right_col}G"      # move to right column
+                "\033[s"                                       # save cursor
+                f"\033[{self._target_row};{self._right_col}H"  # jump to header row
                 + label +
-                "\033[u"                        # restore cursor to input line
+                "\033[u"                                       # restore cursor
             )
             sys.stdout.flush()
