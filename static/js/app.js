@@ -12,7 +12,7 @@ import { initSidebarButton, toggleQuizMenu } from './ui/sidebar.js';
 import { showView, toggleFullscreen } from './ui/screens.js';
 
 // Import quiz modules
-import { loadQuizzes, displayQuizMenuItems, displayQuizList } from './quiz/quiz-manager.js';
+import { loadQuizzes, displayQuizMenuItems, displayQuizList, markActiveQuizMenuItem } from './quiz/quiz-manager.js';
 import { 
     startQuiz, displayQuestion, submitAnswer, showResults, 
     quitQuiz, backToSelection, generateHtmlReport 
@@ -52,6 +52,7 @@ function initializeApp() {
  */
 function startQuizFromMenu(quizPath) {
     console.log('Starting quiz from menu:', quizPath);
+    markActiveQuizMenuItem(quizPath);
     handleStartQuiz(quizPath);
 }
 

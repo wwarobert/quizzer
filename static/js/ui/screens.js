@@ -3,6 +3,8 @@
  * Handles switching between different views (dashboard, quiz selection, quiz, results)
  */
 
+import { setActiveQuizPath } from '../state/quiz-state.js';
+
 /**
  * Show a specific view and hide others
  * @param {string} viewName - Name of the view to show (dashboard, quizSelection, quiz)
@@ -26,12 +28,29 @@ export function showView(viewName, updateDashboardCallback) {
         document.getElementById('quizView').classList.remove('hidden');
     }
 
-    // Update active menu item
+    // Update active menu items
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
         item.removeAttribute('aria-current');
     });
-    if (event && event.target) {
+    document.querySelectorAll('.expandable-header').forEach(h => h.classList.remove('active'));
+
+    if (viewName === 'dashboard') {
+        // Mark the Dashboard button active, clear active quiz item
+        setActiveQuizPath(null);
+        document.querySelectorAll('.quiz-menu-item').forEach(el => el.classList.remove('active'));
+        const dashboardBtn = document.querySelector('.menu-item[onclick*="dashboard"]');
+        if (dashboardBtn) {
+            dashboardBtn.classList.add('active');
+            dashboardBtn.setAttribute('aria-current', 'page');
+        }
+    } else if (viewName === 'quiz') {
+        // Mark the Available Quizzes header active while quiz is running
+        const quizMenuToggle = document.getElementById('quizMenuToggle');
+        if (quizMenuToggle) {
+            quizMenuToggle.classList.add('active');
+        }
+    } else if (event && event.target) {
         const active = event.target.closest('.menu-item');
         if (active) {
             active.classList.add('active');

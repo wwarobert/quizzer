@@ -17,6 +17,7 @@ export let timerInterval = null;
 
 // UI state
 export let sidebarCollapsed = false;
+export let activeQuizPath = null;
 
 // Local storage state
 export let quizRuns = JSON.parse(localStorage.getItem('quizRuns') || '[]');
@@ -68,6 +69,10 @@ export function setTimerInterval(interval) {
 
 export function setSidebarCollapsed(collapsed) {
     sidebarCollapsed = collapsed;
+}
+
+export function setActiveQuizPath(path) {
+    activeQuizPath = path;
 }
 
 export function setQuizRuns(runs) {

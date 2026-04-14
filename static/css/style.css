@@ -82,6 +82,8 @@
             color: #37474F;
             padding: 20px;
             border-right: 1px solid #E0E0E0;
+            overflow-y: auto;
+            z-index: 100;
         }
 
         .sidebar.collapsed {
@@ -241,24 +243,26 @@
             margin-bottom: var(--space-xs);
             border-radius: 4px;
             cursor: pointer;
-            transition: background 0.2s ease;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
             display: flex;
             align-items: center;
-            gap: var(--space-sm);
             background: transparent;
             color: #78909C;
-            font-size: 0.95rem;
-            font-weight: 400;
+            font-weight: 500;
+            font-size: inherit;
+            font-family: inherit;
             list-style: none;
             border: none;
+            border-left: 3px solid transparent;
+            width: 100%;
+            text-align: left;
         }
 
         .menu-item:hover {
             background: #F5F5F5;
             color: #37474F;
             transform: none;
-            font-weight: 400;
-            border-color: transparent;
+            border-left-color: #B0BEC5;
         }
 
         .menu-item:focus-visible {
@@ -269,14 +273,10 @@
         }
 
         .menu-item.active {
-            background: #F5F5F5;
-            color: #37474F;
-            font-weight: 500;
-            border-color: transparent;
-        }
-
-        .menu-item-icon {
-            font-size: 1.2em;
+            background: #ECEFF1;
+            color: #263238;
+            font-weight: 600;
+            border-left-color: #37474F;
         }
 
         .expandable-menu {
@@ -288,7 +288,7 @@
             margin-bottom: 5px;
             border-radius: 4px;
             cursor: pointer;
-            transition: background 0.2s ease;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -296,6 +296,7 @@
             color: #78909C;
             font-weight: 500;
             border: none;
+            border-left: 3px solid transparent;
             width: 100%;
             text-align: left;
             font-family: inherit;
@@ -305,6 +306,7 @@
         .expandable-header:hover {
             background: #F5F5F5;
             color: #37474F;
+            border-left-color: #B0BEC5;
         }
 
         .expandable-header:focus-visible {
@@ -312,6 +314,13 @@
             outline-offset: 2px;
             background: #F0F7FF;
             color: #37474F;
+        }
+
+        .expandable-header.active {
+            background: #ECEFF1;
+            color: #263238;
+            font-weight: 600;
+            border-left-color: #37474F;
         }
 
         .expandable-content {
@@ -323,8 +332,7 @@
         }
 
         .expandable-content.expanded {
-            max-height: 500px;
-            overflow-y: auto;
+            max-height: 2000px;
         }
 
         .quiz-menu-item {
@@ -355,6 +363,13 @@
             outline-offset: 2px;
             background: #F0F7FF;
             color: #37474F;
+        }
+
+        .quiz-menu-item.active {
+            background: #ECEFF1;
+            color: #263238;
+            font-weight: 600;
+            border-left-color: #37474F;
         }
 
         .chevron {
