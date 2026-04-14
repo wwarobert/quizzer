@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import random
+import shutil
 import sys
 import time
 from datetime import datetime
@@ -243,14 +244,25 @@ def run_quiz(quiz: Quiz, pass_threshold: float = DEFAULT_PASS_THRESHOLD) -> Quiz
         bar = progress_bar(idx - 1, len(quiz.questions))
         print(f"{bar}")
         print()
-        print(cyan(f"Question {idx}/{len(quiz.questions)}"))
+
+        # Question header with right-aligned live timer
+        term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
+        q_label = f"Question {idx}/{len(quiz.questions)}"
+        print(
+            cyan(q_label)
+            + LiveTimer.right_pad(q_label, term_cols)
+            + LiveTimer.initial_label()
+        )
         print(divider())
         print(bold(question.question))
         print()
 
-        # Live per-question timer — starts right before input
-        timer = LiveTimer()
-        timer.print_line()
+        # Live per-question timer on the Question N/N header line
+        q_lines = max(1, (len(question.question) + term_cols - 1) // term_cols)
+        timer = LiveTimer(
+            lines_up=q_lines + 2,  # question text + divider + blank
+            right_col=term_cols - LiveTimer.WIDTH + 1,
+        )
         timer.start()
         user_answer = get_user_answer()
         q_time = timer.stop()
@@ -361,14 +373,25 @@ def run_quiz_review_mode(quiz: Quiz) -> QuizResult:
         bar = progress_bar(idx - 1, len(quiz.questions))
         print(f"{bar}  {yellow('[REVIEW]')}")
         print()
-        print(cyan(f"Question {idx}/{len(quiz.questions)}"))
+
+        # Question header with right-aligned live timer
+        term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
+        q_label = f"Question {idx}/{len(quiz.questions)}"
+        print(
+            cyan(q_label)
+            + LiveTimer.right_pad(q_label, term_cols)
+            + LiveTimer.initial_label()
+        )
         print(divider())
         print(bold(question.question))
         print()
 
-        # Live per-question timer — starts right before input
-        timer = LiveTimer()
-        timer.print_line()
+        # Live per-question timer on the Question N/N header line
+        q_lines = max(1, (len(question.question) + term_cols - 1) // term_cols)
+        timer = LiveTimer(
+            lines_up=q_lines + 2,  # question text + divider + blank
+            right_col=term_cols - LiveTimer.WIDTH + 1,
+        )
         timer.start()
         user_answer = get_user_answer()
         q_time = timer.stop()

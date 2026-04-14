@@ -275,41 +275,68 @@ def section(title: str, width: int = _DIVIDER_WIDTH) -> str:
 
 class LiveTimer:
     """
-    Background timer that updates one line above the cursor every second.
+    Background timer that updates a specific position in the terminal every second.
 
-    Usage pattern — print a blank timer line, then the input prompt:
-
-        timer = LiveTimer()
-        timer.start()
-        answer = input("Your answer: ")
-        elapsed = timer.stop()   # seconds as float
-
-    The timer prints to the line immediately above the current cursor
-    position using ANSI cursor-save / restore so typed characters are
+    Designed to sit right-aligned on the "Question N/N" header line while the
+    user types their answer below. Uses ANSI cursor save/restore so typing is
     not disturbed.
 
-    Falls back to a no-op when color / ANSI is disabled so CI pipelines
-    are unaffected.
+    Usage:
+
+        term_cols = shutil.get_terminal_size(fallback=(80, 24)).columns
+        q_label = f"Question {idx}/{total}"
+        # Print header line with right-aligned initial timer
+        print(cyan(q_label) + LiveTimer.right_pad(q_label, term_cols) + LiveTimer.initial_label())
+        print(divider())
+        print(bold(question_text))
+        print()
+        q_lines = max(1, (len(question_text) + term_cols - 1) // term_cols)
+        timer = LiveTimer(
+            lines_up=q_lines + 2,            # question + divider + blank
+            right_col=term_cols - LiveTimer.WIDTH + 1,
+        )
+        timer.start()
+        answer = input("Your answer: ")
+        elapsed = timer.stop()
+
+    Falls back silently when not a TTY or ANSI color is disabled.
     """
 
-    _PLACEHOLDER = dim("  ⏱  0:00")
-    _PLACEHOLDER_PLAIN = "  ⏱  0:00"
+    # Fixed visual width of the timer label (e.g. "  ⏱  0:00")
+    WIDTH: int = 9
 
-    def __init__(self) -> None:
+    def __init__(self, lines_up: int = 1, right_col: int = 1) -> None:
+        """
+        Args:
+            lines_up:  Lines to move up from the input cursor to reach the
+                       question header line where the timer lives.
+            right_col: 1-indexed terminal column where the timer label starts.
+        """
+        self._lines_up = lines_up
+        self._right_col = right_col
         self._start: float = 0.0
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
 
     # ------------------------------------------------------------------
-    # Public API
+    # Class-level helpers (used when building the question header line)
     # ------------------------------------------------------------------
 
-    def print_line(self) -> None:
-        """Print the initial (static) timer placeholder line."""
-        if _USE_COLOR:
-            print(self._PLACEHOLDER)
-        else:
-            print(self._PLACEHOLDER_PLAIN)
+    @classmethod
+    def initial_label(cls) -> str:
+        """Return the initial (static) timer label string, ready to print."""
+        plain = f"  ⏱ {0:2d}:{0:02d}"   # consistent WIDTH chars
+        return dim(plain) if _USE_COLOR else plain
+
+    @classmethod
+    def right_pad(cls, left_text: str, term_cols: int) -> str:
+        """Return the spaces needed between left_text and a right-aligned timer."""
+        pad = term_cols - len(left_text) - cls.WIDTH
+        return " " * max(1, pad)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
     def start(self) -> None:
         """Start the background update thread."""
@@ -320,7 +347,7 @@ class LiveTimer:
             self._thread.start()
 
     def stop(self) -> float:
-        """Stop the timer and return elapsed seconds."""
+        """Stop the timer thread and return elapsed seconds."""
         self._stop_event.set()
         if self._thread is not None:
             self._thread.join(timeout=2)
@@ -332,18 +359,18 @@ class LiveTimer:
     # ------------------------------------------------------------------
 
     def _run(self) -> None:
-        """Update the timer display every second until stopped."""
+        """Update the timer in-place every second until stopped."""
         while not self._stop_event.wait(1.0):
             elapsed = int(time.time() - self._start)
             m, s = divmod(elapsed, 60)
-            label = dim(f"  ⏱  {m}:{s:02d}")
-            # Save cursor → up 1 line → col 1 → erase line → write → restore
+            # Always WIDTH chars: "  ⏱ _0:00" (space-padded minutes)
+            plain = f"  ⏱ {m:2d}:{s:02d}"
+            label = dim(plain) if _USE_COLOR else plain
             sys.stdout.write(
-                "\033[s"        # save cursor position
-                "\033[1A"       # move up 1 line
-                "\033[1G"       # move to column 1
-                "\033[2K"       # erase entire line
+                "\033[s"                        # save cursor (at input line)
+                f"\033[{self._lines_up}A"       # move up to Question N/N line
+                f"\033[{self._right_col}G"      # move to right column
                 + label +
-                "\033[u"        # restore cursor position
+                "\033[u"                        # restore cursor to input line
             )
             sys.stdout.flush()
