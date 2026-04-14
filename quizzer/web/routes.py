@@ -103,12 +103,16 @@ def _log_and_return_error(
     return jsonify({"error": message}), status_code
 
 
-def _load_quiz_metadata(quiz_file: Path) -> dict | None:
+def _load_quiz_metadata(quiz_file: Path, base_dir: Path = None) -> dict | None:
     """
     Load quiz metadata from JSON file.
 
     Args:
         quiz_file: Path to quiz JSON file
+        base_dir: Base directory to compute relative path from.
+                  When provided, the returned ``path`` is relative to
+                  this directory so that it can be round-tripped through
+                  ``validate_quiz_path`` without path doubling.
 
     Returns:
         Dict with quiz metadata or None if loading fails
@@ -116,8 +120,17 @@ def _load_quiz_metadata(quiz_file: Path) -> dict | None:
     try:
         with open(quiz_file, "r", encoding="utf-8") as f:
             data = json.load(f)
+            # Return path relative to base_dir so the client can send it
+            # back and validate_quiz_path can resolve it correctly.
+            if base_dir is not None:
+                try:
+                    path = quiz_file.relative_to(base_dir).as_posix()
+                except ValueError:
+                    path = str(quiz_file)
+            else:
+                path = str(quiz_file)
             return {
-                "path": str(quiz_file),
+                "path": path,
                 "quiz_id": data.get("quiz_id", quiz_file.stem),
                 "num_questions": len(data.get("questions", [])),
                 "source_file": data.get("source_file", ""),
@@ -238,7 +251,7 @@ def register_routes(app, limiter):
                         continue
 
                     # Load quiz metadata using helper
-                    metadata = _load_quiz_metadata(quiz_file)
+                    metadata = _load_quiz_metadata(quiz_file, quizzes_dir)
                     if metadata:
                         quiz_files.append(metadata)
             else:
