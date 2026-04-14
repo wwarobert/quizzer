@@ -538,7 +538,8 @@ def select_folder_from_list(folders: List[Path]) -> Path:
     Raises:
         SystemExit: If user cancels or provides invalid input
     """
-    print()
+    clear_screen()
+    print_logo()
     print(section("SELECT QUIZ FOLDER"))
     print()
 

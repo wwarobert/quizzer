@@ -111,17 +111,17 @@ _LOGO_ROWS = [
     " ╚══▀▀═╝  ╚═════╝ ╚═╝ ╚══════╝ ╚══════╝╚══════╝╚═╝  ╚═╝",
 ]
 
-# 2-D colour table: _LOGO_2D[row][col_segment]
-# 3 column segments per row; colour shifts both down and to the right.
+# 2-D colour table: grey diagonal gradient
+# bright white (top-left highlight) → dark grey (bottom-right shadow)
 #
-#          col-left         col-mid          col-right
+#          col-left        col-mid         col-right
 _LOGO_2D = [
-    ["\033[1;97m",  "\033[1;97m",  "\033[1;96m"],  # row 0 — bold white  → bold cyan
-    ["\033[1;97m",  "\033[1;96m",  "\033[96m"  ],  # row 1
-    ["\033[1;96m",  "\033[96m",    "\033[1;36m"],  # row 2
-    ["\033[96m",    "\033[1;36m",  "\033[36m"  ],  # row 3
-    ["\033[1;36m",  "\033[36m",    "\033[34m"  ],  # row 4
-    ["\033[36m",    "\033[34m",    "\033[2;34m"],   # row 5 — cyan → deep blue
+    ["\033[1;97m",  "\033[1;97m",  "\033[97m"  ],  # row 0 — bold white
+    ["\033[1;97m",  "\033[97m",    "\033[37m"  ],  # row 1
+    ["\033[97m",    "\033[37m",    "\033[2;37m"],   # row 2
+    ["\033[37m",    "\033[2;37m",  "\033[90m"  ],   # row 3
+    ["\033[2;37m",  "\033[90m",    "\033[90m"  ],   # row 4
+    ["\033[90m",    "\033[90m",    "\033[2;90m"],    # row 5 — dim dark grey
 ]
 
 # Column split point: each row is split into thirds
