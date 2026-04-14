@@ -23,6 +23,10 @@ REPORT_NOT_FOUND = "Report not found"
 REPORT_INVALID_ID = "Invalid quiz ID"
 REPORT_LOAD_FAILED = "Failed to load report"
 
+# Quiz deletion errors
+QUIZ_DELETE_FAILED = "Failed to delete quiz"
+QUIZ_DELETE_NOT_ALLOWED = "Quiz deletion not allowed for this path"
+
 # Quiz list errors
 QUIZ_LIST_FAILED = "Failed to fetch quizzes"
 
