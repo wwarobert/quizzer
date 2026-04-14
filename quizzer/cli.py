@@ -20,6 +20,7 @@ import time
 # Color support detection
 # ---------------------------------------------------------------------------
 
+
 def _color_enabled() -> bool:
     """
     Return True if ANSI color output should be used.
@@ -49,16 +50,16 @@ def disable_color() -> None:
 
 class _C:
     """ANSI escape code constants."""
-    RESET  = "\033[0m"
-    BOLD   = "\033[1m"
-    DIM    = "\033[2m"
-    GREEN  = "\033[32m"
-    RED    = "\033[31m"
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    GREEN = "\033[32m"
+    RED = "\033[31m"
     YELLOW = "\033[33m"
-    CYAN   = "\033[36m"
-    WHITE  = "\033[97m"
+    CYAN = "\033[36m"
+    WHITE = "\033[97m"
     BRIGHT_GREEN = "\033[92m"
-    BRIGHT_RED   = "\033[91m"
+    BRIGHT_RED = "\033[91m"
 
 
 def _c(code: str, text: str) -> str:
@@ -117,14 +118,14 @@ _LOGO_ROWS = [
 # 2-D colour table: grey diagonal gradient
 # bright white (top-left highlight) → dark grey (bottom-right shadow)
 #
-#          col-left        col-mid         col-right
+#          col-left        col-mid        col-right
 _LOGO_2D = [
-    ["\033[1;97m",  "\033[1;97m",  "\033[97m"  ],  # row 0 — bold white
-    ["\033[1;97m",  "\033[97m",    "\033[37m"  ],  # row 1
-    ["\033[97m",    "\033[37m",    "\033[2;37m"],   # row 2
-    ["\033[37m",    "\033[2;37m",  "\033[90m"  ],   # row 3
-    ["\033[2;37m",  "\033[90m",    "\033[90m"  ],   # row 4
-    ["\033[90m",    "\033[90m",    "\033[2;90m"],    # row 5 — dim dark grey
+    ["\033[1;97m", "\033[1;97m", "\033[97m"],    # row 0 — bold white
+    ["\033[1;97m", "\033[97m", "\033[37m"],       # row 1
+    ["\033[97m", "\033[37m", "\033[2;37m"],       # row 2
+    ["\033[37m", "\033[2;37m", "\033[90m"],       # row 3
+    ["\033[2;37m", "\033[90m", "\033[90m"],       # row 4
+    ["\033[90m", "\033[90m", "\033[2;90m"],       # row 5 — dim dark grey
 ]
 
 # Column split point: each row is split into thirds
@@ -159,9 +160,9 @@ def print_logo() -> None:
 # Progress bar
 # ---------------------------------------------------------------------------
 
-_BAR_FILL   = "\u2588"   # █
-_BAR_EMPTY  = "\u2591"   # ░
-_BAR_WIDTH  = 20
+_BAR_FILL = "\u2588"   # █
+_BAR_EMPTY = "\u2591"  # ░
+_BAR_WIDTH = 20
 
 
 def progress_bar(current: int, total: int, width: int = _BAR_WIDTH) -> str:
@@ -186,7 +187,7 @@ def progress_bar(current: int, total: int, width: int = _BAR_WIDTH) -> str:
         ratio = min(current / total, 1.0)
 
     filled = round(ratio * width)
-    empty  = width - filled
+    empty = width - filled
 
     bar_body = (_BAR_FILL * filled) + (_BAR_EMPTY * empty)
 
@@ -230,9 +231,9 @@ def score_bar(
         >>> bar = score_bar(55.0)
         >>> assert "FAIL" in bar
     """
-    ratio  = min(percentage / 100.0, 1.0)
+    ratio = min(percentage / 100.0, 1.0)
     filled = round(ratio * width)
-    empty  = width - filled
+    empty = width - filled
     passed = percentage >= pass_threshold
 
     bar_body = (_BAR_FILL * filled) + (_BAR_EMPTY * empty)
