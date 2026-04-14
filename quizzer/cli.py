@@ -192,12 +192,7 @@ def progress_bar(current: int, total: int, width: int = _BAR_WIDTH) -> str:
     bar_body = (_BAR_FILL * filled) + (_BAR_EMPTY * empty)
 
     if _USE_COLOR:
-        bar_str = (
-            _C.CYAN + "[" + _C.RESET
-            + _C.GREEN + (_BAR_FILL * filled) + _C.RESET
-            + _C.DIM + (_BAR_EMPTY * empty) + _C.RESET
-            + _C.CYAN + "]" + _C.RESET
-        )
+        bar_str = _C.CYAN + "[" + _C.RESET + _C.GREEN + (_BAR_FILL * filled) + _C.RESET + _C.DIM + (_BAR_EMPTY * empty) + _C.RESET + _C.CYAN + "]" + _C.RESET  # noqa: E501
     else:
         bar_str = f"[{bar_body}]"
 
@@ -241,12 +236,7 @@ def score_bar(
 
     if _USE_COLOR:
         color_code = _C.BRIGHT_GREEN if passed else _C.BRIGHT_RED
-        bar_str = (
-            _C.CYAN + "[" + _C.RESET
-            + color_code + (_BAR_FILL * filled) + _C.RESET
-            + _C.DIM + (_BAR_EMPTY * empty) + _C.RESET
-            + _C.CYAN + "]" + _C.RESET
-        )
+        bar_str = _C.CYAN + "[" + _C.RESET + color_code + (_BAR_FILL * filled) + _C.RESET + _C.DIM + (_BAR_EMPTY * empty) + _C.RESET + _C.CYAN + "]" + _C.RESET  # noqa: E501
         result_str = _c(color_code + _C.BOLD, f" {percentage:.1f}%  {result_text}")
     else:
         bar_str = f"[{bar_body}]"
@@ -364,10 +354,6 @@ class LiveTimer:
             # Always WIDTH chars: "  > _0:00" (space-padded minutes)
             plain = f"  > {m:2d}:{s:02d}"
             label = dim(plain) if _USE_COLOR else plain
-            sys.stdout.write(
-                "\033[s"                                       # save cursor
-                f"\033[{self._target_row};{self._right_col}H"  # jump to header row
-                + label +
-                "\033[u"                                       # restore cursor
-            )
+            esc_jump = f"\033[{self._target_row};{self._right_col}H"
+            sys.stdout.write("\033[s" + esc_jump + label + "\033[u")
             sys.stdout.flush()
