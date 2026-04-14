@@ -45,7 +45,7 @@
         /* Skip link for keyboard users */
         .skip-link {
             position: absolute;
-            top: -40px;
+            top: -100px;
             left: 16px;
             background: #ffffff;
             color: #0b1f4d;
@@ -54,9 +54,13 @@
             border-radius: 6px;
             text-decoration: none;
             z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
         }
         .skip-link:focus {
             top: 16px;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         body {
@@ -291,6 +295,11 @@
             background: transparent;
             color: #78909C;
             font-weight: 500;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+            font-size: inherit;
         }
 
         .expandable-header:hover {
@@ -350,6 +359,10 @@
 
         .chevron {
             transition: transform 0.3s ease;
+            font-size: 0.7em;
+            display: inline-block;
+            width: 16px;
+            text-align: center;
         }
 
         .chevron.rotated {
@@ -590,6 +603,15 @@
 
         .main-content.expanded {
             margin-left: 0;
+        }
+
+        /* View Title */
+        .view-title {
+            font-size: 2em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 10px 0;
+            padding-top: 0;
         }
 
         /* Dashboard */
