@@ -35,8 +35,8 @@ function initializeApp() {
     
     // Load quizzes on startup
     loadQuizzes(
-        () => displayQuizMenuItems(startQuizFromMenu),
-        () => displayQuizList(handleStartQuiz),
+        () => displayQuizMenuItems(startQuizFromMenu, updateDashboard),
+        () => displayQuizList(handleStartQuiz, updateDashboard),
         updateDashboard
     );
     
@@ -91,8 +91,8 @@ function handleToggleQuizMenu() {
     toggleQuizMenu(() => {
         if (quizzes.length === 0) {
             loadQuizzes(
-                () => displayQuizMenuItems(startQuizFromMenu),
-                () => displayQuizList(handleStartQuiz),
+                () => displayQuizMenuItems(startQuizFromMenu, updateDashboard),
+                () => displayQuizList(handleStartQuiz, updateDashboard),
                 updateDashboard
             );
         }
@@ -111,7 +111,7 @@ function handleShowDashboard() {
  */
 function handleShowQuizSelection() {
     showView('quizSelection', updateDashboard);
-    displayQuizList(handleStartQuiz);
+    displayQuizList(handleStartQuiz, updateDashboard);
 }
 
 /**

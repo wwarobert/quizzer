@@ -23,6 +23,8 @@ from quizzer.services import AnswerService
 from quizzer.error_messages import (
     ANSWER_CHECK_FAILED,
     INTERNAL_ERROR,
+    QUIZ_DELETE_FAILED,
+    QUIZ_DELETE_NOT_ALLOWED,
     QUIZ_INVALID_PATH,
     QUIZ_LIST_FAILED,
     QUIZ_LOAD_FAILED,
@@ -395,6 +397,59 @@ def register_routes(app, limiter):
             logger.error(f"Error saving report: {e}", exc_info=True)
             # Don't expose internal error details to client
             return jsonify({"success": False, "error": REPORT_SAVE_FAILED}), 500
+
+    @app.route("/api/quiz", methods=["DELETE"])
+    @limiter.limit("20 per hour")
+    def delete_quiz():
+        """Delete a quiz JSON file.
+
+        Validates the path to prevent directory traversal, then
+        removes the quiz file from disk.
+
+        Returns:
+            JSON with success status and updated quiz count.
+        """
+        quiz_path = request.args.get("path")
+        if not quiz_path:
+            return jsonify({"error": QUIZ_NOT_PROVIDED}), 400
+
+        try:
+            # Validate path (prevents traversal attacks)
+            validated_path = validate_quiz_path(quiz_path, QUIZZES_DIR)
+
+            if not validated_path.exists():
+                return _log_and_return_error(
+                    QUIZ_NOT_FOUND, 404,
+                    error_details=f"Quiz file not found: {quiz_path}"
+                )
+
+            # Delete the file
+            validated_path.unlink()
+
+            _log_user_action(
+                "quiz_deleted",
+                quiz_path=str(validated_path)
+            )
+
+            logger.info(
+                f"[{_get_request_id()}] Quiz deleted: "
+                f"{validated_path}"
+            )
+
+            return jsonify({"success": True})
+
+        except InvalidQuizPathError as e:
+            return _log_and_return_error(
+                QUIZ_DELETE_NOT_ALLOWED, 400,
+                error_details=f"Invalid path for deletion: "
+                f"{quiz_path} - {e}"
+            )
+        except Exception as e:
+            return _log_and_return_error(
+                QUIZ_DELETE_FAILED, 500,
+                error_details=f"Error deleting quiz: {e}",
+                exc_info=True
+            )
 
     @app.route("/report/<quiz_id>")
     @limiter.limit("50 per hour")
