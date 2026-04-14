@@ -763,12 +763,12 @@ class TestUserInputHelpers:
                 run_quiz.get_user_answer()
 
     def test_print_header(self, capsys):
-        """Test printing quiz header."""
+        """Test printing quiz header (ASCII art logo)."""
         run_quiz.print_header()
         captured = capsys.readouterr()
-        assert "QUIZ" in captured.out.upper()
-        # Logo uses +/- border (not = signs)
-        assert "+" in captured.out
+        # Logo uses Unicode block/box chars — check for content and structure
+        assert len(captured.out) > 50
+        assert "█" in captured.out or "╗" in captured.out
 
 
 class TestMainFunction:

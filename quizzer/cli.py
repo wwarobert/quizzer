@@ -96,41 +96,47 @@ def dim(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# ASCII art logo
+# ASCII art logo  —  ANSI Shadow style, QUIZZER, 6 rows × 55 chars
+# Color gradient: bright white (top/highlight) → blue (base/depth)
+# E has 3 horizontal bars — clearly not an I
 # ---------------------------------------------------------------------------
 
-_LOGO_LINES = [
-    r"  ___  _   _ ___ __________ _____ ____  ",
-    r" / _ \| | | |_ _|__  /__  /|_  _||  _ \ ",
-    r"| | | | | | || |  / /  / /   | |  | |_) |",
-    r"| |_| | |_| || | / /_ / /_  _| |_ |  _ < ",
-    " \\__\\_\\\\___/|___/____|____|_|_____|_| \\_\\",
+_LOGO_ROWS = [
+    " ██████╗ ██╗   ██╗██╗███████╗ ███████╗ ███████╗██████╗ ",
+    "██╔═══██╗██║   ██║██║╚════██║ ╚════██║ ██╔════╝██╔══██╗",
+    "██║   ██║██║   ██║██║    ██╔╝     ██╔╝ █████╗  ██████╔╝",
+    "██║▄▄ ██║██║   ██║██║   ██╔╝     ██╔╝  ██╔══╝  ██╔══██╗",
+    "╚██████╔╝╚██████╔╝██║ ███████╗ ███████╗███████╗██║  ██║",
+    " ╚══▀▀═╝  ╚═════╝ ╚═╝ ╚══════╝ ╚══════╝╚══════╝╚═╝  ╚═╝",
 ]
 
-_TAGLINE = "CLI Quiz Runner  |  v1.0"
+# Per-row ANSI codes: top rows bright (highlight face), bottom rows dark (shadow face)
+_LOGO_GRADIENT = [
+    "\033[1;97m",   # bold bright white  — highlight top
+    "\033[97m",     # bright white
+    "\033[1;96m",   # bold bright cyan
+    "\033[96m",     # bright cyan
+    "\033[36m",     # cyan               — shadow bottom
+    "\033[34m",     # blue               — base/depth
+]
 
-# Border auto-sized to widest logo line + 2 padding chars each side
-_INNER_WIDTH = max(len(ln) for ln in _LOGO_LINES) + 4
-_BORDER_WIDTH = _INNER_WIDTH + 2   # +2 for the | chars
+# Width used by divider() / section() helpers — matches logo width
+_DIVIDER_WIDTH = max(len(r) for r in _LOGO_ROWS)
 
 
-def print_logo(tagline: bool = True) -> None:
+def print_logo() -> None:
     """
-    Print the Quizzer ASCII art logo to stdout.
+    Print the Quizzer ASCII art logo (ANSI Shadow, 3-D colour gradient).
 
-    Args:
-        tagline: Whether to print the tagline below the logo (default: True)
+    No border or version text — pure lettering only.
+    Colour is skipped automatically when output is not a TTY or NO_COLOR is set.
     """
-    border = cyan("+" + "-" * _INNER_WIDTH + "+")
     print()
-    print(border)
-    for line in _LOGO_LINES:
-        padded = ("  " + line).ljust(_INNER_WIDTH)
-        print(cyan("|") + bold(cyan(padded)) + cyan("|"))
-    if tagline:
-        tl = _TAGLINE.center(_INNER_WIDTH)
-        print(cyan("|") + dim(tl) + cyan("|"))
-    print(border)
+    for i, row in enumerate(_LOGO_ROWS):
+        if _USE_COLOR:
+            print(_LOGO_GRADIENT[i] + row + _C.RESET)
+        else:
+            print(row)
     print()
 
 
@@ -237,12 +243,12 @@ def score_bar(
 # Section dividers
 # ---------------------------------------------------------------------------
 
-def divider(width: int = _BORDER_WIDTH, char: str = "-") -> str:
+def divider(width: int = _DIVIDER_WIDTH, char: str = "-") -> str:
     """Return a styled horizontal divider line."""
     return dim(char * width)
 
 
-def section(title: str, width: int = _BORDER_WIDTH) -> str:
+def section(title: str, width: int = _DIVIDER_WIDTH) -> str:
     """Return a styled section header line."""
     line = f"  {title}  ".center(width, "-")
     return cyan(line)
